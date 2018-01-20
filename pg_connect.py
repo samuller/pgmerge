@@ -28,13 +28,13 @@ def main():
     cur = conn.cursor()
     # Query the database and obtain data as Python objects
     schema = "public"
-    tables = db_meta.get_tables(cur, schema)
+    tables = db_meta.get_table_names(cur, schema)
 
     print("Found %s tables in schema '%s'" % (len(tables), schema))
     for table in tables:
         print(table)
+        # print(db_meta.get_foreign_keys(cur, table))
         # print(db_meta.get_column_names(cur, table, schema))
-        # print_rows(cur, db_meta.sql_foreign_keys_of_table(table))
 
     # Make the changes to the database persistent
     conn.commit()

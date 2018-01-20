@@ -1,11 +1,24 @@
 from pypika import PostgreSQLQuery as Query, Table, Field
 
 
+class ForeignKey:
+
+    def __init__(self, name, table, columns, other_table, other_columns):
+        self.name = name
+        self.table = table
+        self.columns = columns
+        self.other_table = other_table
+        self.other_columns = other_columns
+
+    def __repr__(self):
+        return "%s: %s.%s -> %s.%s" % (self.name, self.table, self.columns, self.other_table, self.other_columns)
+
+
 def take_first(list_of_tuples):
     return [tup[0] for tup in list_of_tuples]
 
 
-def get_tables(cursor, schema="public"):
+def get_table_names(cursor, schema="public"):
     sql = sql_tables_in_db(schema)
     print(sql)
 
@@ -17,6 +30,12 @@ def get_column_names(cursor, table, schema="public"):
     sql = "SELECT * FROM %s.%s LIMIT 0" % (schema, table)
     cursor.execute(sql)
     return take_first(cursor.description)
+
+
+def get_foreign_keys(cursor, table, schema="public"):
+    cursor.execute(sql_foreign_keys_of_table(table, schema))
+    return [ForeignKey(row[0], row[1], [row[2]], row[3], [row[4]])
+            for row in cursor]
 
 
 def pypika_get_tables(schema="public"):
