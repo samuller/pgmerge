@@ -20,8 +20,6 @@ def take_first(list_of_tuples):
 
 def get_table_names(cursor, schema="public"):
     sql = sql_tables_in_db(schema)
-    print(sql)
-
     cursor.execute(sql)
     return take_first(cursor.fetchall())
 
@@ -84,7 +82,8 @@ def sql_foreign_keys_of_table(table, schema="public"):
         ON tc.constraint_name = kcu.constraint_name
     JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
-    WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='%s';""" % \
+    WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
+    ORDER BY tc.constraint_name;""" % \
           (table,)
     return sql
 
