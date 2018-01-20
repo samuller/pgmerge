@@ -1,10 +1,5 @@
 import config
 import psycopg2
-# python-sql
-import sql as ps
-import sql.aggregate as psa
-import sql.conditionals as psc
-# pypika
 from pypika import PostgreSQLQuery as Query, Table, Field
 
 
@@ -27,17 +22,6 @@ def pypika_get_tables(schema="public"):
     sql = q.get_sql(quote_char=None)
     return sql
 
-
-def python_sql_get_tables(schema="public"):
-    """Use python-sql to generate sql query to fetch all tables"""
-    tables = ps.Table('information_schema.tables')
-    select = tables.select()
-    select.where = tables.table_schema == schema
-    select.order_by = (tables.table_schema, tables.table_name)
-    print(tuple(select))
-    print(format_tuple(tuple(select)))
-    sql = format_tuple(tuple(select))
-    return sql
 
 
 def sql_get_tables(schema="public"):
