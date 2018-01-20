@@ -1,6 +1,17 @@
 from pypika import PostgreSQLQuery as Query, Table, Field
 
 
+class TableColumn:
+
+    def __init__(self, table_name, column_name, is_primary_key=None):
+        self.table_name = table_name
+        self.column_name = column_name
+        self.is_primary_key = is_primary_key
+
+    def __repr__(self):
+        return "%s.%s%s" % (self.table_name, self.column_name, " *" if self.is_primary_key else "")
+
+
 class ForeignKey:
 
     def __init__(self, name, table, columns, other_table, other_columns):
@@ -34,6 +45,11 @@ def get_primary_key_column_names(cursor, table, schema="public"):
     sql = sql_primary_keys(table, schema)
     cursor.execute(sql)
     return take_first(cursor.fetchall())
+
+
+def get_columns(cursor, table, schema="public"):
+    pk_columns = get_primary_key_column_names(cursor, table, schema)
+    return [TableColumn(table, col, col in pk_columns) for col in get_column_names(cursor, table, schema)]
 
 
 def get_foreign_keys(cursor, table, schema="public"):
