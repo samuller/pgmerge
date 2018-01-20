@@ -23,8 +23,7 @@ def pypika_get_tables(schema="public"):
     return sql
 
 
-
-def sql_get_tables(schema="public"):
+def sql_tables_in_db(schema="public"):
     """Generate sql query to fetch all tables"""
     sql = ("SELECT table_name FROM information_schema.tables" +
            " WHERE table_schema = '%s'" +
@@ -33,20 +32,65 @@ def sql_get_tables(schema="public"):
     return sql
 
 
+def sql_foreign_keys_of_table(table, schema="public"):
+    """
+    Does not work correctly for foreign key constraints that point
+    to multiple columns
+    """
+    sql = """SELECT
+        tc.constraint_name, tc.table_name, kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+    FROM
+        information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+        ON tc.constraint_name = kcu.constraint_name
+    JOIN information_schema.constraint_column_usage AS ccu
+        ON ccu.constraint_name = tc.constraint_name
+    WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='%s';""" % \
+          (table,)
+    return sql
+
+
+def psql_foreign_keys_of_table(table, schema="public"):
+    """
+    Postgres-specific and gives constraint's definition in sql
+    """
+    sql = """SELECT conname,
+        pg_catalog.pg_get_constraintdef(r.oid, true) as condef
+    FROM pg_catalog.pg_constraint r
+    WHERE r.conrelid = '%s.%s'::regclass AND r.contype = 'f'
+    ORDER BY conname;""" % \
+          (schema, table,)
+    return sql
+
+
+def take_first(list_of_tuples):
+    return [tup[0] for tup in list_of_tuples]
+
+
 def get_tables(cursor, schema="public"):
-    sql = sql_get_tables(schema)
+    sql = sql_tables_in_db(schema)
     print(sql)
 
     cursor.execute(sql)
-    tables = [tbl[0] for tbl in cursor.fetchall()]
-    return tables
+    return take_first(cursor.fetchall())
 
 
 def get_column_names(cursor, table, schema="public"):
     sql = "SELECT * FROM %s.%s LIMIT 0" % (schema, table)
     cursor.execute(sql)
-    col_names = [desc[0] for desc in cursor.description]
-    return col_names
+    return take_first(cursor.description)
+
+
+def print_rows(cursor, sql):
+    cursor.execute(sql)
+    count = cursor.rowcount
+    # rows = list(cursor)
+    print("%s results" % count)
+    for row in cursor:
+        print(row)
+    return count
 
 
 def main():
@@ -66,6 +110,7 @@ def main():
     for table in tables:
         print(table)
         # print(get_column_names(cur, table, schema))
+        # print_rows(cur, sql_foreign_keys_of_table(table))
 
     # Make the changes to the database persistent
     conn.commit()
