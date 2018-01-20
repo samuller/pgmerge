@@ -32,6 +32,12 @@ def get_column_names(cursor, table, schema="public"):
     return take_first(cursor.description)
 
 
+def get_primary_key_column_names(cursor, table, schema="public"):
+    sql = sql_primary_keys(table, schema)
+    cursor.execute(sql)
+    return take_first(cursor.fetchall())
+
+
 def get_foreign_keys(cursor, table, schema="public"):
     cursor.execute(sql_foreign_keys_of_table(table, schema))
     return [ForeignKey(row[0], row[1], [row[2]], row[3], [row[4]])
@@ -93,4 +99,16 @@ def psql_foreign_keys_of_table(table, schema="public"):
     WHERE r.conrelid = '%s.%s'::regclass AND r.contype = 'f'
     ORDER BY conname;""" % \
           (schema, table,)
+    return sql
+
+
+def sql_primary_keys(table, schema="public"):
+    sql = """SELECT column_name
+    FROM information_schema.table_constraints
+    JOIN information_schema.key_column_usage
+    USING(constraint_catalog, constraint_schema, constraint_name,
+          table_catalog, table_schema, table_name)
+    WHERE constraint_type = 'PRIMARY KEY'
+        AND (table_schema, table_name) = ('%s', '%s')
+    ORDER BY ordinal_position;""" % (schema, table)
     return sql
