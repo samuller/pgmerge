@@ -1,0 +1,3 @@
+psycopg2==2.7.3.2
+pypika==0.10.3
+python-sql==0.9
