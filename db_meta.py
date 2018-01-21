@@ -47,7 +47,7 @@ def get_table_names(cursor, schema="public"):
 def get_column_names(cursor, table, schema="public"):
     sql = "SELECT * FROM %s.%s LIMIT 0" % (schema, table)
     cursor.execute(sql)
-    return [row[0] for row in cursor]
+    return [row[0] for row in cursor.description]
 
 
 def get_primary_key_column_names(cursor, table, schema="public"):
@@ -133,5 +133,3 @@ def sql_column_default_values():
         AND (%(table)s is null OR table_name = %(table)s)
     ORDER BY ordinal_position;
     """
-
-
