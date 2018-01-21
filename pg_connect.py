@@ -31,10 +31,16 @@ def main():
     tables = db_meta.get_table_names(cur, schema)
 
     print("Found %s tables in schema '%s'" % (len(tables), schema))
+    no_pks = []
     for table in tables:
-        print(table)
+        # print("\n", table)
         # print(db_meta.get_columns(cur, table, schema))
         # print(db_meta.get_foreign_keys(cur, table))
+        pks = db_meta.get_primary_key_column_names(cur, table)
+        if len(pks) == 0:
+            no_pks.append(table)
+    if len(no_pks) > 0:
+        print("The following tables have no primary key: ", no_pks)
 
     # Make the changes to the database persistent
     conn.commit()
