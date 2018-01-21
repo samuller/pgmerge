@@ -98,9 +98,11 @@ def sql_foreign_keys_of_table(table, schema="public"):
         ON tc.constraint_name = kcu.constraint_name
     JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
-    WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
+    WHERE constraint_type = 'FOREIGN KEY'
+        AND tc.table_schema = '%s'
+        AND tc.table_name='%s'
     ORDER BY tc.constraint_name;""" % \
-          (table,)
+          (schema, table)
     return sql
 
 
