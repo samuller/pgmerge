@@ -1,3 +1,6 @@
+# TODO:
+# - use sql queries with parameters
+# - allow generating queries that don't filter on schema or table
 from pypika import PostgreSQLQuery as Query, Table, Field
 
 
@@ -108,12 +111,14 @@ def sql_foreign_keys_of_table(table, schema="public"):
 
 def psql_foreign_keys_of_table(table, schema="public"):
     """
-    Postgres-specific and gives constraint's definition in sql
+    Postgres-specific is harder to interpret as it gives
+    constraint's definition in sql syntax
     """
     sql = """SELECT conname,
         pg_catalog.pg_get_constraintdef(r.oid, true) as condef
     FROM pg_catalog.pg_constraint r
-    WHERE r.conrelid = '%s.%s'::regclass AND r.contype = 'f'
+    WHERE r.conrelid = '%s.%s'::regclass
+        AND r.contype = 'f'
     ORDER BY conname;""" % \
           (schema, table,)
     return sql
@@ -126,6 +131,7 @@ def sql_primary_keys(table, schema="public"):
     USING(constraint_catalog, constraint_schema, constraint_name,
           table_catalog, table_schema, table_name)
     WHERE constraint_type = 'PRIMARY KEY'
-        AND (table_schema, table_name) = ('%s', '%s')
+        AND table_schema = '%s'
+        AND table_name = '%s'
     ORDER BY ordinal_position;""" % (schema, table)
     return sql
