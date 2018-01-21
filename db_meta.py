@@ -1,6 +1,6 @@
 #
-# We might consider constructing our queries with the PyPika in the future,
-# but most of the main reasons it was considered are currently handled:
+# We might consider constructing our queries with the PyPika library in the future,
+# but most of the main reasons it was considered are currently covered:
 # - queries that aren't db-specific:
 #   - not currently a priority
 # - dynamically generating sql WHERE clauses to make filtering parameters optional:
@@ -13,6 +13,7 @@
 #  - Pypika doesn't seem to be able to use parameters and it's protection against sql injections is unknown
 #
 # from pypika import PostgreSQLQuery as Query, Table, Field
+from psycopg2 import sql as psql
 
 
 class TableColumn:
@@ -45,8 +46,8 @@ def get_table_names(cursor, schema="public"):
 
 
 def get_column_names(cursor, table, schema="public"):
-    sql = "SELECT * FROM %s.%s LIMIT 0" % (schema, table)
-    cursor.execute(sql)
+    cursor.execute(psql.SQL("SELECT * FROM {}.{} LIMIT 0")
+                   .format(psql.Identifier(schema), psql.Identifier(table)))
     return [row[0] for row in cursor.description]
 
 
