@@ -57,7 +57,7 @@ def get_columns(cursor, table, schema="public"):
 
 def get_foreign_keys(cursor, table, schema="public"):
     cursor.execute(sql_foreign_keys_of_table(table, schema))
-    return [ForeignKey(row[0], row[1], [row[2]], row[3], [row[4]])
+    return [ForeignKey(row[2], row[0], [row[1]], row[3], [row[4]])
             for row in cursor]
 
 
@@ -92,7 +92,7 @@ def sql_foreign_keys_of_table(table, schema="public"):
     to multiple columns
     """
     sql = """SELECT
-        tc.constraint_name, tc.table_name, kcu.column_name,
+        tc.table_name, kcu.column_name, tc.constraint_name,
         ccu.table_name AS foreign_table_name,
         ccu.column_name AS foreign_column_name
     FROM
