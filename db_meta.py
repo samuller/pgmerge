@@ -39,10 +39,6 @@ class ForeignKey:
         return "%s: %s.%s -> %s.%s" % (self.name, self.table, self.columns, self.other_table, self.other_columns)
 
 
-def take_first(list_of_tuples):
-    return [tup[0] for tup in list_of_tuples]
-
-
 def get_table_names(cursor, schema="public"):
     cursor.execute(sql_tables_in_db(), {'schema': schema})
     return [row[1] for row in cursor]
@@ -51,12 +47,12 @@ def get_table_names(cursor, schema="public"):
 def get_column_names(cursor, table, schema="public"):
     sql = "SELECT * FROM %s.%s LIMIT 0" % (schema, table)
     cursor.execute(sql)
-    return take_first(cursor.description)
+    return [row[0] for row in cursor]
 
 
 def get_primary_key_column_names(cursor, table, schema="public"):
     cursor.execute(sql_primary_keys(), {'schema': schema, 'table': table})
-    return take_first(cursor.fetchall())
+    return [row[0] for row in cursor]
 
 
 def get_columns(cursor, table, schema="public"):
