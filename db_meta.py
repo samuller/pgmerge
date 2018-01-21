@@ -135,3 +135,14 @@ def sql_primary_keys(table, schema="public"):
         AND table_name = '%s'
     ORDER BY ordinal_position;""" % (schema, table)
     return sql
+
+
+def sql_column_default_values(table, schema=""):
+    sql = """SELECT column_name, column_default
+    FROM information_schema.columns
+    WHERE table_schema = '%s'
+        AND table_name = '%s'
+    ORDER BY ordinal_position;
+    """ % (schema, table)
+    return sql
+
