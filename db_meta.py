@@ -33,9 +33,8 @@ def take_first(list_of_tuples):
 
 
 def get_table_names(cursor, schema="public"):
-    sql = sql_tables_in_db(schema)
-    cursor.execute(sql)
-    return take_first(cursor.fetchall())
+    cursor.execute(sql_tables_in_db(), {'schema': schema})
+    return [row[1] for row in cursor]
 
 
 def get_column_names(cursor, table, schema="public"):
@@ -45,8 +44,7 @@ def get_column_names(cursor, table, schema="public"):
 
 
 def get_primary_key_column_names(cursor, table, schema="public"):
-    sql = sql_primary_keys(table, schema)
-    cursor.execute(sql)
+    cursor.execute(sql_primary_keys(), {'schema': schema, 'table': table})
     return take_first(cursor.fetchall())
 
 
@@ -55,8 +53,8 @@ def get_columns(cursor, table, schema="public"):
     return [TableColumn(table, col, col in pk_columns) for col in get_column_names(cursor, table, schema)]
 
 
-def get_foreign_keys(cursor, table, schema="public"):
-    cursor.execute(sql_foreign_keys_of_table(table, schema))
+def get_foreign_keys(cursor, table=None, schema="public"):
+    cursor.execute(sql_foreign_keys_of_table(), {'schema': schema, 'table': table})
     return [ForeignKey(row[2], row[0], [row[1]], row[3], [row[4]])
             for row in cursor]
 
@@ -77,21 +75,22 @@ def pypika_get_tables(schema="public"):
     return sql
 
 
-def sql_tables_in_db(schema="public"):
+def sql_tables_in_db():
     """Generate sql query to fetch all tables"""
-    sql = ("SELECT table_name FROM information_schema.tables" +
-           " WHERE table_schema = '%s'" +
-           " ORDER BY table_schema,table_name;") % (
-        schema)
-    return sql
+    return """
+    SELECT table_schema, table_name FROM information_schema.tables
+    WHERE (%(schema)s is null OR table_schema = %(schema)s)
+    ORDER BY table_schema, table_name;
+    """
 
 
-def sql_foreign_keys_of_table(table, schema="public"):
+def sql_foreign_keys_of_table():
     """
     Does not work correctly for foreign key constraints that point
     to multiple columns
     """
-    sql = """SELECT
+    return """
+    SELECT
         tc.table_name, kcu.column_name, tc.constraint_name,
         ccu.table_name AS foreign_table_name,
         ccu.column_name AS foreign_column_name
@@ -102,47 +101,46 @@ def sql_foreign_keys_of_table(table, schema="public"):
     JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
     WHERE constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema = '%s'
-        AND tc.table_name='%s'
-    ORDER BY tc.constraint_name;""" % \
-          (schema, table)
-    return sql
+        AND (%(schema)s is null OR tc.table_schema = %(schema)s)
+        AND (%(table)s is null OR tc.table_name = %(table)s)
+    ORDER BY tc.constraint_name;"""
 
 
-def psql_foreign_keys_of_table(table, schema="public"):
+def psql_foreign_keys_of_table():
     """
-    Postgres-specific is harder to interpret as it gives
-    constraint's definition in sql syntax
+    Postgres-specific is more accurate but harder to interpret as
+    it gives constraint's definition in sql syntax.
+
+    schema_table = schema + "." + table
+    (schema_table, schema_table)
     """
-    sql = """SELECT conname,
-        pg_catalog.pg_get_constraintdef(r.oid, true) as condef
+    return """
+    SELECT
+        conname, pg_catalog.pg_get_constraintdef(r.oid, true) as condef
     FROM pg_catalog.pg_constraint r
-    WHERE r.conrelid = '%s.%s'::regclass
-        AND r.contype = 'f'
-    ORDER BY conname;""" % \
-          (schema, table,)
-    return sql
+    WHERE r.contype = 'f'
+        AND (%s is null OR r.conrelid = %s::regclass)
+    ORDER BY conname;"""
 
 
-def sql_primary_keys(table, schema="public"):
-    sql = """SELECT column_name
+def sql_primary_keys():
+    return """SELECT column_name
     FROM information_schema.table_constraints
     JOIN information_schema.key_column_usage
     USING(constraint_catalog, constraint_schema, constraint_name,
           table_catalog, table_schema, table_name)
     WHERE constraint_type = 'PRIMARY KEY'
-        AND table_schema = '%s'
-        AND table_name = '%s'
-    ORDER BY ordinal_position;""" % (schema, table)
-    return sql
+        AND (%(schema)s is null OR table_schema = %(schema)s)
+        AND (%(table)s is null OR table_name = %(table)s)
+    ORDER BY ordinal_position;"""
 
 
-def sql_column_default_values(table, schema=""):
-    sql = """SELECT column_name, column_default
+def sql_column_default_values():
+    return """SELECT column_name, column_default
     FROM information_schema.columns
-    WHERE table_schema = '%s'
-        AND table_name = '%s'
+    WHERE (%(schema)s is null OR table_schema = %(schema)s)
+        AND (%(table)s is null OR table_name = %(table)s)
     ORDER BY ordinal_position;
-    """ % (schema, table)
-    return sql
+    """
+
 
