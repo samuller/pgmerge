@@ -1,7 +1,18 @@
-# TODO:
-# - use sql queries with parameters
-# - allow generating queries that don't filter on schema or table
-from pypika import PostgreSQLQuery as Query, Table, Field
+#
+# We might consider constructing our queries with the PyPika in the future,
+# but most of the main reasons it was considered are currently handled:
+# - queries that aren't db-specific:
+#   - not currently a priority
+# - dynamically generating sql WHERE clauses to make filtering parameters optional:
+#   - we use the following sql pattern "WHERE value is null or column = value"
+# - escaping strings:
+#  - done by psycopg2 when using parameters
+# - avoiding sql injections:
+#  - current use cases shouldn't require this
+#  - using psycopg2 parameters does this for us
+#  - Pypika doesn't seem to be able to use parameters and it's protection against sql injections is unknown
+#
+# from pypika import PostgreSQLQuery as Query, Table, Field
 
 
 class TableColumn:
@@ -57,22 +68,6 @@ def get_foreign_keys(cursor, table=None, schema="public"):
     cursor.execute(sql_foreign_keys_of_table(), {'schema': schema, 'table': table})
     return [ForeignKey(row[2], row[0], [row[1]], row[3], [row[4]])
             for row in cursor]
-
-
-def pypika_get_tables(schema="public"):
-    """Use PyPika to generate sql query to fetch all tables"""
-    tables = Table('tables', schema='information_schema')
-    q = Query.from_(tables).select(
-        'table_name'
-    ).where(
-        tables.table_schema == schema
-    ).orderby(
-        tables.table_schema
-    ).orderby(
-        'table_name'
-    )
-    sql = q.get_sql(quote_char=None)
-    return sql
 
 
 def sql_tables_in_db():
