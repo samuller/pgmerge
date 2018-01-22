@@ -1,21 +1,15 @@
 import config
 import db_meta
+import click
 import psycopg2
 import networkx as nx
+import os
+import getpass
 
 
-def format_tuple(str_args):
-    return str_args[0] % str_args[1]
-
-
-def print_rows(cursor, sql):
-    cursor.execute(sql)
-    count = cursor.rowcount
-    # rows = list(cursor)
-    print("%s results" % count)
-    for row in cursor:
-        print(row)
-    return count
+def break_simple_cycles(table_graph):
+    for cycle in nx.simple_cycles(table_graph):
+        table_graph.remove_edge(cycle[0], cycle[-1])
 
 
 def print_cycle_info_and_break_cycles(table_graph):
@@ -28,14 +22,14 @@ def print_cycle_info_and_break_cycles(table_graph):
         print(simple_cycles)
 
     # Break simple cycles and self-references to help find bigger cycles
-    # copy_of_graph = table_graph.copy()
-    for cycle in nx.simple_cycles(table_graph):
-        table_graph.remove_edge(cycle[0], cycle[-1])
+    copy_of_graph = table_graph.copy()
+    break_simple_cycles(copy_of_graph)
+
     try:
-        cycle = nx.find_cycle(table_graph)
+        cycle = nx.find_cycle(copy_of_graph)
         print("\nAnother cycle was detected:")
         print(cycle)
-    except:
+    except nx.exception.NetworkXNoCycle:
         pass
 
 
@@ -48,18 +42,28 @@ def print_partition_info(table_graph):
 
 
 def print_insertion_order(table_graph):
+    copy_of_graph = table_graph.copy()
+    break_simple_cycles(copy_of_graph)
     print("\nInsertion order:")
-    print(nx.topological_sort(table_graph, reverse=True))
+    print(nx.topological_sort(copy_of_graph, reverse=True))
 
 
-def main():
-    VERBOSE = False
+@click.command()
+@click.option('--dbname', '-d', help='database name to connect to')
+@click.option('--host', '-h', help='database server host or socket directory')
+@click.option('--port', '-p', help='database server port')
+@click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
+@click.option('--verbose', '-v', is_flag=True)
+# @click.option('--password', '-W', help='database user name', prompt=True, hide_input=True)
+@click.version_option(version='0.0.1')
+def main(dbname, host, port, username, verbose):
+    if config.DB_PASSWORD is None:
+        password = getpass.getpass()
+    else:
+        password = config.DB_PASSWORD
+
     # Connect to an existing database
-    conn = psycopg2.connect(
-        host=config.DB_HOST,
-        dbname=config.DB_NAME,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD)
+    conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=username, password=password)
     # Open a cursor to perform database operations
     cur = conn.cursor()
     # Query the database and obtain data as Python objects
@@ -71,7 +75,7 @@ def main():
     no_pks = []
     table_graph = nx.DiGraph()
     for table in tables:
-        if VERBOSE:
+        if verbose:
             print("\n", table)
             print(db_meta.get_columns(cur, table, schema))
             print(db_meta.get_foreign_keys(cur, table))
@@ -95,7 +99,7 @@ def main():
     print("Found %s tables in schema '%s'" % (len(tables), schema))
     print(tables)
     if len(no_pks) > 0:
-        print("\n%s tables have no primary key:"% (len(no_pks),))
+        print("\n%s tables have no primary key:" % (len(no_pks),))
         print(no_pks)
 
     print_partition_info(table_graph)

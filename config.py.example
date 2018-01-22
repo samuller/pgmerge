@@ -1,7 +1,5 @@
 # Example configuration file
 # Copy config.py.example to config.py with your settings
 # Config.py is set in .gitignore and should never be committed
-DB_HOST = None
-DB_NAME = "db"
-DB_USER = "user"
-DB_PASSWORD = "password"
+# DB_PASSWORD = "password"
+DB_PASSWORD = None
