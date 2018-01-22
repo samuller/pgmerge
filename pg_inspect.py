@@ -7,6 +7,17 @@ import os
 import getpass
 
 
+def print_missing_primary_keys(cursor, tables):
+    no_pks = []
+    for table in tables:
+        pks = db_meta.get_primary_key_column_names(cursor, table)
+        if len(pks) == 0:
+            no_pks.append(table)
+    if len(no_pks) > 0:
+        print("\n%s tables have no primary key:" % (len(no_pks),))
+        print(no_pks)
+
+
 def break_simple_cycles(table_graph):
     for cycle in nx.simple_cycles(table_graph):
         table_graph.remove_edge(cycle[0], cycle[-1])
@@ -48,63 +59,75 @@ def print_insertion_order(table_graph):
     print(nx.topological_sort(copy_of_graph, reverse=True))
 
 
+def build_fk_dependency_graph(cursor, tables):
+    table_graph = nx.DiGraph()
+    for table in tables:
+        fks = db_meta.get_foreign_keys(cursor, table)
+        table_graph.add_node(table)
+        for fk in fks:
+            table_graph.add_edge(fk.table, fk.other_table)
+    return table_graph
+
+
 @click.command()
 @click.option('--dbname', '-d', help='database name to connect to')
 @click.option('--host', '-h', help='database server host or socket directory')
 @click.option('--port', '-p', help='database server port')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
+@click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
 @click.option('--verbose', '-v', is_flag=True)
+@click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
+@click.option('--list-tables', '-t', is_flag=True)
+@click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
+@click.option('--insert-order', '-i', is_flag=True,
+              help='Output the insertion order of tables based on the foreign-key dependency graph. ' +
+              'This can be used by importer scripts if there are no circular dependency issues.')
+@click.option('--partition', '-pt', is_flag=True,
+              help='Partition and list sub-graphs of foreign-key dependency graph')
 # @click.option('--password', '-W', help='database user name', prompt=True, hide_input=True)
 @click.version_option(version='0.0.1')
-def main(dbname, host, port, username, verbose):
+def main(dbname, host, port, username, schema, verbose, warnings, list_tables, partition, cycles, insert_order):
+    # Either type password or avoid manual input with config file
     if config.DB_PASSWORD is None:
         password = getpass.getpass()
     else:
         password = config.DB_PASSWORD
 
-    # Connect to an existing database
+    # Connect to an existing database and open a cursor to perform database operations
     conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=username, password=password)
-    # Open a cursor to perform database operations
-    cur = conn.cursor()
-    # Query the database and obtain data as Python objects
+    cursor = conn.cursor()
 
     # Process database structure
-    schema = "public"
-    tables = db_meta.get_table_names(cur, schema)
+    tables = db_meta.get_table_names(cursor, schema)
+    print("Found %s tables in schema '%s'" % (len(tables), schema))
 
-    no_pks = []
-    table_graph = nx.DiGraph()
     for table in tables:
         if verbose:
             print("\n", table)
-            print(db_meta.get_columns(cur, table, schema))
-            print(db_meta.get_foreign_keys(cur, table))
+            print(db_meta.get_columns(cursor, table, schema))
+            print(db_meta.get_foreign_keys(cursor, table))
 
-        pks = db_meta.get_primary_key_column_names(cur, table)
-        if len(pks) == 0:
-            no_pks.append(table)
+    if list_tables:
+        print(tables)
+    if warnings:
+        print_missing_primary_keys(cursor, tables)
 
-        fks = db_meta.get_foreign_keys(cur, table)
-        table_graph.add_node(table)
-        for fk in fks:
-            table_graph.add_edge(fk.table, fk.other_table)
+    table_graph = nx.DiGraph()
+    if partition or cycles or insert_order:
+        table_graph = build_fk_dependency_graph(cursor, tables)
+    if partition:
+        print_partition_info(table_graph)
+    if cycles:
+        print_cycle_info_and_break_cycles(table_graph)
+    if insert_order:
+        print_insertion_order(table_graph)
+
 
     # Make the changes to the database persistent
     conn.commit()
     # Close communication with the database
-    cur.close()
+    cursor.close()
     conn.close()
-
-    # Print warnings and info
-    print("Found %s tables in schema '%s'" % (len(tables), schema))
-    print(tables)
-    if len(no_pks) > 0:
-        print("\n%s tables have no primary key:" % (len(no_pks),))
-        print(no_pks)
-
-    print_partition_info(table_graph)
-    print_cycle_info_and_break_cycles(table_graph)
-    print_insertion_order(table_graph)
 
 
 if __name__ == "__main__":
