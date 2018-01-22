@@ -113,7 +113,7 @@ def sql_foreign_keys_of_table():
     Does not work correctly for foreign key constraints that point
     to multiple columns. Also, duplicates are possible as constraint names
     aren't necessarily unique in Postgres (see note at bottom of:
-    https://www.postgresql.org/docs/10/static/information-schema.html )
+    https://www.postgresql.org/docs/current/static/information-schema.html )
     """
     return """
     SELECT
@@ -160,7 +160,7 @@ def sql_primary_keys():
         AND (%(table)s is null OR table_name = %(table)s)
     ORDER BY ordinal_position;"""
 
-# Unique constraint types:
+# Unique constraint types (https://www.postgresql.org/docs/current/static/ddl-constraints.html):
 # - column-constraint
 # - table-constraint
 # - unique partial index
