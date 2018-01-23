@@ -65,8 +65,18 @@ def build_fk_dependency_graph(inspector, schema):
         table_graph.add_node(table)
         for fk in fks:
             assert fk['referred_schema'] == schema, 'Remote tables not supported'
-            table_graph.add_edge(table, fk['referred_table'])
+            table_graph.add_edge(table, fk['referred_table'], name=fk['name'])
     return table_graph
+
+def graph_export_to_dot_file(table_graph, filename):
+    with open(filename, 'w') as out:
+        out.write('digraph dependency_graph {\n')
+        out.write('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n\n')
+        for node in table_graph.nodes():
+            for neighbour in table_graph[node]:
+                edge = table_graph[node][neighbour].get('name')
+                out.write('"%s" -> "%s" [label="%s"];\n' % (node, neighbour, edge))
+        out.write('\n}\n')
 
 
 @click.command()
@@ -85,13 +95,15 @@ def build_fk_dependency_graph(inspector, schema):
               'This can be used by importer scripts if there are no circular dependency issues.')
 @click.option('--partition', '-pt', is_flag=True,
               help='Partition and list sub-graphs of foreign-key dependency graph')
+@click.option('--export-graph', '-e', default='out.dot',
+              help='Export foreign-key dependency graph to a dot file')
 # Either type password or avoid manual input with config file
 @click.option('--password', '-W', hide_input=True, prompt=config.DB_PASSWORD is None, default=config.DB_PASSWORD,
               help='database password (default is to prompt for password or read config)')
 @click.version_option(version='0.0.1')
 def main(dbname, host, port, username, password,
          schema, warnings,
-         list_tables, table_details, partition, cycles, insert_order):
+         list_tables, table_details, partition, cycles, insert_order, export_graph):
 
     url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
     engine = create_engine(url)
@@ -131,6 +143,10 @@ def main(dbname, host, port, username, password,
         print_cycle_info_and_break_cycles(table_graph)
     if insert_order:
         print_insertion_order(table_graph)
+    if export_graph is not None:
+        graph_export_to_dot_file(table_graph, export_graph)
+        print('\nGraph exported to %s. You can use graphviz to generate a PDF by running:' % (export_graph,))
+        print('    cat %s | dot -Tpdf > graph.pdf' % (export_graph,))
 
 
 if __name__ == "__main__":
