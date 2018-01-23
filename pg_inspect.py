@@ -68,18 +68,17 @@ def build_fk_dependency_graph(inspector, schema):
             table_graph.add_edge(table, fk['referred_table'], name=fk['name'])
     return table_graph
 
-def graph_export_to_dot_file(table_graph, filename):
-    with open(filename, 'w') as out:
-        out.write('digraph dependency_graph {\n')
-        out.write('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n\n')
-        for node in table_graph.nodes():
-            for neighbour in table_graph[node]:
-                edge = table_graph[node][neighbour].get('name')
-                out.write('"%s" -> "%s" [label="%s"];\n' % (node, neighbour, edge))
-        out.write('\n}\n')
+def graph_export_to_dot_file(table_graph):
+    print('digraph dependency_graph {')
+    print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
+    for node in table_graph.nodes():
+        for neighbour in table_graph[node]:
+            edge = table_graph[node][neighbour].get('name')
+            print('"%s" -> "%s" [label="%s"];' % (node, neighbour, edge))
+    print('\n}')
 
 
-@click.command()
+@click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to')
 @click.option('--host', '-h', help='database server host or socket directory', default='localhost')
 @click.option('--port', '-p', help='database server port', default='5432')
@@ -95,8 +94,10 @@ def graph_export_to_dot_file(table_graph, filename):
               'This can be used by importer scripts if there are no circular dependency issues.')
 @click.option('--partition', '-pt', is_flag=True,
               help='Partition and list sub-graphs of foreign-key dependency graph')
-@click.option('--export-graph', '-e', default='out.dot',
-              help='Export foreign-key dependency graph to a dot file')
+@click.option('--export-graph', '-e', is_flag=True,
+              help='Output dot format description of foreign-key dependency graph.' +
+                   ' To use graphviz to generate a PDF from this format, pipe the output to:' +
+                   ' dot -Tpdf > graph.pdf')
 # Either type password or avoid manual input with config file
 @click.option('--password', '-W', hide_input=True, prompt=config.DB_PASSWORD is None, default=config.DB_PASSWORD,
               help='database password (default is to prompt for password or read config)')
@@ -127,7 +128,7 @@ def main(dbname, host, port, username, password,
                 print("\tcolumns:", ", ".join([col['name'] for col in columns]))
             if len(fks) > 0:
                 print("\tfks:", fks)
-    else:
+    elif not export_graph:
         print("Found %s tables in schema '%s'" % (len(tables), schema))
 
     if warnings:
@@ -135,7 +136,8 @@ def main(dbname, host, port, username, password,
         pass
 
     table_graph = nx.DiGraph()
-    if partition or cycles or insert_order:
+    # Commands that require a graph to be generated
+    if any([partition, cycles, insert_order, export_graph]):
         table_graph = build_fk_dependency_graph(inspector, schema)
     if partition:
         print_partition_info(table_graph)
@@ -143,10 +145,8 @@ def main(dbname, host, port, username, password,
         print_cycle_info_and_break_cycles(table_graph)
     if insert_order:
         print_insertion_order(table_graph)
-    if export_graph is not None:
-        graph_export_to_dot_file(table_graph, export_graph)
-        print('\nGraph exported to %s. You can use graphviz to generate a PDF by running:' % (export_graph,))
-        print('    cat %s | dot -Tpdf > graph.pdf' % (export_graph,))
+    if export_graph:
+        graph_export_to_dot_file(table_graph)
 
 
 if __name__ == "__main__":
