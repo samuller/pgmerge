@@ -4,7 +4,6 @@ import click
 import psycopg2
 import networkx as nx
 import os
-import getpass
 
 
 def print_missing_primary_keys(cursor, tables):
@@ -47,7 +46,7 @@ def print_cycle_info_and_break_cycles(table_graph):
 def print_partition_info(table_graph):
     sub_graphs = [graph for graph in nx.weakly_connected_component_subgraphs(table_graph)]
     if len(sub_graphs) > 1:
-        print("\nReferences can be partitioned into %s sub-graphs:" % (len(sub_graphs),))
+        print("\nDependency graph can be partitioned into %s sub-graphs:" % (len(sub_graphs),))
         for graph in sub_graphs:
             print(graph.nodes())
 
@@ -75,40 +74,45 @@ def build_fk_dependency_graph(cursor, tables):
 @click.option('--port', '-p', help='database server port')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
 @click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
-@click.option('--verbose', '-v', is_flag=True)
 @click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
-@click.option('--list-tables', '-t', is_flag=True)
+@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
+@click.option('--table-details', '-tt', is_flag=True,
+              help="Output all tables along with column and foreign key information")
 @click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
 @click.option('--insert-order', '-i', is_flag=True,
               help='Output the insertion order of tables based on the foreign-key dependency graph. ' +
               'This can be used by importer scripts if there are no circular dependency issues.')
 @click.option('--partition', '-pt', is_flag=True,
               help='Partition and list sub-graphs of foreign-key dependency graph')
-# @click.option('--password', '-W', help='database user name', prompt=True, hide_input=True)
+# Either type password or avoid manual input with config file
+@click.option('--password', '-W', hide_input=True, prompt=config.DB_PASSWORD is None, default=config.DB_PASSWORD,
+              help='database password (default is to prompt for password or read config)')
 @click.version_option(version='0.0.1')
-def main(dbname, host, port, username, schema, verbose, warnings, list_tables, partition, cycles, insert_order):
-    # Either type password or avoid manual input with config file
-    if config.DB_PASSWORD is None:
-        password = getpass.getpass()
-    else:
-        password = config.DB_PASSWORD
-
+def main(dbname, host, port, username, password,
+         schema, warnings,
+         list_tables, table_details, partition, cycles, insert_order):
     # Connect to an existing database and open a cursor to perform database operations
     conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=username, password=password)
     cursor = conn.cursor()
 
     # Process database structure
     tables = db_meta.get_table_names(cursor, schema)
-    print("Found %s tables in schema '%s'" % (len(tables), schema))
-
-    for table in tables:
-        if verbose:
-            print("\n", table)
-            print(db_meta.get_columns(cursor, table, schema))
-            print(db_meta.get_foreign_keys(cursor, table))
 
     if list_tables:
-        print(tables)
+        for table in tables:
+            print(table)
+    elif table_details:
+        for table in tables:
+            columns = db_meta.get_columns(cursor, table, schema)
+            fks = db_meta.get_foreign_keys(cursor, table)
+            print("\ntable:", table)
+            if len(columns) > 0:
+                print("\tcolumns:", ", ".join([col.column_name for col in columns]))
+            if len(fks) > 0:
+                print("\tfks:", ", ".join([str(fk) for fk in fks]))
+    else:
+        print("Found %s tables in schema '%s'" % (len(tables), schema))
+
     if warnings:
         print_missing_primary_keys(cursor, tables)
 
@@ -121,7 +125,6 @@ def main(dbname, host, port, username, schema, verbose, warnings, list_tables, p
         print_cycle_info_and_break_cycles(table_graph)
     if insert_order:
         print_insertion_order(table_graph)
-
 
     # Make the changes to the database persistent
     conn.commit()
