@@ -1,15 +1,14 @@
 import config
-import db_meta
 import click
-import psycopg2
 import networkx as nx
 import os
+from sqlalchemy import create_engine, inspect
 
 
-def print_missing_primary_keys(cursor, tables):
+def print_missing_primary_keys(inspector, schema):
     no_pks = []
-    for table in tables:
-        pks = db_meta.get_primary_key_column_names(cursor, table)
+    for table in inspector.get_table_names(schema):
+        pks = inspector.get_primary_keys(table, schema)
         if len(pks) == 0:
             no_pks.append(table)
     if len(no_pks) > 0:
@@ -58,20 +57,22 @@ def print_insertion_order(table_graph):
     print(nx.topological_sort(copy_of_graph, reverse=True))
 
 
-def build_fk_dependency_graph(cursor, tables):
+def build_fk_dependency_graph(inspector, schema):
     table_graph = nx.DiGraph()
+    tables = sorted(inspector.get_table_names(schema))
     for table in tables:
-        fks = db_meta.get_foreign_keys(cursor, table)
+        fks = inspector.get_foreign_keys(table, schema)
         table_graph.add_node(table)
         for fk in fks:
-            table_graph.add_edge(fk.table, fk.other_table)
+            assert fk['referred_schema'] == schema, 'Remote tables not supported'
+            table_graph.add_edge(table, fk['referred_table'])
     return table_graph
 
 
 @click.command()
 @click.option('--dbname', '-d', help='database name to connect to')
-@click.option('--host', '-h', help='database server host or socket directory')
-@click.option('--port', '-p', help='database server port')
+@click.option('--host', '-h', help='database server host or socket directory', default='localhost')
+@click.option('--port', '-p', help='database server port', default='5432')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
 @click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
 @click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
@@ -91,46 +92,45 @@ def build_fk_dependency_graph(cursor, tables):
 def main(dbname, host, port, username, password,
          schema, warnings,
          list_tables, table_details, partition, cycles, insert_order):
-    # Connect to an existing database and open a cursor to perform database operations
-    conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=username, password=password)
-    cursor = conn.cursor()
+
+    url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
+    engine = create_engine(url)
+    inspector = inspect(engine)
+    if schema is None:
+        schema = inspector.default_schema_name
+        # print(inspector.get_schema_names())
 
     # Process database structure
-    tables = db_meta.get_table_names(cursor, schema)
+    tables = sorted(inspector.get_table_names(schema))
 
     if list_tables:
         for table in tables:
             print(table)
     elif table_details:
         for table in tables:
-            columns = db_meta.get_columns(cursor, table, schema)
-            fks = db_meta.get_foreign_keys(cursor, table)
+            columns = inspector.get_columns(table, schema)
+            fks = inspector.get_foreign_keys(table, schema)
             print("\ntable:", table)
             if len(columns) > 0:
-                print("\tcolumns:", ", ".join([col.column_name for col in columns]))
+                print("\tcolumns:", ", ".join([col['name'] for col in columns]))
             if len(fks) > 0:
-                print("\tfks:", ", ".join([str(fk) for fk in fks]))
+                print("\tfks:", fks)
     else:
         print("Found %s tables in schema '%s'" % (len(tables), schema))
 
     if warnings:
-        print_missing_primary_keys(cursor, tables)
+        print_missing_primary_keys(inspector, schema)
+        pass
 
     table_graph = nx.DiGraph()
     if partition or cycles or insert_order:
-        table_graph = build_fk_dependency_graph(cursor, tables)
+        table_graph = build_fk_dependency_graph(inspector, schema)
     if partition:
         print_partition_info(table_graph)
     if cycles:
         print_cycle_info_and_break_cycles(table_graph)
     if insert_order:
         print_insertion_order(table_graph)
-
-    # Make the changes to the database persistent
-    conn.commit()
-    # Close communication with the database
-    cursor.close()
-    conn.close()
 
 
 if __name__ == "__main__":
