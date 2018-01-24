@@ -57,25 +57,74 @@ def print_insertion_order(table_graph):
     print(nx.topological_sort(copy_of_graph, reverse=True))
 
 
-def build_fk_dependency_graph(inspector, schema):
+def build_fk_dependency_graph(inspector, schema, tables=None):
     table_graph = nx.DiGraph()
-    tables = sorted(inspector.get_table_names(schema))
+    if tables is None:
+        tables = sorted(inspector.get_table_names(schema))
     for table in tables:
         fks = inspector.get_foreign_keys(table, schema)
         table_graph.add_node(table)
         for fk in fks:
             assert fk['referred_schema'] == schema, 'Remote tables not supported'
-            table_graph.add_edge(table, fk['referred_table'], name=fk['name'])
+            other_table = fk['referred_table']
+            if other_table in tables:
+                table_graph.add_edge(table, other_table, name=fk['name'])
     return table_graph
 
-def graph_export_to_dot_file(table_graph):
-    print('digraph dependency_graph {')
+
+def graph_export_to_dot_file(table_graph, name='dependency_graph'):
+    print('digraph %s {' % (name,))
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
     for node in table_graph.nodes():
         for neighbour in table_graph[node]:
             edge = table_graph[node][neighbour].get('name')
             print('"%s" -> "%s" [label="%s"];' % (node, neighbour, edge))
     print('\n}')
+
+
+def transferability(inspector, schema):
+    operational = []
+    knowledge = []
+    transformable = []
+    pk_contains_fk = []
+    tables = sorted(inspector.get_table_names(schema))
+    for table in tables:
+        columns = inspector.get_columns(table, schema)
+        fks = inspector.get_foreign_keys(table, schema)
+        pks = inspector.get_primary_keys(table, schema)
+        uniques = inspector.get_unique_constraints(table, schema)
+
+        for fk in fks:
+            if not set(fk['constrained_columns']).isdisjoint(set(pks)):
+                pk_contains_fk.append(table)
+
+        auto_id = False
+        default_columns = []
+        for col in columns:
+            if col['name'] in pks and col['default'] is not None:
+                auto_id = True
+            if col['default'] is not None:
+                default_columns.append(col['name'])
+
+        # For any unique constraint, if all columns don't have defaults, then we can use it
+        auto_transformable = False
+        for unique in uniques:
+            if set(unique['column_names']).isdisjoint(set(default_columns)):
+                auto_transformable = True
+
+        if auto_id and not auto_transformable:
+            operational.append(table)
+        elif auto_id and auto_transformable:
+            transformable.append(table)
+        else:
+            knowledge.append(table)
+
+    print("\nOperational:\n", operational)
+    print("\nKnowledge:\n", knowledge)
+    print("\nAuto-transformable to knowledge:\n", transformable)
+    print("\nPK contains FK:\n", pk_contains_fk)
+    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, operational), name='operational')
+    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, knowledge), name='knowledge')
 
 
 @click.command(context_settings=dict(max_content_width=120))
@@ -86,7 +135,7 @@ def graph_export_to_dot_file(table_graph):
 @click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
 @click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
 @click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
-@click.option('--table-details', '-tt', is_flag=True,
+@click.option('--table-details', '-td', is_flag=True,
               help="Output all tables along with column and foreign key information")
 @click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
 @click.option('--insert-order', '-i', is_flag=True,
@@ -98,13 +147,14 @@ def graph_export_to_dot_file(table_graph):
               help='Output dot format description of foreign-key dependency graph.' +
                    ' To use graphviz to generate a PDF from this format, pipe the output to:' +
                    ' dot -Tpdf > graph.pdf')
+@click.option('--transferable', '-x', is_flag=True, help='Output info related to table transfers')
 # Either type password or avoid manual input with config file
 @click.option('--password', '-W', hide_input=True, prompt=config.DB_PASSWORD is None, default=config.DB_PASSWORD,
               help='database password (default is to prompt for password or read config)')
 @click.version_option(version='0.0.1')
-def main(dbname, host, port, username, password,
-         schema, warnings,
-         list_tables, table_details, partition, cycles, insert_order, export_graph):
+def main(dbname, host, port, username, password, schema,
+         warnings, list_tables, table_details, partition,
+         cycles, insert_order, export_graph, transferable):
 
     url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
     engine = create_engine(url)
@@ -112,6 +162,10 @@ def main(dbname, host, port, username, password,
     if schema is None:
         schema = inspector.default_schema_name
         # print(inspector.get_schema_names())
+
+    if transferable:
+        transferability(inspector, schema)
+        return
 
     # Process database structure
     tables = sorted(inspector.get_table_names(schema))
