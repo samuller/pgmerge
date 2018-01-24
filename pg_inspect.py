@@ -158,7 +158,7 @@ def transferability(inspector, schema):
 @click.option('--password', '-W', hide_input=True, prompt=not found_config,
               default=config.DB_PASSWORD if found_config else None,
               help='database password (default is to prompt for password or read config)')
-@click.version_option(version='0.0.1')
+@click.version_option(version='0.5.0')
 def main(dbname, host, port, username, password, schema,
          warnings, list_tables, table_details, partition,
          cycles, insert_order, export_graph, transferable):
