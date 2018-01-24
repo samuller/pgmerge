@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import config
 import click
 import networkx as nx
