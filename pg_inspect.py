@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-import config
+import os
 import click
 import networkx as nx
-import os
 from sqlalchemy import create_engine, inspect
+
+found_config = True
+try:
+    import config
+except ImportError:
+    found_config = False
 
 
 def print_missing_primary_keys(inspector, schema):
@@ -150,7 +155,8 @@ def transferability(inspector, schema):
                    ' dot -Tpdf > graph.pdf')
 @click.option('--transferable', '-x', is_flag=True, help='Output info related to table transfers')
 # Either type password or avoid manual input with config file
-@click.option('--password', '-W', hide_input=True, prompt=config.DB_PASSWORD is None, default=config.DB_PASSWORD,
+@click.option('--password', '-W', hide_input=True, prompt=not found_config,
+              default=config.DB_PASSWORD if found_config else None,
               help='database password (default is to prompt for password or read config)')
 @click.version_option(version='0.0.1')
 def main(dbname, host, port, username, password, schema,
