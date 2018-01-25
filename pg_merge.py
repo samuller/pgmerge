@@ -23,6 +23,18 @@ def export_all(engine, inspector, schema, output_dir, file_format="CSV HEADER"):
     fake_conn.commit()
 
 
+def get_unique_columns(inspector, table, schema):
+    pks = inspector.get_primary_keys(table, schema)
+    if len(pks) > 0:
+        return pks
+
+    uniques = inspector.get_unique_constraints(table, schema)
+    if len(uniques) == 0:
+        return []
+    else:
+        return uniques[0]['column_names']
+
+
 def import_all(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
     fake_conn = engine.raw_connection()
     fake_cur = fake_conn.cursor()
@@ -41,7 +53,12 @@ def import_all(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
         fake_cur.copy_expert(copy_sql, input_file)
 
         fake_cur.execute("SELECT count(*) from %s;" % (temp_table_name,))
-        print("%s: %s" % (table, fake_cur.fetchone()[0]))
+        # print("%s: %s" % (table, fake_cur.fetchone()[0]))
+
+        uniques = get_unique_columns(inspector, table, schema)
+        if len(uniques) == 0:
+            print("Table '%s' has no primary key or unique columns to use!" % (table,))
+            continue
 
         drop_sql = "DROP TABLE %s" % (temp_table_name,)
         fake_cur.execute(drop_sql)
