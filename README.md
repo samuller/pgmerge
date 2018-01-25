@@ -12,11 +12,11 @@ Then install required modules:
 
     pip install -r requirements.txt
 
-Then you should be able to run:
+You should now be able to run:
 
     python pg_inspect.py --help
 
-If you have a database set up then you can test connecting with it by using:
+If you have a database set up then you can connect to it by using:
 
     python pg_inspect.py -d database -U user
 
