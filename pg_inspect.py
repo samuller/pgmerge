@@ -134,7 +134,8 @@ def transferability(inspector, schema):
 
 
 @click.command(context_settings=dict(max_content_width=120))
-@click.option('--dbname', '-d', help='database name to connect to')
+@click.option('--engine', '-e', help='database engine (default: postgresql)', default='postgresql')
+@click.option('--dbname', '-d', help='database name to connect to', required=True)
 @click.option('--host', '-h', help='database server host or socket directory', default='localhost')
 @click.option('--port', '-p', help='database server port', default='5432')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
@@ -149,22 +150,24 @@ def transferability(inspector, schema):
               'This can be used by importer scripts if there are no circular dependency issues.')
 @click.option('--partition', '-pt', is_flag=True,
               help='Partition and list sub-graphs of foreign-key dependency graph')
-@click.option('--export-graph', '-e', is_flag=True,
+@click.option('--export-graph', '-x', is_flag=True,
               help='Output dot format description of foreign-key dependency graph.' +
                    ' To use graphviz to generate a PDF from this format, pipe the output to:' +
                    ' dot -Tpdf > graph.pdf')
-@click.option('--transferable', '-x', is_flag=True, help='Output info related to table transfers')
+@click.option('--transferable', '-tf', is_flag=True, help='Output info related to table transfers')
 # Either type password or avoid manual input with config file
 @click.option('--password', '-W', hide_input=True, prompt=not found_config,
               default=config.DB_PASSWORD if found_config else None,
               help='database password (default is to prompt for password or read config)')
 @click.version_option(version='0.5.0')
-def main(dbname, host, port, username, password, schema,
+def main(engine, dbname, host, port, username, password, schema,
          warnings, list_tables, table_details, partition,
          cycles, insert_order, export_graph, transferable):
 
-    url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
+    url = "%s://%s:%s@%s:%s/%s" % (engine, username, password, host, port, dbname)
     engine = create_engine(url)
+    if engine is None:
+        return
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
