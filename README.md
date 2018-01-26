@@ -14,9 +14,9 @@ Then install required modules:
 
 You should now be able to run:
 
-    python pg_inspect.py --help
+    python db_inspect.py --help
 
 If you have a database set up then you can connect to it by using:
 
-    python pg_inspect.py -d database -U user
+    python db_inspect.py -d database -U user
 
