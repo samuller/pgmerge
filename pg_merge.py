@@ -33,15 +33,16 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
-def sql_delete_identical_tmp_data(table_name, temp_table_name, all_column_names):
+def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_name, all_column_names):
     # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
     #                               for col in all_columns])
-    where_clause = " AND ".join(["(%s.%s = %s.%s OR (%s.%s IS NULL AND %s.%s IS NULL))"
-                                 % (table_name, col, temp_table_name, col, table_name, col, temp_table_name, col)
-                                 for col in all_column_names])
+    where_clause = " AND ".join(
+        ["(%s.%s = %s.%s OR (%s.%s IS NULL AND %s.%s IS NULL))"
+         % (reference_table_name, col, delete_table_name, col, reference_table_name, col, delete_table_name, col)
+         for col in all_column_names])
     delete_sql = "DELETE FROM %s USING %s WHERE %s;" % \
-                 (temp_table_name, table_name, where_clause)
+                 (delete_table_name, reference_table_name, where_clause)
     return delete_sql
 
 
@@ -89,7 +90,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             cursor.copy_expert(copy_sql, input_file)
 
             # Delete data that is already identical to that in destination table
-            cursor.execute(sql_delete_identical_tmp_data(table, temp_table_name, all_columns))
+            cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, table, all_columns))
             stats['skip'] = cursor.rowcount
 
             # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
