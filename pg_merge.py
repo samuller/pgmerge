@@ -42,6 +42,8 @@ def import_all(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
         if len(id_columns) == 0:
             print("Skipping table '%s' as it has no primary key or unique columns!" % (table,))
             continue
+        all_columns = [col['name'] for col in inspector.get_columns(table, schema)]
+
         temp_table_name = "_tmp_%s" % (table,)
         input_file = open(os.path.join(input_dir, table + '.csv'), 'r')
         # Create temporary table with same columns and types as target table
@@ -54,6 +56,22 @@ def import_all(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
         fake_cur.execute("SELECT count(*) from %s;" % (temp_table_name,))
         # print("%s: %s" % (table, fake_cur.fetchone()[0]))
 
+        # select_columns = ",".join(id_columns)
+        # fake_cur.execute("SELECT %s from %s WHERE all columns equal;" % (select_columns, table, ))
+        # # to_be_skipped = fake_cur.fetchall()
+        #
+        # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
+        # fake_cur.execute(insert_sql)
+
+        # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
+        # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
+        set_columns = ",".join(["%s = %s.%s" % (col, temp_table_name, col)
+                                for col in all_columns])
+        match_columns = " AND ".join(["%s.%s = %s.%s" % (table, col, temp_table_name, col)
+                                      for col in id_columns])
+        update_sql = "UPDATE %s SET %s FROM %s WHERE %s" % (table, set_columns, temp_table_name, match_columns)
+        fake_cur.execute(update_sql)
+        print("Updated %s rows in '%s'" % (fake_cur.rowcount, table))
 
         drop_sql = "DROP TABLE %s" % (temp_table_name,)
         fake_cur.execute(drop_sql)
