@@ -57,6 +57,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
         #     'Postgresql 9.5 or later required for INSERT ... ON CONFLICT: %s' % (conn.server_version,)
 
         tables = sorted(inspector.get_table_names(schema))
+        total_stats = {'skip': 0, 'insert': 0, 'update': 0}
         # For now we assume a file for each table
         for table in tables:
             id_columns = get_unique_columns(inspector, table, schema)
@@ -64,6 +65,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
                 print("Skipping table '%s' as it has no primary key or unique columns!" % (table,))
                 continue
             all_columns = [col['name'] for col in inspector.get_columns(table, schema)]
+            stats = {'skip': 0 ,'insert': 0, 'update': 0}
 
             temp_table_name = "_tmp_%s" % (table,)
             input_file = open(os.path.join(input_dir, table + '.csv'), 'r')
@@ -76,7 +78,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
 
             # Delete data that is already identical to that in destination table
             cursor.execute(sql_delete_identical_tmp_data(table, temp_table_name, all_columns))
-            print("Matched %s rows in '%s'" % (cursor.rowcount, table))
+            stats['skip'] = cursor.rowcount
 
             # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
             # cursor.execute(insert_sql)
@@ -89,10 +91,18 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
                                           for col in id_columns])
             update_sql = "UPDATE %s SET %s FROM %s WHERE %s" % (table, set_columns, temp_table_name, match_columns)
             cursor.execute(update_sql)
-            print("Updated %s rows in '%s'" % (cursor.rowcount, table))
+            stats['update'] = cursor.rowcount
 
             drop_sql = "DROP TABLE %s" % (temp_table_name,)
             cursor.execute(drop_sql)
+
+            print("%s:\n\t skip: %s \t insert: %s \t update: %s" %
+                  (table, stats['skip'], stats['insert'], stats['update'] ))
+            total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
+
+        print()
+        print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
+              (total_stats['skip'], total_stats['insert'], total_stats['update']))
 
         conn.commit()
     finally:
