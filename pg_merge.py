@@ -30,7 +30,11 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
-def import_all(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
+def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
+    """
+    Imports files that introduce new or updated rows. These files have the exact structure
+    of the final desired table except that they might be missing rows.
+    """
     with engine.raw_connection() as conn:
         cursor = conn.cursor()
         # assert conn.server_version >= 90500, \
