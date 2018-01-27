@@ -55,7 +55,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             temp_table_name = "_tmp_%s" % (table,)
             input_file = open(os.path.join(input_dir, table + '.csv'), 'r')
             # Create temporary table with same columns and types as target table
-            create_sql = "CREATE TEMP TABLE %s AS SELECT * from %s LIMIT 0;" % (temp_table_name, table)
+            create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, table)
             cursor.execute(create_sql)
 
             copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
