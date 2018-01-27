@@ -11,7 +11,8 @@ except ImportError:
 
 
 def export_all(engine, inspector, schema, output_dir, file_format="CSV HEADER"):
-    with engine.raw_connection() as conn:
+    conn = engine.raw_connection()
+    try:
         cursor = conn.cursor()
 
         tables = sorted(inspector.get_table_names(schema))
@@ -21,6 +22,8 @@ def export_all(engine, inspector, schema, output_dir, file_format="CSV HEADER"):
             cursor.copy_expert(copy_sql, output_file)
 
         conn.commit()
+    finally:
+        conn.close()
 
 
 def get_unique_columns(inspector, table, schema):
@@ -35,7 +38,8 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
     """
-    with engine.raw_connection() as conn:
+    conn = engine.raw_connection()
+    try:
         cursor = conn.cursor()
         # assert conn.server_version >= 90500, \
         #     'Postgresql 9.5 or later required for INSERT ... ON CONFLICT: %s' % (conn.server_version,)
@@ -81,6 +85,8 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             cursor.execute(drop_sql)
 
         conn.commit()
+    finally:
+        conn.close()
 
 
 @click.command(context_settings=dict(max_content_width=120))
