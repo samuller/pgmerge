@@ -33,6 +33,18 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
+def sql_delete_identical_tmp_data(table_name, temp_table_name, all_column_names):
+    # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
+    # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
+    #                               for col in all_columns])
+    where_clause = " AND ".join(["(%s.%s = %s.%s OR (%s.%s IS NULL AND %s.%s IS NULL))"
+                                 % (table_name, col, temp_table_name, col, table_name, col, temp_table_name, col)
+                                 for col in all_column_names])
+    delete_sql = "DELETE FROM %s USING %s WHERE %s;" % \
+                 (temp_table_name, table_name, where_clause)
+    return delete_sql
+
+
 def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
@@ -45,6 +57,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
         #     'Postgresql 9.5 or later required for INSERT ... ON CONFLICT: %s' % (conn.server_version,)
 
         tables = sorted(inspector.get_table_names(schema))
+        # For now we assume a file for each table
         for table in tables:
             id_columns = get_unique_columns(inspector, table, schema)
             if len(id_columns) == 0:
@@ -57,17 +70,14 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             # Create temporary table with same columns and types as target table
             create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, table)
             cursor.execute(create_sql)
-
+            # Import data into temporary table
             copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
             cursor.copy_expert(copy_sql, input_file)
 
-            cursor.execute("SELECT count(*) from %s;" % (temp_table_name,))
-            # print("%s: %s" % (table, cursor.fetchone()[0]))
+            # Delete data that is already identical to that in destination table
+            cursor.execute(sql_delete_identical_tmp_data(table, temp_table_name, all_columns))
+            print("Matched %s rows in '%s'" % (cursor.rowcount, table))
 
-            # select_columns = ",".join(id_columns)
-            # cursor.execute("SELECT %s from %s WHERE all columns equal;" % (select_columns, table, ))
-            # # to_be_skipped = cursor.fetchall()
-            #
             # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
             # cursor.execute(insert_sql)
 
