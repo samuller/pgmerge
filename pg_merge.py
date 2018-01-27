@@ -78,7 +78,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
                 print("Skipping table '%s' as it has no primary key or unique columns!" % (table,))
                 continue
             all_columns = [col['name'] for col in inspector.get_columns(table, schema)]
-            stats = {'skip': 0 ,'insert': 0, 'update': 0}
+            stats = {'skip': 0, 'insert': 0, 'update': 0}
 
             temp_table_name = "_tmp_%s" % (table,)
             input_file = open(os.path.join(input_dir, table + '.csv'), 'r')
@@ -103,7 +103,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             cursor.execute(drop_sql)
 
             print("%s:\n\t skip: %s \t insert: %s \t update: %s" %
-                  (table, stats['skip'], stats['insert'], stats['update'] ))
+                  (table, stats['skip'], stats['insert'], stats['update']))
             total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
         print()
