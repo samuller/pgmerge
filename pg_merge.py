@@ -90,7 +90,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
 
 
 @click.command(context_settings=dict(max_content_width=120))
-@click.option('--dbname', '-d', help='database name to connect to')
+@click.option('--dbname', '-d', help='database name to connect to', required=True)
 @click.option('--host', '-h', help='database server host or socket directory (default: localhost)', default='localhost')
 @click.option('--port', '-p', help='database server port (default: 5432)', default='5432')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
