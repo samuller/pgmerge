@@ -45,6 +45,18 @@ def sql_delete_identical_tmp_data(table_name, temp_table_name, all_column_names)
     return delete_sql
 
 
+def sql_update_rows_between_tables(update_table_name, reference_table_name, id_column_names, all_column_names):
+    # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
+    # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
+    set_columns = ",".join(["%s = %s.%s" % (col, reference_table_name, col)
+                            for col in all_column_names])
+    where_clause = " AND ".join(["%s.%s = %s.%s" % (update_table_name, col, reference_table_name, col)
+                                 for col in id_column_names])
+    update_sql = "UPDATE %s SET %s FROM %s WHERE %s" % \
+                 (update_table_name, set_columns, reference_table_name, where_clause)
+    return update_sql
+
+
 def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
@@ -83,14 +95,7 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
             # cursor.execute(insert_sql)
 
-            # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
-            # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
-            set_columns = ",".join(["%s = %s.%s" % (col, temp_table_name, col)
-                                    for col in all_columns])
-            match_columns = " AND ".join(["%s.%s = %s.%s" % (table, col, temp_table_name, col)
-                                          for col in id_columns])
-            update_sql = "UPDATE %s SET %s FROM %s WHERE %s" % (table, set_columns, temp_table_name, match_columns)
-            cursor.execute(update_sql)
+            cursor.execute(sql_update_rows_between_tables(table, temp_table_name, id_columns, all_columns))
             stats['update'] = cursor.rowcount
 
             drop_sql = "DROP TABLE %s" % (temp_table_name,)
