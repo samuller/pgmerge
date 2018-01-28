@@ -199,7 +199,7 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
 def main(dbname, host, port, username, password, schema,
          config, export, directory, tables):
     """
-    Merges data in CSV files from the given directory (default: 'tmp') into a Postgresql database.
+    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
     """
 
