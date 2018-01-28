@@ -84,7 +84,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
         return None
 
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
-    stats = {'skip': 0, 'insert': 0, 'update': 0}
+    stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     temp_table_name = "_tmp_%s" % (dest_table,)
     input_file = open(input_file, 'r')
@@ -94,6 +94,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     # Import data into temporary table
     copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
     cursor.copy_expert(copy_sql, input_file)
+    stats['total'] = cursor.rowcount
 
     # Delete rows in temp table that are already identical to those in destination table
     cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
@@ -165,8 +166,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
         total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
     print()
-    print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
-          (total_stats['skip'], total_stats['insert'], total_stats['update']))
+    print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s" %
+          (total_stats['skip'], total_stats['insert'], total_stats['update'], total_stats['total']))
     if len(error_tables) > 0:
         print("\n%s tables skipped due to errors:" % (len(error_tables)))
         print("\t" + "\n\t".join(error_tables))
