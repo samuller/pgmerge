@@ -2,6 +2,7 @@
 import os
 import re
 import click
+import db_graph
 from sqlalchemy import create_engine, inspect
 
 found_config = True
@@ -141,11 +142,16 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
                 del import_files[idx]
             print()
 
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        insertion_order = db_graph.get_insertion_order(table_graph)
 
+        import_pairs = list(zip(import_files, dest_tables))
+        import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
 
         total_stats = {'skip': 0, 'insert': 0, 'update': 0}
         error_tables = list(unknown_tables)
 
+        for file, table in import_pairs:
             stats = import_new(inspector, cursor, schema, table, file, file_format)
             if stats is None:
                 print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
