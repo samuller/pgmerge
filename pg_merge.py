@@ -161,8 +161,12 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
                 error_tables.append(table)
                 continue
 
-            print("%s:\n\t skip: %s \t insert: %s \t update: %s" %
-                  (table, stats['skip'], stats['insert'], stats['update']))
+            stat_output = "{0}:\n\t skip: {1:<10} insert: {2:<10} update: {3}".format(
+                table, stats['skip'], stats['insert'], stats['update'])
+            if stats['insert'] > 0 or stats['update']:
+                click.secho(stat_output, fg='green')
+            else:
+                print(stat_output)
             total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
         print()
