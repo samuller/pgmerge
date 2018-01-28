@@ -149,14 +149,15 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     error_tables = list(unknown_tables)
 
     for file, table in import_pairs:
+        print("%s:" % (table,))
         stats = import_new(inspector, cursor, schema, table, file, file_format)
         if stats is None:
-            print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
+            print("\tSkipping table as it has no primary key or unique columns!")
             error_tables.append(table)
             continue
 
-        stat_output = "{0}:\n\t skip: {1:<10} insert: {2:<10} update: {3}".format(
-            table, stats['skip'], stats['insert'], stats['update'])
+        stat_output = "\t skip: {0:<10} insert: {1:<10} update: {2}".format(
+            stats['skip'], stats['insert'], stats['update'])
         if stats['insert'] > 0 or stats['update']:
             click.secho(stat_output, fg='green')
         else:
