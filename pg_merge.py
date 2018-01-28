@@ -180,15 +180,14 @@ def main(dbname, host, port, username, password, schema,
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
-        # print(inspector.get_schema_names())
 
     if export:
         export_all(engine, inspector, schema, directory)
     else:
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
-        import_files = [f for f in all_files if re.match(".*\.csv", f)]
+        import_files = [f for f in all_files if re.match(r".*\.csv", f)]
         dest_tables = [f[:-4] for f in import_files]
-        import_files = [os.path.join(directory, f) for f in all_files if re.match(".*\.csv", f)]
+        import_files = [os.path.join(directory, f) for f in all_files if re.match(r".*\.csv", f)]
         import_all_new(engine, inspector, schema, import_files, dest_tables)
 
 
