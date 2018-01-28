@@ -131,11 +131,17 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
         error_tables = []
 
         for file, table in zip(import_files, dest_tables):
+            if table not in tables:
+                print("%s:\n\tSkipping unknown table for '%s'!" % (table, file))
+                error_tables.append(table)
+                continue
+
             stats = import_new(inspector, cursor, schema, table, file, file_format)
+
             if stats is None:
                 print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
-                stats = {'skip': 0, 'insert': 0, 'update': 0}
                 error_tables.append(table)
+                continue
 
             print("%s:\n\t skip: %s \t insert: %s \t update: %s" %
                   (table, stats['skip'], stats['insert'], stats['update']))
