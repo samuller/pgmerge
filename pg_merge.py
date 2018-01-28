@@ -150,8 +150,9 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
         print()
         print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
               (total_stats['skip'], total_stats['insert'], total_stats['update']))
-        print("\nTables skipped due to errors:")
+        print("\n%s tables skipped due to errors:" % (len(error_tables)))
         print("\t" + "\n\t".join(error_tables))
+        print("\n%s tables imported successfully" % (len(dest_tables) - len(error_tables),))
 
         conn.commit()
     finally:
