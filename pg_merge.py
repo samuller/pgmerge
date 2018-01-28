@@ -121,23 +121,32 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
     of the final desired table except that they might be missing rows.
     """
     assert len(import_files) == len(dest_tables), "Files without matching tables"
+    # Use copy of lists since they might be altered and are passed by reference
+    import_files = list(import_files)
+    dest_tables = list(dest_tables)
 
     conn = engine.raw_connection()
     try:
         cursor = conn.cursor()
 
         tables = sorted(inspector.get_table_names(schema))
-        total_stats = {'skip': 0, 'insert': 0, 'update': 0}
-        error_tables = []
 
-        for file, table in zip(import_files, dest_tables):
-            if table not in tables:
-                print("%s:\n\tSkipping unknown table for '%s'!" % (table, file))
-                error_tables.append(table)
-                continue
+        unknown_tables = set(dest_tables).difference(set(tables))
+        if len(unknown_tables) > 0:
+            print("Skipping files for unknown tables:")
+            for table in unknown_tables:
+                idx = dest_tables.index(table)
+                print("\t%s: %s" % (table, import_files[idx]))
+                del dest_tables[idx]
+                del import_files[idx]
+            print()
+
+
+
+        total_stats = {'skip': 0, 'insert': 0, 'update': 0}
+        error_tables = list(unknown_tables)
 
             stats = import_new(inspector, cursor, schema, table, file, file_format)
-
             if stats is None:
                 print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
                 error_tables.append(table)
