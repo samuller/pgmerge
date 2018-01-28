@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import re
 import click
 from sqlalchemy import create_engine, inspect
 
@@ -114,11 +115,13 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     return stats
 
 
-def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
+def import_all_new(engine, inspector, schema, import_files, dest_tables, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
     """
+    assert len(import_files) == len(dest_tables), "Files without matching tables"
+
     conn = engine.raw_connection()
     try:
         cursor = conn.cursor()
@@ -126,9 +129,9 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
         tables = sorted(inspector.get_table_names(schema))
         total_stats = {'skip': 0, 'insert': 0, 'update': 0}
         error_tables = []
-        # For now we assume a file for each table
-        for table in tables:
-            stats = import_new(inspector, cursor, schema, table, os.path.join(input_dir, table + '.csv'), file_format)
+
+        for file, table in zip(import_files, dest_tables):
+            stats = import_new(inspector, cursor, schema, table, file, file_format)
             if stats is None:
                 print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
                 stats = {'skip': 0, 'insert': 0, 'update': 0}
@@ -175,8 +178,11 @@ def main(dbname, host, port, username, password, schema,
     if export:
         export_all(engine, inspector, schema, directory)
     else:
-        print("TODO: implement import")
-        # import_all(engine, inspector, schema, directory)
+        all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+        import_files = [f for f in all_files if re.match(".*\.csv", f)]
+        dest_tables = [f[:-4] for f in import_files]
+        import_files = [os.path.join(directory, f) for f in all_files if re.match(".*\.csv", f)]
+        import_all_new(engine, inspector, schema, import_files, dest_tables)
 
 
 if __name__ == "__main__":
