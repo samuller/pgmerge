@@ -99,13 +99,15 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
     cursor.copy_expert(copy_sql, input_file)
 
-    # Insert rows from temp table that are not in destination table (according to id columns)
-    cursor.execute(sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
-    stats['insert'] = cursor.rowcount
-
     # Delete rows in temp table that are already identical to those in destination table
     cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
     stats['skip'] = cursor.rowcount
+
+    # Insert rows from temp table that are not in destination table (according to id columns)
+    cursor.execute(sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
+    stats['insert'] = cursor.rowcount
+    # Delete rows that were just inserted
+    cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
 
     # Update rows whose id columns match in destination table
     cursor.execute(sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, all_columns))
