@@ -12,12 +12,13 @@ except ImportError:
     found_config = False
 
 
-def export_all(engine, inspector, schema, output_dir, file_format="CSV HEADER"):
+def export_all(engine, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
     conn = engine.raw_connection()
     try:
         cursor = conn.cursor()
 
-        tables = sorted(inspector.get_table_names(schema))
+        if tables is None:
+            tables = sorted(inspector.get_table_names(schema))
         for table in tables:
             output_file = open(os.path.join(output_dir, table + '.csv'), 'wb')
             copy_sql = 'COPY %s TO STDOUT WITH %s' % (table, file_format)
@@ -185,7 +186,8 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
               help='database password (default is to prompt for password or read config)')
 @click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
 @click.option('--config', '-c', help='config file')
-@click.argument('directory', default='tmp')
+@click.argument('directory', default='tmp', nargs=1)
+@click.argument('tables', default=None, nargs=-1)
 @click.version_option(version='0.0.1')
 def main(dbname, host, port, username, password, schema,
          config, export, directory, tables):
@@ -201,12 +203,22 @@ def main(dbname, host, port, username, password, schema,
         schema = inspector.default_schema_name
 
     if export:
-        export_all(engine, inspector, schema, directory)
+        export_all(engine, inspector, schema, directory, tables)
     else:
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
         import_files = [f for f in all_files if re.match(r".*\.csv", f)]
         dest_tables = [f[:-4] for f in import_files]
-        import_files = [os.path.join(directory, f) for f in all_files if re.match(r".*\.csv", f)]
+        if len(tables) != 0:
+            import_files = ["%s.csv" % (table,) for table in tables]
+            dest_tables = tables
+            unknown_files = set(import_files).difference(set(all_files))
+            if len(unknown_files) > 0:
+                print("No files found for the following tables:")
+                for file in unknown_files:
+                    print("\t", file)
+                return
+        import_files = [os.path.join(directory, f) for f in import_files]
+
         import_all_new(engine, inspector, schema, import_files, dest_tables)
 
 
