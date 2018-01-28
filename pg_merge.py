@@ -86,11 +86,13 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
 
         tables = sorted(inspector.get_table_names(schema))
         total_stats = {'skip': 0, 'insert': 0, 'update': 0}
+        error_tables = []
         # For now we assume a file for each table
         for table in tables:
             id_columns = get_unique_columns(inspector, table, schema)
             if len(id_columns) == 0:
-                print("Skipping table '%s' as it has no primary key or unique columns!" % (table,))
+                print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
+                error_tables.append(table)
                 continue
             all_columns = [col['name'] for col in inspector.get_columns(table, schema)]
             stats = {'skip': 0, 'insert': 0, 'update': 0}
@@ -126,6 +128,8 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
         print()
         print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
               (total_stats['skip'], total_stats['insert'], total_stats['update']))
+        print("\nTables skipped due to errors:")
+        print("\t" + "\n\t".join(error_tables))
 
         conn.commit()
     finally:
