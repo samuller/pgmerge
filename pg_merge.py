@@ -176,19 +176,23 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
 
 @click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to', required=True)
-@click.option('--host', '-h', help='database server host or socket directory (default: localhost)', default='localhost')
+@click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
 @click.option('--port', '-p', help='database server port (default: 5432)', default='5432')
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
-@click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
+@click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
 @click.option('--password', '-W', hide_input=True, prompt=not found_config,
               default=cfg.DB_PASSWORD if found_config else None,
               help='database password (default is to prompt for password or read config)')
-@click.option('--export', '-e', is_flag=True, help='export all tables to directory')
+@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
 @click.option('--config', '-c', help='config file')
 @click.argument('directory', default='tmp')
 @click.version_option(version='0.0.1')
 def main(dbname, host, port, username, password, schema,
-         config, export, directory):
+         config, export, directory, tables):
+    """
+    Merges data in CSV files from the given directory (default: 'tmp') into a Postgresql database.
+    If one or more tables are specified then only they will be used and any data for other tables will be ignored.
+    """
 
     url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
     engine = create_engine(url)
