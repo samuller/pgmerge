@@ -51,6 +51,16 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
     return delete_sql
 
 
+def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names):
+    insert_table_cols = ",".join(["%s.%s" % (insert_table_name, col) for col in id_column_names])
+    reference_table_cols = ",".join(["%s.%s" % (reference_table_name, col) for col in id_column_names])
+
+    insert_sql = "INSERT INTO %s SELECT %s.* FROM %s LEFT JOIN %s ON (%s) = (%s) WHERE (%s) is NULL;" %\
+                 (insert_table_name, reference_table_name, reference_table_name, insert_table_name,
+                  insert_table_cols, reference_table_cols, insert_table_cols)
+    return insert_sql
+
+
 def sql_update_rows_between_tables(update_table_name, reference_table_name, id_column_names, all_column_names):
     # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
     # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
@@ -98,9 +108,11 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
             cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, table, all_columns))
             stats['skip'] = cursor.rowcount
 
-            # insert_sql = "INSERT INTO %s SELECT * FROM %s WHERE 1 = 1;" % (table, temp_table_name)
-            # cursor.execute(insert_sql)
+            # Insert data from temp table that is does not yet exist (according to id columns)
+            cursor.execute(sql_insert_rows_not_in_table(table, temp_table_name, id_columns))
+            stats['insert'] = cursor.rowcount
 
+            # Update data that does exist
             cursor.execute(sql_update_rows_between_tables(table, temp_table_name, id_columns, all_columns))
             stats['update'] = cursor.rowcount
 
