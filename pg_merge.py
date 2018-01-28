@@ -12,21 +12,17 @@ except ImportError:
     found_config = False
 
 
-def export_all(engine, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
-    conn = engine.raw_connection()
-    try:
-        cursor = conn.cursor()
+def export_all(connection, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
+    cursor = connection.cursor()
 
-        if tables is None:
-            tables = sorted(inspector.get_table_names(schema))
-        for table in tables:
-            output_file = open(os.path.join(output_dir, table + '.csv'), 'wb')
-            copy_sql = 'COPY %s TO STDOUT WITH %s' % (table, file_format)
-            cursor.copy_expert(copy_sql, output_file)
+    if tables is None:
+        tables = sorted(inspector.get_table_names(schema))
+    for table in tables:
+        output_file = open(os.path.join(output_dir, table + '.csv'), 'wb')
+        copy_sql = 'COPY %s TO STDOUT WITH %s' % (table, file_format)
+        cursor.copy_expert(copy_sql, output_file)
 
-        conn.commit()
-    finally:
-        conn.close()
+    connection.commit()
 
 
 def get_unique_columns(inspector, table, schema):
@@ -119,7 +115,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     return stats
 
 
-def import_all_new(engine, inspector, schema, import_files, dest_tables, file_format="CSV HEADER"):
+def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
@@ -129,55 +125,59 @@ def import_all_new(engine, inspector, schema, import_files, dest_tables, file_fo
     import_files = list(import_files)
     dest_tables = list(dest_tables)
 
+    cursor = connection.cursor()
+
+    tables = sorted(inspector.get_table_names(schema))
+
+    unknown_tables = set(dest_tables).difference(set(tables))
+    if len(unknown_tables) > 0:
+        print("Skipping files for unknown tables:")
+        for table in unknown_tables:
+            idx = dest_tables.index(table)
+            print("\t%s: %s" % (table, import_files[idx]))
+            del dest_tables[idx]
+            del import_files[idx]
+        print()
+
+    table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+    insertion_order = db_graph.get_insertion_order(table_graph)
+
+    import_pairs = list(zip(import_files, dest_tables))
+    import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
+
+    total_stats = {'skip': 0, 'insert': 0, 'update': 0}
+    error_tables = list(unknown_tables)
+
+    for file, table in import_pairs:
+        stats = import_new(inspector, cursor, schema, table, file, file_format)
+        if stats is None:
+            print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
+            error_tables.append(table)
+            continue
+
+        stat_output = "{0}:\n\t skip: {1:<10} insert: {2:<10} update: {3}".format(
+            table, stats['skip'], stats['insert'], stats['update'])
+        if stats['insert'] > 0 or stats['update']:
+            click.secho(stat_output, fg='green')
+        else:
+            print(stat_output)
+        total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
+
+    print()
+    print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
+          (total_stats['skip'], total_stats['insert'], total_stats['update']))
+    if len(error_tables) > 0:
+        print("\n%s tables skipped due to errors:" % (len(error_tables)))
+        print("\t" + "\n\t".join(error_tables))
+    print("\n%s tables imported successfully" % (len(dest_tables) - len(error_tables),))
+
+    connection.commit()
+
+
+def run_in_session(engine, func):
     conn = engine.raw_connection()
     try:
-        cursor = conn.cursor()
-
-        tables = sorted(inspector.get_table_names(schema))
-
-        unknown_tables = set(dest_tables).difference(set(tables))
-        if len(unknown_tables) > 0:
-            print("Skipping files for unknown tables:")
-            for table in unknown_tables:
-                idx = dest_tables.index(table)
-                print("\t%s: %s" % (table, import_files[idx]))
-                del dest_tables[idx]
-                del import_files[idx]
-            print()
-
-        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
-        insertion_order = db_graph.get_insertion_order(table_graph)
-
-        import_pairs = list(zip(import_files, dest_tables))
-        import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
-
-        total_stats = {'skip': 0, 'insert': 0, 'update': 0}
-        error_tables = list(unknown_tables)
-
-        for file, table in import_pairs:
-            stats = import_new(inspector, cursor, schema, table, file, file_format)
-            if stats is None:
-                print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
-                error_tables.append(table)
-                continue
-
-            stat_output = "{0}:\n\t skip: {1:<10} insert: {2:<10} update: {3}".format(
-                table, stats['skip'], stats['insert'], stats['update'])
-            if stats['insert'] > 0 or stats['update']:
-                click.secho(stat_output, fg='green')
-            else:
-                print(stat_output)
-            total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
-
-        print()
-        print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s" %
-              (total_stats['skip'], total_stats['insert'], total_stats['update']))
-        if len(error_tables) > 0:
-            print("\n%s tables skipped due to errors:" % (len(error_tables)))
-            print("\t" + "\n\t".join(error_tables))
-        print("\n%s tables imported successfully" % (len(dest_tables) - len(error_tables),))
-
-        conn.commit()
+        func(conn)
     finally:
         conn.close()
 
@@ -210,7 +210,9 @@ def main(dbname, host, port, username, password, schema,
         schema = inspector.default_schema_name
 
     if export:
-        export_all(engine, inspector, schema, directory, tables)
+        run_in_session(engine, lambda conn:
+            export_all(conn, inspector, schema, directory, tables)
+        )
     else:
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
         import_files = [f for f in all_files if re.match(r".*\.csv", f)]
@@ -226,7 +228,9 @@ def main(dbname, host, port, username, password, schema,
                 return
         import_files = [os.path.join(directory, f) for f in import_files]
 
-        import_all_new(engine, inspector, schema, import_files, dest_tables)
+        run_in_session(engine, lambda conn:
+            import_all_new(conn, inspector, schema, import_files, dest_tables)
+        )
 
 
 if __name__ == "__main__":
