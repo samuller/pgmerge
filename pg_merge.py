@@ -55,9 +55,11 @@ def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_col
     insert_table_cols = ",".join(["%s.%s" % (insert_table_name, col) for col in id_column_names])
     reference_table_cols = ",".join(["%s.%s" % (reference_table_name, col) for col in id_column_names])
 
-    insert_sql = "INSERT INTO %s SELECT %s.* FROM %s LEFT JOIN %s ON (%s) = (%s) WHERE (%s) is NULL;" %\
-                 (insert_table_name, reference_table_name, reference_table_name, insert_table_name,
+    select_sql = "SELECT %s.* FROM %s LEFT JOIN %s ON (%s) = (%s) WHERE (%s) is NULL" %\
+                 (reference_table_name, reference_table_name, insert_table_name,
                   insert_table_cols, reference_table_cols, insert_table_cols)
+
+    insert_sql = "INSERT INTO %s (%s) RETURNING NULL;" % (insert_table_name, select_sql)
     return insert_sql
 
 
