@@ -76,6 +76,10 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
 
 
 def import_new(inspector, cursor, schema, dest_table, input_file, file_format="CSV HEADER"):
+    """
+    Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
+    constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
+    """
     id_columns = get_unique_columns(inspector, dest_table, schema)
     if len(id_columns) == 0:
         return None
@@ -118,8 +122,6 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
     conn = engine.raw_connection()
     try:
         cursor = conn.cursor()
-        # assert conn.server_version >= 90500, \
-        #     'Postgresql 9.5 or later required for INSERT ... ON CONFLICT: %s' % (conn.server_version,)
 
         tables = sorted(inspector.get_table_names(schema))
         total_stats = {'skip': 0, 'insert': 0, 'update': 0}
