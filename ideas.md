@@ -10,9 +10,12 @@ An idea/planning list:
 - Insertion order based on dependencies:
   - [x] Table order.
   - [ ] Order of rows within tables (when tables self-reference).
+    - Or disable foreign keys during import and hope that data is consistent once they are re-enabled.
 - Speed vs. impact options:
   - Bulk import: faster, but might lock tables which affects active system which is in use.
   - Incremental import: slower, but [maximizes table availability][1] since locks are for short time.
+- [ ] VACUUM tables after import
+- [ ] Use proper transaction management with sessions/commit
 
 [1]:[https://blog.codacy.com/how-to-update-large-tables-in-postgresql-e9aecd197fb7?gi=dc843a01e10b]
 
@@ -51,3 +54,10 @@ Identity columns:
 - Names:
   - [x] Exact: each file has name of table and contains all data destined for that table.
   - [ ] Conceptual: each filename describes application/business logic concept and configuration specifies final table/s.
+
+## Command-line
+
+- Table selection:
+  - [x] command-line should support either single table or all tables.
+  - [ ] Config should be used for finer control.
+- [ ] Export and import capabilities should always match.
