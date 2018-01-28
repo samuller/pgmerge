@@ -54,7 +54,7 @@ def print_partition_info(table_graph):
 
 def print_insertion_order(table_graph):
     print("\nInsertion order:")
-    print(db_graph.get_insertion_order)
+    print(db_graph.get_insertion_order(table_graph))
 
 
 def graph_export_to_dot_file(table_graph, name='dependency_graph'):
