@@ -73,6 +73,41 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
+def import_new(inspector, cursor, schema, dest_table, input_file, file_format="CSV HEADER"):
+    id_columns = get_unique_columns(inspector, dest_table, schema)
+    if len(id_columns) == 0:
+        return None
+
+    all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
+    stats = {'skip': 0, 'insert': 0, 'update': 0}
+
+    temp_table_name = "_tmp_%s" % (dest_table,)
+    input_file = open(input_file, 'r')
+    # Create temporary table with same columns and types as target table
+    create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, dest_table)
+    cursor.execute(create_sql)
+    # Import data into temporary table
+    copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
+    cursor.copy_expert(copy_sql, input_file)
+
+    # Delete rows in temp table that are already identical to those in destination table
+    cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
+    stats['skip'] = cursor.rowcount
+
+    # Insert rows from temp table that are not in destination table (according to id columns)
+    cursor.execute(sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
+    stats['insert'] = cursor.rowcount
+
+    # Update rows whose id columns match in destination table
+    cursor.execute(sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, all_columns))
+    stats['update'] = cursor.rowcount
+
+    drop_sql = "DROP TABLE %s" % (temp_table_name,)
+    cursor.execute(drop_sql)
+
+    return stats
+
+
 def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
@@ -89,37 +124,11 @@ def import_all_new(engine, inspector, schema, input_dir, file_format="CSV HEADER
         error_tables = []
         # For now we assume a file for each table
         for table in tables:
-            id_columns = get_unique_columns(inspector, table, schema)
-            if len(id_columns) == 0:
+            stats = import_new(inspector, cursor, schema, table, os.path.join(input_dir, table + '.csv'), file_format)
+            if stats is None:
                 print("%s:\n\tSkipping table as it has no primary key or unique columns!" % (table,))
+                stats = {'skip': 0, 'insert': 0, 'update': 0}
                 error_tables.append(table)
-                continue
-            all_columns = [col['name'] for col in inspector.get_columns(table, schema)]
-            stats = {'skip': 0, 'insert': 0, 'update': 0}
-
-            temp_table_name = "_tmp_%s" % (table,)
-            input_file = open(os.path.join(input_dir, table + '.csv'), 'r')
-            # Create temporary table with same columns and types as target table
-            create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, table)
-            cursor.execute(create_sql)
-            # Import data into temporary table
-            copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
-            cursor.copy_expert(copy_sql, input_file)
-
-            # Delete data that is already identical to that in destination table
-            cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, table, all_columns))
-            stats['skip'] = cursor.rowcount
-
-            # Insert data from temp table that is does not yet exist (according to id columns)
-            cursor.execute(sql_insert_rows_not_in_table(table, temp_table_name, id_columns))
-            stats['insert'] = cursor.rowcount
-
-            # Update data that does exist
-            cursor.execute(sql_update_rows_between_tables(table, temp_table_name, id_columns, all_columns))
-            stats['update'] = cursor.rowcount
-
-            drop_sql = "DROP TABLE %s" % (temp_table_name,)
-            cursor.execute(drop_sql)
 
             print("%s:\n\t skip: %s \t insert: %s \t update: %s" %
                   (table, stats['skip'], stats['insert'], stats['update']))
