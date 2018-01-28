@@ -27,6 +27,11 @@ def export_all(engine, inspector, schema, output_dir, file_format="CSV HEADER"):
 
 
 def get_unique_columns(inspector, table, schema):
+    """
+    If the combination of primary key and unique constraints is used to identify a row, then you'll miss rows where
+    values in separate unique constraints have been swapped. This means that extra INSERTS or missed UPDATES could
+    happen if these columns are collectively used as an identifier.
+    """
     pks = inspector.get_primary_keys(table, schema)
     unique_constraints = inspector.get_unique_constraints(table, schema)
     unique = [col for constraint in unique_constraints for col in constraint['column_names']]
