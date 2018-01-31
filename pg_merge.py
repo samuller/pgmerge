@@ -116,6 +116,16 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     return stats
 
 
+def disable_foreign_keys(cursor):
+    sql = "SET session_replication_role = replica;"
+    cursor.execute(sql)
+
+
+def enable_foreign_keys(cursor):
+    sql = "SET session_replication_role = DEFAULT;"
+    cursor.execute(sql)
+
+
 def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER"):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
@@ -141,14 +151,15 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
         print()
 
     table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+    # Sort by dependency requirements
     insertion_order = db_graph.get_insertion_order(table_graph)
-
     import_pairs = list(zip(import_files, dest_tables))
     import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
-
+    # Stats
     total_stats = {'skip': 0, 'insert': 0, 'update': 0}
     error_tables = list(unknown_tables)
-
+    # Disable
+    disable_foreign_keys(cursor)
     for file, table in import_pairs:
         print("%s:" % (table,))
         stats = import_new(inspector, cursor, schema, table, file, file_format)
@@ -165,6 +176,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
             print(stat_output)
         total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
+    enable_foreign_keys(cursor)
+
     print()
     print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s" %
           (total_stats['skip'], total_stats['insert'], total_stats['update'], total_stats['total']))
@@ -173,6 +186,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
         print("\t" + "\n\t".join(error_tables))
     print("\n%s tables imported successfully" % (len(dest_tables) - len(error_tables),))
 
+    # Transaction is committed
     connection.commit()
 
 
