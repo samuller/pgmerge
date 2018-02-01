@@ -117,6 +117,36 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
 
 
 def disable_foreign_keys(cursor):
+    """
+    There are different possible approaches for disabling foreign keys. The following are some options that
+    disable and re-enable foreign keys globally [1]:
+        SET session_replication_role = REPLICA; -- [2]
+        SET session_replication_role = DEFAULT;
+    or
+        SET CONSTRAINTS ALL DEFERRED;
+        SET CONSTRAINTS ALL IMMEDIATE;
+
+    Options for disabling and re-enabling foreign keys per table are [3]:
+        ALTER TABLE table_name DISABLE TRIGGER ALL;
+        ALTER TABLE table_name ENABLE TRIGGER ALL;
+    or
+        ALTER TABLE table_name ALTER CONSTRAINT table_fkey DEFERRABLE; -- [4]
+        SET CONSTRAINTS table_fkey DEFERRED;
+    or
+        ALTER TABLE table_name DROP CONSTRAINT table_fkey;
+        ALTER TABLE table_name ADD CONSTRAINT table_fkey FOREIGN KEY (column_name)
+            REFERENCES other_table_name (other_column_name) ON DELETE RESTRICT;
+    The second and third options might need extra code to leave constraints in the same state as before (e.g.
+    NOT DEFERRABLE or ON UPDATE CASCADE).
+
+    Some of these options work on most constraints, but not foreign keys. Most cases where foreign keys can
+    be disabled, it seems to require superuser rights.
+
+    [1][https://stackoverflow.com/questions/3942258/how-do-i-temporarily-disable-triggers-in-postgresql]
+    [2][https://www.postgresql.org/docs/current/static/runtime-config-client.html]
+    [3][https://stackoverflow.com/questions/38112379/disable-postgresql-foreign-key-checks-for-migrations]
+    [4][https://www.postgresql.org/docs/current/static/sql-altertable.html]
+    """
     sql = "SET session_replication_role = REPLICA;"
     cursor.execute(sql)
 
