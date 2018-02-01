@@ -156,6 +156,28 @@ def enable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
+def find_and_warn_about_cycles(table_graph, dest_tables):
+    def print_message(msg):
+        print(msg)
+        print()
+        print("See --help regarding the --disable-foreign-keys option.")
+
+    simple_cycles = db_graph.get_simple_cycles(table_graph)
+
+    relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
+    if len(relevant_cycles) > 0:
+        print_message("Cycle/s found in tables to be imported:\n\t%s" % (relevant_cycles,))
+        return True
+
+    self_references = [table for cycle in simple_cycles if len(cycle) == 1 for table in cycle]
+    relevant_tables = [table for table in self_references if table in dest_tables]
+    if len(relevant_tables) > 0:
+        print_message("Self-referencing table/s found in tables to be imported:\n\n\t%s" % (relevant_tables,))
+        return True
+
+    return False
+
+
 def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tables):
     unknown_tables = set(dest_tables).difference(set(schema_tables))
     if len(unknown_tables) > 0:
@@ -196,6 +218,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
 
     if suspend_foreign_keys:
         disable_foreign_keys(cursor)
+    elif find_and_warn_about_cycles(table_graph, dest_tables):
+        return
 
     for file, table in import_pairs:
         print("%s:" % (table,))
