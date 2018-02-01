@@ -117,7 +117,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
 
 
 def disable_foreign_keys(cursor):
-    sql = "SET session_replication_role = replica;"
+    sql = "SET session_replication_role = REPLICA;"
     cursor.execute(sql)
 
 
@@ -126,7 +126,8 @@ def enable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
-def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER"):
+def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER",
+                   suspend_foreign_keys=False):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
@@ -158,8 +159,10 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     # Stats
     total_stats = {'skip': 0, 'insert': 0, 'update': 0}
     error_tables = list(unknown_tables)
-    # Disable
-    disable_foreign_keys(cursor)
+
+    if suspend_foreign_keys:
+        disable_foreign_keys(cursor)
+
     for file, table in import_pairs:
         print("%s:" % (table,))
         stats = import_new(inspector, cursor, schema, table, file, file_format)
@@ -176,7 +179,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
             print(stat_output)
         total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
-    enable_foreign_keys(cursor)
+    if suspend_foreign_keys:
+        enable_foreign_keys(cursor)
 
     print()
     print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s" %
@@ -201,19 +205,22 @@ def run_in_session(engine, func):
 @click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to', required=True)
 @click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
-@click.option('--port', '-p', help='database server port (default: 5432)', default='5432')
+@click.option('--port', '-p', help='database server port', default='5432', show_default=True)
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
 @click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
 @click.option('--password', '-W', hide_input=True, prompt=not found_config,
               default=cfg.DB_PASSWORD if found_config else None,
               help='database password (default is to prompt for password or read config)')
-@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
 @click.option('--config', '-c', help='config file')
+@click.option('--disable-foreign-keys', '-f', is_flag=True,
+              help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
+                   'requires superuser rights)')
+@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
 @click.argument('directory', default='tmp', nargs=1)
 @click.argument('tables', default=None, nargs=-1)
 @click.version_option(version='0.0.1')
 def main(dbname, host, port, username, password, schema,
-         config, export, directory, tables):
+         config, export, directory, tables, disable_foreign_keys):
     """
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
@@ -245,7 +252,8 @@ def main(dbname, host, port, username, password, schema,
         import_files = [os.path.join(directory, f) for f in import_files]
 
         run_in_session(engine, lambda conn:
-            import_all_new(conn, inspector, schema, import_files, dest_tables)
+            import_all_new(conn, inspector, schema, import_files, dest_tables,
+                           suspend_foreign_keys=disable_foreign_keys)
         )
 
 
