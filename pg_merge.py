@@ -156,6 +156,19 @@ def enable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
+def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tables):
+    unknown_tables = set(dest_tables).difference(set(schema_tables))
+    if len(unknown_tables) > 0:
+        print("Skipping files for unknown tables:")
+        for table in unknown_tables:
+            idx = dest_tables.index(table)
+            print("\t%s: %s" % (table, import_files[idx]))
+            del dest_tables[idx]
+            del import_files[idx]
+        print()
+    return unknown_tables
+
+
 def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER",
                    suspend_foreign_keys=False):
     """
@@ -170,16 +183,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     cursor = connection.cursor()
 
     tables = sorted(inspector.get_table_names(schema))
-
-    unknown_tables = set(dest_tables).difference(set(tables))
-    if len(unknown_tables) > 0:
-        print("Skipping files for unknown tables:")
-        for table in unknown_tables:
-            idx = dest_tables.index(table)
-            print("\t%s: %s" % (table, import_files[idx]))
-            del dest_tables[idx]
-            del import_files[idx]
-        print()
+    unknown_tables = get_and_warn_about_any_unknown_tables(import_files, dest_tables, tables)
 
     table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
     # Sort by dependency requirements
