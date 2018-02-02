@@ -322,12 +322,12 @@ def main(dbname, host, port, username, password, schema,
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
     """
-    user_db_config = {'dbname': dbname, 'host': host, 'port': port, 'username': username, 'password': password}
+    user_db_config = {'host': host, 'port': port, 'username': username, 'password': password}
     db_config = load_config_for_db(dbname, user_db_config)
     if db_config['password'] is None:
         db_config['password'] = getpass.getpass()
 
-    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**db_config)
+    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**db_config, dbname=dbname)
     engine = create_engine(url)
     inspector = inspect(engine)
     if schema is None:
