@@ -2,3 +2,4 @@ psycopg2==2.7.3.2
 networkx==1.11
 click==6.7
 sqlalchemy==1.1.5
+appdirs==1.4.3

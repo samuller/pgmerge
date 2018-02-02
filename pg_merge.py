@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 import os
 import re
+import yaml
 import click
+import getpass
 import db_graph
+import collections
+from appdirs import user_data_dir
 from sqlalchemy import create_engine, inspect
-
-found_config = True
-try:
-    import config as cfg
-except ImportError:
-    found_config = False
 
 
 def export_all(connection, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
@@ -260,14 +258,55 @@ def run_in_session(engine, func):
         conn.close()
 
 
+def recursive_update_ignore_none(any_dict, update_dict):
+    """
+    Similar to dict.update(), but updates recursively nested dictionaries and never
+    updates a key's value to None.
+    """
+    for key, value in update_dict.items():
+        if value is None:
+            continue
+        elif isinstance(value, collections.Mapping):
+            any_dict[key] = recursive_update_ignore_none(any_dict.get(key, {}), value)
+        else:
+            any_dict[key] = value
+    return any_dict
+
+
+def load_config_for_db(dbname, priority_config_for_db=None):
+    """
+    Loads any config for the specific database name from the default config file, but
+    then merges those configs with the given configs which take higher priority.
+    """
+    # Create config directory if it doesn't exist
+    config_dir = user_data_dir('pg_merge', appauthor=False)
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    # Create config file if it doesn't exist
+    default_config = os.path.join(config_dir, ".pg_merge.yml")
+    with open(default_config, 'a'):
+        pass
+    # Load config
+    yaml_config = None
+    with open(default_config, 'r') as config_file:
+        yaml_config = yaml.safe_load(config_file)
+    # Assign empty config
+    final_config = {dbname: {'host': None, 'port': None, 'username': None, 'password': None}}
+    # Merge yaml and priority configs
+    if yaml_config is not None and dbname in yaml_config:
+        recursive_update_ignore_none(final_config, yaml_config)
+    if priority_config_for_db is not None:
+        recursive_update_ignore_none(final_config[dbname], priority_config_for_db)
+    return final_config[dbname]
+
+
 @click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to', required=True)
 @click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
 @click.option('--port', '-p', help='database server port', default='5432', show_default=True)
 @click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
 @click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
-@click.option('--password', '-W', hide_input=True, prompt=not found_config,
-              default=cfg.DB_PASSWORD if found_config else None,
+@click.option('--password', '-W', hide_input=True, prompt=False, default=None,
               help='database password (default is to prompt for password or read config)')
 @click.option('--config', '-c', help='config file')
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
@@ -283,8 +322,12 @@ def main(dbname, host, port, username, password, schema,
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
     """
+    user_db_config = {'dbname': dbname, 'host': host, 'port': port, 'username': username, 'password': password}
+    db_config = load_config_for_db(dbname, user_db_config)
+    if db_config['password'] is None:
+        db_config['password'] = getpass.getpass()
 
-    url = "postgresql://%s:%s@%s:%s/%s" % (username, password, host, port, dbname)
+    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**db_config)
     engine = create_engine(url)
     inspector = inspect(engine)
     if schema is None:
