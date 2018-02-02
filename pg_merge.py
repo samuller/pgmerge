@@ -315,7 +315,7 @@ def load_config_for_db(dbname, priority_config_for_db=None):
 @click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
 @click.argument('directory', default='tmp', nargs=1)
 @click.argument('tables', default=None, nargs=-1)
-@click.version_option(version='0.0.1')
+@click.version_option(version='0.9.0')
 def main(dbname, host, port, username, password, schema,
          config, export, directory, tables, disable_foreign_keys):
     """
