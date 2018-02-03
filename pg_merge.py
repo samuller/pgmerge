@@ -273,28 +273,38 @@ def recursive_update_ignore_none(any_dict, update_dict):
     return any_dict
 
 
+def get_default_config_path():
+    config_dir = user_data_dir('pg_merge', appauthor=False)
+    return os.path.join(config_dir, "default_config.yml")
+
+
+def ensure_file_exists(file_path):
+    # Recursively create all directories if they don't exist
+    file_dirs = os.path.dirname(file_path)
+    if not os.path.exists(file_dirs):
+        os.makedirs(file_dirs)
+    # Create file if it doesn't exist, but don't alter it if it does
+    with open(file_path, 'a'):
+        pass
+
+
 def load_config_for_db(dbname, priority_config_for_db=None):
     """
     Loads any config for the specific database name from the default config file, but
     then merges those configs with the given configs which take higher priority.
     """
-    # Create config directory if it doesn't exist
-    config_dir = user_data_dir('pg_merge', appauthor=False)
-    if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-    # Create config file if it doesn't exist
-    default_config = os.path.join(config_dir, ".pg_merge.yml")
-    with open(default_config, 'a'):
-        pass
+    config_path = get_default_config_path()
+    ensure_file_exists(config_path)
     # Load config
     yaml_config = None
-    with open(default_config, 'r') as config_file:
+    with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)
     # Assign empty config
     final_config = {dbname: {'host': None, 'port': None, 'username': None, 'password': None}}
-    # Merge yaml and priority configs
+    # Override empty config with those from default config
     if yaml_config is not None and dbname in yaml_config:
         recursive_update_ignore_none(final_config, yaml_config)
+    # Override default config with priority configs
     if priority_config_for_db is not None:
         recursive_update_ignore_none(final_config[dbname], priority_config_for_db)
     return final_config[dbname]
