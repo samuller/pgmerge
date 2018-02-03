@@ -6,6 +6,7 @@ import click
 import getpass
 import db_graph
 import collections
+from rxjson import Rx
 from appdirs import user_data_dir
 from sqlalchemy import create_engine, inspect
 
@@ -278,6 +279,10 @@ def get_default_config_path():
     return os.path.join(config_dir, "default_config.yml")
 
 
+def get_schema_path():
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 def ensure_file_exists(file_path):
     # Recursively create all directories if they don't exist
     file_dirs = os.path.dirname(file_path)
@@ -293,11 +298,24 @@ def load_config_for_db(dbname, priority_config_for_db=None):
     Loads any config for the specific database name from the default config file, but
     then merges those configs with the given configs which take higher priority.
     """
+    # Load YAML defining schema for validation of default config
+    schema_path = os.path.join(get_schema_path(), 'default_config_schema.yml')
+    with open(schema_path, 'r') as config_file:
+        schema_config = yaml.safe_load(config_file)
+        rx = Rx.Factory({"register_core_types": True})
+        schema = rx.make_schema(schema_config)
+
+    # Load default config
     config_path = get_default_config_path()
     ensure_file_exists(config_path)
-    # Load config
     with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)
+
+    # Validate config if it's not empty
+    if yaml_config is not None and not schema.check(yaml_config):
+        print("Default config is invalid: '%s'" % (config_path,))
+        return None
+
     # Assign empty config
     final_config = {dbname: {'host': None, 'port': None, 'username': None, 'password': None}}
     # Override empty config with those from default config
@@ -333,6 +351,8 @@ def main(dbname, host, port, username, password, schema,
     """
     user_db_config = {'host': host, 'port': port, 'username': username, 'password': password}
     db_config = load_config_for_db(dbname, user_db_config)
+    if db_config is None:
+        return
     if db_config['password'] is None:
         db_config['password'] = getpass.getpass()
 

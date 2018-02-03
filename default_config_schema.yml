@@ -1,0 +1,10 @@
+type: //map
+values:
+  type: //rec
+  optional:
+    type: //str
+    host: //str
+    port: //str
+    username: //str
+    password: //str
+    schema: //str
