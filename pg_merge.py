@@ -296,7 +296,6 @@ def load_config_for_db(dbname, priority_config_for_db=None):
     config_path = get_default_config_path()
     ensure_file_exists(config_path)
     # Load config
-    yaml_config = None
     with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)
     # Assign empty config
