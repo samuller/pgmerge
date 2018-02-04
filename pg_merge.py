@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import re
-import yaml
 import click
 import logging
 import getpass
@@ -383,14 +382,14 @@ def main(dbname, host, port, username, password, schema,
     """
     setup_logging()
 
-    user_db_config = {'host': host, 'port': port, 'username': username, 'password': password}
-    db_config = load_config_for_db(dbname, user_db_config)
-    if db_config is None:
+    config_db_user = {'host': host, 'port': port, 'username': username, 'password': password}
+    config_db = load_config_for_db(dbname, config_db_user)
+    if config_db is None:
         return
-    if db_config['password'] is None:
-        db_config['password'] = getpass.getpass()
+    if config_db['password'] is None:
+        config_db['password'] = getpass.getpass()
 
-    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**db_config, dbname=dbname)
+    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
     engine = create_engine(url)
     inspector = inspect(engine)
     if schema is None:
