@@ -155,6 +155,20 @@ def enable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
+def get_all_dependant_tables(tables, inspector, schema):
+    """
+    Find all the tables on which the given set of tables depends. I.e. if the table has a foreign key dependency on
+    a table and that table has a dependency on 2 other tables, then we'll get all 3 tables. We return all referenced
+    tables as well as the given set of tables.
+    """
+    table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+    db_graph.convert_to_dag(table_graph)
+
+    dependant_tables = {dependant for table in tables for dependant in db_graph.get_dependants(table_graph, table)}
+    dependant_tables = dependant_tables.union(set(tables))
+    return dependant_tables
+
+
 def find_and_warn_about_cycles(table_graph, dest_tables):
     def print_message(msg):
         print(msg)
@@ -336,6 +350,8 @@ def load_config_for_db(dbname, priority_config_for_db=None):
 @click.option('--password', '-W', hide_input=True, prompt=False, default=None,
               help='database password (default is to prompt for password or read config)')
 @click.option('--config', '-c', help='config file')
+@click.option('--include-dependant-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
+              'all tables with foreign keys that depend on those tables')
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
               help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
                    'requires superuser rights)')
@@ -344,7 +360,7 @@ def load_config_for_db(dbname, priority_config_for_db=None):
 @click.argument('tables', default=None, nargs=-1)
 @click.version_option(version='0.9.0')
 def main(dbname, host, port, username, password, schema,
-         config, export, directory, tables, disable_foreign_keys):
+         config, export, directory, tables, disable_foreign_keys, include_dependant_tables):
     """
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
@@ -361,6 +377,9 @@ def main(dbname, host, port, username, password, schema,
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
+
+    if include_dependant_tables:
+        tables = get_all_dependant_tables(tables, inspector, schema)
 
     if export:
         run_in_session(engine, lambda conn:

@@ -14,13 +14,30 @@ def get_fks_for_simple_cycles(table_graph, simple_cycles):
 
 
 def break_simple_cycles(table_graph):
+    edges_removed = []
     for cycle in nx.simple_cycles(table_graph):
         table_graph.remove_edge(cycle[0], cycle[-1])
+        edges_removed.append([cycle[0], cycle[-1]])
+    return edges_removed
+
+
+def convert_to_dag(directed_graph):
+    """
+    Convert graph to directed acyclic graph by breaking cycles.
+    """
+    edges_removed = break_simple_cycles(directed_graph)
+    assert nx.is_directed_acyclic_graph(directed_graph), "Only simple cycles are currently supported."
+    # cycle = nx.find_cycle(copy_of_graph)
+    return edges_removed
+
+
+def get_dependants(directed_acyclic_graph, node):
+    return nx.descendants(directed_acyclic_graph, node)
 
 
 def get_insertion_order(table_graph):
     copy_of_graph = table_graph.copy()
-    break_simple_cycles(copy_of_graph)
+    convert_to_dag(copy_of_graph)
     return nx.topological_sort(copy_of_graph, reverse=True)
 
 
