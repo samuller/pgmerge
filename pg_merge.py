@@ -5,15 +5,12 @@ import click
 import logging
 import getpass
 import db_graph
-import collections
-from rxjson import Rx
+from db_config import *
 from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
-from appdirs import user_config_dir, user_log_dir
+from appdirs import user_log_dir
 
 APP_NAME = "pg_merge"
-SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
-DEFAULT_CONFIG_FILE = os.path.join(user_config_dir(APP_NAME, appauthor=False), "default_config.yml")
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 
@@ -37,7 +34,6 @@ def setup_logging():
 
 def export_all(connection, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
     cursor = connection.cursor()
-
     if tables is None:
         tables = sorted(inspector.get_table_names(schema))
     for table in tables:
@@ -179,20 +175,6 @@ def enable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
-def get_all_dependent_tables(tables, inspector, schema):
-    """
-    Find all the tables on which the given set of tables depends. I.e. if the table has a foreign key dependency on
-    a table and that table has a dependency on 2 other tables, then we'll get all 3 tables. We return all referenced
-    tables as well as the given set of tables.
-    """
-    table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
-    db_graph.convert_to_dag(table_graph)
-
-    dependent_tables = {dependent for table in tables for dependent in db_graph.get_dependents(table_graph, table)}
-    dependent_tables = dependent_tables.union(set(tables))
-    return dependent_tables
-
-
 def find_and_warn_about_cycles(table_graph, dest_tables):
     def print_message(msg):
         print(msg)
@@ -297,65 +279,6 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def recursive_update_ignore_none(any_dict, update_dict):
-    """
-    Similar to dict.update(), but updates recursively nested dictionaries and never
-    updates a key's value to None.
-    """
-    for key, value in update_dict.items():
-        if value is None:
-            continue
-        elif isinstance(value, collections.Mapping):
-            any_dict[key] = recursive_update_ignore_none(any_dict.get(key, {}), value)
-        else:
-            any_dict[key] = value
-    return any_dict
-
-
-def ensure_file_exists(file_path):
-    # Recursively create all directories if they don't exist
-    file_dirs = os.path.dirname(file_path)
-    if not os.path.exists(file_dirs):
-        os.makedirs(file_dirs)
-    # Create file if it doesn't exist, but don't alter it if it does
-    with open(file_path, 'a'):
-        pass
-
-
-def load_config_for_db(dbname, priority_config_for_db=None):
-    """
-    Loads any config for the specific database name from the default config file, but
-    then merges those configs with the given configs which take higher priority.
-    """
-    # Load YAML defining schema for validation of default config
-    schema_path = SCHEMA_FILE
-    with open(schema_path, 'r') as config_file:
-        schema_config = yaml.safe_load(config_file)
-        rx = Rx.Factory({"register_core_types": True})
-        schema = rx.make_schema(schema_config)
-
-    # Load default config
-    config_path = DEFAULT_CONFIG_FILE
-    ensure_file_exists(config_path)
-    with open(config_path, 'r') as config_file:
-        yaml_config = yaml.safe_load(config_file)
-
-    # Validate config if it's not empty
-    if yaml_config is not None and not schema.check(yaml_config):
-        print("Default config is invalid: '%s'" % (config_path,))
-        return None
-
-    # Assign empty config
-    final_config = {dbname: {'host': None, 'port': None, 'username': None, 'password': None}}
-    # Override empty config with those from default config
-    if yaml_config is not None and dbname in yaml_config:
-        recursive_update_ignore_none(final_config, yaml_config)
-    # Override default config with priority configs
-    if priority_config_for_db is not None:
-        recursive_update_ignore_none(final_config[dbname], priority_config_for_db)
-    return final_config[dbname]
-
-
 @click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to', required=True)
 @click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
@@ -396,7 +319,8 @@ def main(dbname, host, port, username, password, schema,
         schema = inspector.default_schema_name
 
     if include_dependent_tables:
-        tables = get_all_dependent_tables(tables, inspector, schema)
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
     if export:
         run_in_session(engine, lambda conn:

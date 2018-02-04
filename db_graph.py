@@ -68,3 +68,17 @@ def get_simple_cycle_fks_per_table(table_graph):
         cycle_fks_per_table[table_b].append(table_graph.get_edge_data(table_b, table_a)['name'])
 
     return cycle_fks_per_table
+
+
+def get_all_dependent_tables(table_graph, tables):
+    """
+    Find all the tables on which the given set of tables depends. I.e. if the table has a foreign key dependency on
+    a table and that table has a dependency on 2 other tables, then we'll get all 3 tables. We return all referenced
+    tables as well as the given set of tables.
+    """
+    convert_to_dag(table_graph)
+
+    dependent_tables = {dependent for table in tables for dependent in get_dependents(table_graph, table)}
+    dependent_tables = dependent_tables.union(set(tables))
+    return dependent_tables
+
