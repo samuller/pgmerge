@@ -3,12 +3,37 @@ import os
 import re
 import yaml
 import click
+import logging
 import getpass
 import db_graph
 import collections
 from rxjson import Rx
-from appdirs import user_data_dir
 from sqlalchemy import create_engine, inspect
+from logging.handlers import RotatingFileHandler
+from appdirs import user_config_dir, user_log_dir
+
+APP_NAME = "pg_merge"
+SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
+DEFAULT_CONFIG_FILE = os.path.join(user_config_dir(APP_NAME, appauthor=False), "default_config.yml")
+LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
+
+
+def setup_logging():
+    log_dir = os.path.dirname(LOG_FILE)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=1024*1024, backupCount=0, encoding=None, delay=0)
+    file_handler.setFormatter(
+        logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
+    file_handler.setLevel(logging.DEBUG)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(
+        logging.Formatter("%(levelname)s: %(message)s"))
+    stream_handler.setLevel(logging.WARN)
+
+    logging.basicConfig(handlers=[file_handler, stream_handler])
 
 
 def export_all(connection, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
@@ -288,15 +313,6 @@ def recursive_update_ignore_none(any_dict, update_dict):
     return any_dict
 
 
-def get_default_config_path():
-    config_dir = user_data_dir('pg_merge', appauthor=False)
-    return os.path.join(config_dir, "default_config.yml")
-
-
-def get_schema_path():
-    return os.path.dirname(os.path.abspath(__file__))
-
-
 def ensure_file_exists(file_path):
     # Recursively create all directories if they don't exist
     file_dirs = os.path.dirname(file_path)
@@ -313,14 +329,14 @@ def load_config_for_db(dbname, priority_config_for_db=None):
     then merges those configs with the given configs which take higher priority.
     """
     # Load YAML defining schema for validation of default config
-    schema_path = os.path.join(get_schema_path(), 'default_config_schema.yml')
+    schema_path = SCHEMA_FILE
     with open(schema_path, 'r') as config_file:
         schema_config = yaml.safe_load(config_file)
         rx = Rx.Factory({"register_core_types": True})
         schema = rx.make_schema(schema_config)
 
     # Load default config
-    config_path = get_default_config_path()
+    config_path = DEFAULT_CONFIG_FILE
     ensure_file_exists(config_path)
     with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)
@@ -365,6 +381,8 @@ def main(dbname, host, port, username, password, schema,
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
     """
+    setup_logging()
+
     user_db_config = {'host': host, 'port': port, 'username': username, 'password': password}
     db_config = load_config_for_db(dbname, user_db_config)
     if db_config is None:
