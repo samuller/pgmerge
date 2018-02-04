@@ -25,7 +25,7 @@ def convert_to_dag(directed_graph):
     return edges_removed
 
 
-def get_dependants(directed_acyclic_graph, node):
+def get_dependents(directed_acyclic_graph, node):
     assert nx.is_directed_acyclic_graph(directed_acyclic_graph), "Graph contains cycles."
     return nx.descendants(directed_acyclic_graph, node)
 
