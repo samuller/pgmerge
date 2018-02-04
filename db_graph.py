@@ -3,20 +3,14 @@ import networkx as nx
 # from sqlalchemy import create_engine, inspect
 
 
-def get_simple_cycles(table_graph):
-    return list(nx.simple_cycles(table_graph))
+def get_simple_cycles(graph):
+    return list(nx.simple_cycles(graph))
 
 
-def get_fks_for_simple_cycles(table_graph, simple_cycles):
-    fks = [table_graph.get_edge_data(cycle[0], cycle[1])['name'] for cycle in simple_cycles if len(cycle) == 2]
-    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])['name'] for cycle in simple_cycles if len(cycle) == 2])
-    return fks
-
-
-def break_simple_cycles(table_graph):
+def break_simple_cycles(graph):
     edges_removed = []
-    for cycle in nx.simple_cycles(table_graph):
-        table_graph.remove_edge(cycle[0], cycle[-1])
+    for cycle in nx.simple_cycles(graph):
+        graph.remove_edge(cycle[0], cycle[-1])
         edges_removed.append([cycle[0], cycle[-1]])
     return edges_removed
 
@@ -32,7 +26,14 @@ def convert_to_dag(directed_graph):
 
 
 def get_dependants(directed_acyclic_graph, node):
+    assert nx.is_directed_acyclic_graph(directed_acyclic_graph), "Graph contains cycles."
     return nx.descendants(directed_acyclic_graph, node)
+
+
+def get_fks_for_simple_cycles(table_graph, simple_cycles):
+    fks = [table_graph.get_edge_data(cycle[0], cycle[1])['name'] for cycle in simple_cycles if len(cycle) == 2]
+    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])['name'] for cycle in simple_cycles if len(cycle) == 2])
+    return fks
 
 
 def get_insertion_order(table_graph):
