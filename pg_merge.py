@@ -135,7 +135,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     return stats
 
 
-def disable_foreign_keys(cursor):
+def disable_foreign_key_constraints(cursor):
     """
     There are different possible approaches for disabling foreign keys. The following are some options that
     disable and re-enable foreign keys globally [1]:
@@ -170,7 +170,7 @@ def disable_foreign_keys(cursor):
     cursor.execute(sql)
 
 
-def enable_foreign_keys(cursor):
+def enable_foreign_key_constraints(cursor):
     sql = "SET session_replication_role = DEFAULT;"
     cursor.execute(sql)
 
@@ -236,7 +236,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     error_tables = list(unknown_tables)
 
     if suspend_foreign_keys:
-        disable_foreign_keys(cursor)
+        disable_foreign_key_constraints(cursor)
     elif find_and_warn_about_cycles(table_graph, dest_tables):
         return
 
@@ -257,7 +257,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
         total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
 
     if suspend_foreign_keys:
-        enable_foreign_keys(cursor)
+        enable_foreign_key_constraints(cursor)
 
     print()
     print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s" %
