@@ -2,8 +2,9 @@
 
     Usage: pgmerge.py [OPTIONS] [DIRECTORY] [TABLES]...
 
-    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database. If one or more
-    tables are specified then only they will be used and any data for other tables will be ignored.
+    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
+    If one or more tables are specified then only they will be used and any data for other tables
+    will be ignored.
 
     Options:
     -d, --dbname TEXT               database name to connect to  [required]
