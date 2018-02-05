@@ -295,7 +295,7 @@ def run_in_session(engine, func):
 @click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
 @click.option('--password', '-W', hide_input=True, prompt=False, default=None,
               help='database password (default is to prompt for password or read config)')
-@click.option('--config', '-c', help='config file')
+# @click.option('--config', '-c', help='config file')
 @click.option('--include-dependent-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
               'all tables that depend on those tables due to foreign key constraints')
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
@@ -306,7 +306,7 @@ def run_in_session(engine, func):
 @click.argument('tables', default=None, nargs=-1)
 @click.version_option(version='0.9.0')
 def main(dbname, host, port, username, password, schema,
-         config, export, directory, tables, disable_foreign_keys, include_dependent_tables):
+         export, directory, tables, disable_foreign_keys, include_dependent_tables):
     """
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables will be ignored.
