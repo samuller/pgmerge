@@ -76,9 +76,10 @@ def get_all_dependent_tables(table_graph, tables):
     a table and that table has a dependency on 2 other tables, then we'll get all 3 tables. We return all referenced
     tables as well as the given set of tables.
     """
-    convert_to_dag(table_graph)
-
-    dependent_tables = {dependent for table in tables for dependent in get_dependents(table_graph, table)}
-    dependent_tables = dependent_tables.union(set(tables))
+    dependent_tables = set()
+    for table in tables:
+        dependency_tree = nx.dfs_successors(table_graph, table)
+        dependent_tables.update(set(dependency_tree.keys()))
+        dependent_tables.update({node for dependents in dependency_tree.values() for node in dependents})
     return dependent_tables
 
