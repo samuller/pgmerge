@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import networkx as nx
-# from sqlalchemy import create_engine, inspect
 
 
 def get_simple_cycles(graph):
