@@ -9,6 +9,7 @@ def get_simple_cycles(graph):
 def break_simple_cycles(graph):
     edges_removed = []
     for cycle in nx.simple_cycles(graph):
+        # Only remove one direction of dependency and also remove self-references
         graph.remove_edge(cycle[0], cycle[-1])
         edges_removed.append([cycle[0], cycle[-1]])
     return edges_removed

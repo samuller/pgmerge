@@ -136,6 +136,10 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     drop_sql = "DROP TABLE %s" % (temp_table_name,)
     cursor.execute(drop_sql)
 
+    # VACUUM is useful for each table that had major updates/import, but it has to run outside a transaction
+    # and requires connection to be in autocommit mode
+    # cursor.execute("VACUUM ANALYZE %s" % (dest_table,))
+
     return stats
 
 
@@ -331,10 +335,12 @@ def main(dbname, host, port, username, password, schema,
             export_all(conn, inspector, schema, directory, tables)
         )
     else:
+        # Determine tables based no files in directory
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
         import_files = [f for f in all_files if re.match(r".*\.csv", f)]
         dest_tables = [f[:-4] for f in import_files]
         if len(tables) != 0:
+            # Look for files based on given tables
             import_files = ["%s.csv" % (table,) for table in tables]
             dest_tables = tables
             unknown_files = set(import_files).difference(set(all_files))
