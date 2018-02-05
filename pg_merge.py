@@ -36,6 +36,10 @@ def export_all(connection, inspector, schema, output_dir, tables=None, file_form
     cursor = connection.cursor()
     if tables is None:
         tables = sorted(inspector.get_table_names(schema))
+
+    table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+    find_and_warn_about_cycles(table_graph, tables)
+
     for table in tables:
         output_file = open(os.path.join(output_dir, table + '.csv'), 'wb')
         copy_sql = 'COPY %s TO STDOUT WITH %s' % (table, file_format)
@@ -185,13 +189,13 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
 
     relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
     if len(relevant_cycles) > 0:
-        print_message("Cycle/s found in tables to be imported:\n\t%s" % (relevant_cycles,))
+        print_message("Table dependencies contain cycles that could prevent import:\n\t%s" % (relevant_cycles,))
         return True
 
     self_references = [table for cycle in simple_cycles if len(cycle) == 1 for table in cycle]
     relevant_tables = [table for table in self_references if table in dest_tables]
     if len(relevant_tables) > 0:
-        print_message("Self-referencing table/s found in tables to be imported:\n\n\t%s" % (relevant_tables,))
+        print_message("Self-referencing tables found that could prevent import:\n\n\t%s" % (relevant_tables,))
         return True
 
     return False
@@ -289,7 +293,7 @@ def run_in_session(engine, func):
               help='database password (default is to prompt for password or read config)')
 @click.option('--config', '-c', help='config file')
 @click.option('--include-dependent-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
-              'all tables with foreign keys that depend on those tables')
+              'all tables that depend on those tables due to foreign key constraints')
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
               help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
                    'requires superuser rights)')
