@@ -1,4 +1,4 @@
-# pg_connect
+# pgmerge - PostgreSQL data import and merge utility
 
 ## Development
 
