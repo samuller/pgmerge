@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
 from appdirs import user_log_dir
 
-APP_NAME = "pg_merge"
+APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 
