@@ -309,7 +309,7 @@ def main(dbname, host, port, username, password, schema,
          export, directory, tables, disable_foreign_keys, include_dependent_tables):
     """
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
-    If one or more tables are specified then only they will be used and any data for other tables will be ignored.
+    If one or more tables are specified then only they will be used, otherwise all tables found will be selected.
     """
     setup_logging()
 
