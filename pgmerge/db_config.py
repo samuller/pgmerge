@@ -4,12 +4,11 @@ from utils import *
 from rxjson import Rx
 from appdirs import user_config_dir, user_log_dir
 
-APP_NAME = "pg_merge"
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
-DB_CONFIG_FILE = os.path.join(user_config_dir(APP_NAME, appauthor=False), "db_config.yml")
+DB_CONFIG_FILE = "db_config.yml"
 
 
-def load_config_for_db(dbname, priority_config_for_db=None):
+def load_config_for_db(appname, dbname, priority_config_for_db=None):
     """
     Loads any config for the specific database name from the default config file, but
     then merges those configs with the given configs which take higher priority.
@@ -22,7 +21,7 @@ def load_config_for_db(dbname, priority_config_for_db=None):
         schema = rx.make_schema(schema_config)
 
     # Load default config
-    config_path = DB_CONFIG_FILE
+    config_path = os.path.join(user_config_dir(appname, appauthor=False), DB_CONFIG_FILE)
     ensure_file_exists(config_path)
     with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)

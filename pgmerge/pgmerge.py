@@ -314,7 +314,7 @@ def main(dbname, host, port, username, password, schema,
     setup_logging()
 
     config_db_user = {'host': host, 'port': port, 'username': username, 'password': password}
-    config_db = load_config_for_db(dbname, config_db_user)
+    config_db = load_config_for_db(APP_NAME, dbname, config_db_user)
     if config_db is None:
         return
     if config_db['password'] is None:
