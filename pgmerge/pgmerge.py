@@ -326,6 +326,9 @@ def main(dbname, host, port, username, password, schema,
     if schema is None:
         schema = inspector.default_schema_name
 
+    if len(tables) == 0:
+        tables = None
+
     if include_dependent_tables:
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
