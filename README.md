@@ -21,6 +21,15 @@
     --version                       Show the version and exit.
     --help                          Show this message and exit.
 
+## Installation
+
+    pip install .
+    pgmerge --version
+
+You can uninstall at any time with:
+
+    pip uninstall pgmerge
+
 
 
 
