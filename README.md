@@ -23,8 +23,8 @@
 
 ## Installation
 
-    pip install .
-    pgmerge --version
+    pip install git+https://github.com/samuller/pgmerge
+    pgmerge --help
 
 You can uninstall at any time with:
 
