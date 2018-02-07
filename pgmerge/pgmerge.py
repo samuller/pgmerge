@@ -4,8 +4,8 @@ import re
 import click
 import logging
 import getpass
-import db_graph
-from db_config import *
+from . import db_graph
+from .db_config import *
 from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
 from appdirs import user_log_dir

@@ -1,6 +1,6 @@
 import os
 import yaml
-from utils import *
+from .utils import *
 from rxjson import Rx
 from appdirs import user_config_dir, user_log_dir
 
