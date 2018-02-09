@@ -181,11 +181,19 @@ def process_args_and_run(dbname, host, port, username, password, schema,
             return
 
 
-    if include_dependent_tables:
+    if include_dependent_tables and tables is None:
+        print('Option to specifically include dependent tables has been ignored as all tables will be imported.')
+        print()
+    elif include_dependent_tables:
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
     if export:
+        if tables is None:
+            tables = sorted(inspector.get_table_names(schema))
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        find_and_warn_about_cycles(table_graph, tables)
+
         run_in_session(engine, lambda conn:
             db_export.export_all(conn, inspector, schema, directory, tables)
         )
@@ -194,7 +202,7 @@ def process_args_and_run(dbname, host, port, username, password, schema,
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
         import_files = [f for f in all_files if re.match(r".*\.csv", f)]
         dest_tables = [f[:-4] for f in import_files]
-        if len(tables) != 0:
+        if tables is not None and len(tables) != 0:
             # Look for files based on given tables
             import_files = ["%s.csv" % (table,) for table in tables]
             dest_tables = tables
