@@ -35,7 +35,7 @@ def setup_logging():
     logging.basicConfig(handlers=[file_handler, stream_handler])
 
 
-def export_all(connection, inspector, schema, output_dir, tables=None, file_format="CSV HEADER"):
+def export_all(connection, inspector, schema, output_dir, tables=None, file_format="FORMAT CSV, HEADER"):
     cursor = connection.cursor()
     if tables is None:
         tables = sorted(inspector.get_table_names(schema))
@@ -45,7 +45,7 @@ def export_all(connection, inspector, schema, output_dir, tables=None, file_form
 
     for table in tables:
         output_file = open(os.path.join(output_dir, table + '.csv'), 'wb')
-        copy_sql = 'COPY %s TO STDOUT WITH %s' % (table, file_format)
+        copy_sql = 'COPY %s TO STDOUT WITH (%s)' % (table, file_format)
         cursor.copy_expert(copy_sql, output_file)
 
     connection.commit()
@@ -100,7 +100,7 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def import_new(inspector, cursor, schema, dest_table, input_file, file_format="CSV HEADER"):
+def import_new(inspector, cursor, schema, dest_table, input_file, file_format="FORMAT CSV, HEADER"):
     """
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
@@ -118,7 +118,7 @@ def import_new(inspector, cursor, schema, dest_table, input_file, file_format="C
     create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, dest_table)
     cursor.execute(create_sql)
     # Import data into temporary table
-    copy_sql = 'COPY %s FROM STDOUT WITH %s' % (temp_table_name, file_format)
+    copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (temp_table_name, file_format)
     cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
@@ -221,7 +221,7 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
-def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="CSV HEADER",
+def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="FORMAT CSV, HEADER",
                    suspend_foreign_keys=False):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
