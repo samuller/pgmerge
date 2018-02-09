@@ -6,25 +6,13 @@ import logging
 import getpass
 from . import db_graph
 from .db_config import *
+from appdirs import user_log_dir
+from .utils import NoExceptionFormatter
 from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
-from appdirs import user_log_dir
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
-
-
-class NoExceptionFormatter(logging.Formatter):
-    """
-    Formatter to specifically remove any exception traceback from logging output.
-    See: https://stackoverflow.com/questions/6177520/python-logging-exc-info-only-for-file-handler
-    """
-    def format(self, record):
-        record.exc_text = '' # ensure formatException gets called
-        return super(NoExceptionFormatter, self).format(record)
-
-    def formatException(self, record):
-        return ''
 
 
 def setup_logging():
@@ -359,6 +347,7 @@ def process_args_and_run(dbname, host, port, username, password, schema,
             import_all_new(conn, inspector, schema, import_files, dest_tables,
                            suspend_foreign_keys=disable_foreign_keys)
         )
+
 
 @click.command(context_settings=dict(max_content_width=120))
 @click.option('--dbname', '-d', help='database name to connect to', required=True)

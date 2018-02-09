@@ -1,5 +1,21 @@
 import os
+import logging
 import collections
+
+
+class NoExceptionFormatter(logging.Formatter):
+    """
+    Formatter to specifically remove any exception traceback from logging output.
+    See: https://stackoverflow.com/questions/6177520/python-logging-exc-info-only-for-file-handler
+    """
+    def format(self, record):
+        # Clear cached exception message
+        record.exc_text = ''
+        return super(NoExceptionFormatter, self).format(record)
+
+    def formatException(self, record):
+        return ''
+
 
 def recursive_update_ignore_none(any_dict, update_dict):
     """
