@@ -14,6 +14,19 @@ APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 
+class NoExceptionFormatter(logging.Formatter):
+    """
+    Formatter to specifically remove any exception traceback from logging output.
+    See: https://stackoverflow.com/questions/6177520/python-logging-exc-info-only-for-file-handler
+    """
+    def format(self, record):
+        record.exc_text = '' # ensure formatException gets called
+        return super(NoExceptionFormatter, self).format(record)
+
+    def formatException(self, record):
+        return ''
+
+
 def setup_logging():
     log_dir = os.path.dirname(LOG_FILE)
     if not os.path.exists(log_dir):
@@ -29,7 +42,7 @@ def setup_logging():
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(
-        logging.Formatter("%(levelname)s: %(message)s"))
+        NoExceptionFormatter("%(levelname)s: %(message)s"))
     stream_handler.setLevel(logging.WARN)
 
     logging.basicConfig(handlers=[file_handler, stream_handler])
@@ -290,32 +303,8 @@ def run_in_session(engine, func):
         conn.close()
 
 
-@click.command(context_settings=dict(max_content_width=120))
-@click.option('--dbname', '-d', help='database name to connect to', required=True)
-@click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
-@click.option('--port', '-p', help='database server port', default='5432', show_default=True)
-@click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
-@click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
-@click.option('--password', '-W', hide_input=True, prompt=False, default=None,
-              help='database password (default is to prompt for password or read config)')
-# @click.option('--config', '-c', help='config file')
-@click.option('--include-dependent-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
-              'all tables that depend on those tables due to foreign key constraints')
-@click.option('--disable-foreign-keys', '-f', is_flag=True,
-              help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
-                   'requires superuser rights)')
-@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
-@click.argument('directory', default='tmp', nargs=1)
-@click.argument('tables', default=None, nargs=-1)
-@click.version_option(version='0.9.0')
-def main(dbname, host, port, username, password, schema,
-         export, directory, tables, disable_foreign_keys, include_dependent_tables):
-    """
-    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
-    If one or more tables are specified then only they will be used, otherwise all tables found will be selected.
-    """
-    setup_logging()
-
+def process_args_and_run(dbname, host, port, username, password, schema,
+                         export, directory, tables, disable_foreign_keys, include_dependent_tables):
     config_db_user = {'host': host, 'port': port, 'username': username, 'password': password}
     config_db = load_config_for_db(APP_NAME, dbname, config_db_user)
     if config_db is None:
@@ -361,6 +350,37 @@ def main(dbname, host, port, username, password, schema,
             import_all_new(conn, inspector, schema, import_files, dest_tables,
                            suspend_foreign_keys=disable_foreign_keys)
         )
+
+@click.command(context_settings=dict(max_content_width=120))
+@click.option('--dbname', '-d', help='database name to connect to', required=True)
+@click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
+@click.option('--port', '-p', help='database server port', default='5432', show_default=True)
+@click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
+@click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
+@click.option('--password', '-W', hide_input=True, prompt=False, default=None,
+              help='database password (default is to prompt for password or read config)')
+# @click.option('--config', '-c', help='config file')
+@click.option('--include-dependent-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
+              'all tables that depend on those tables due to foreign key constraints')
+@click.option('--disable-foreign-keys', '-f', is_flag=True,
+              help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
+                   'requires superuser rights)')
+@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
+@click.argument('directory', default='tmp', nargs=1)
+@click.argument('tables', default=None, nargs=-1)
+@click.version_option(version='0.9.0')
+def main(dbname, host, port, username, password, schema,
+         export, directory, tables, disable_foreign_keys, include_dependent_tables):
+    """
+    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
+    If one or more tables are specified then only they will be used, otherwise all tables found will be selected.
+    """
+    setup_logging()
+    try:
+        process_args_and_run(dbname, host, port, username, password, schema,
+                             export, directory, tables, disable_foreign_keys, include_dependent_tables)
+    except Exception as e:
+        logging.exception(e)
 
 
 if __name__ == "__main__":
