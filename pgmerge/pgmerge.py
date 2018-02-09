@@ -19,7 +19,10 @@ def setup_logging():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=1024*1024, backupCount=0, encoding=None, delay=0)
+    max_total_size = 1024*1024
+    file_count = 2
+    file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size/file_count,
+                                       backupCount=file_count - 1, encoding=None, delay=0)
     file_handler.setFormatter(
         logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
     file_handler.setLevel(logging.DEBUG)
