@@ -320,6 +320,15 @@ def process_args_and_run(dbname, host, port, username, password, schema,
 
     if len(tables) == 0:
         tables = None
+    else:
+        # Check tables exist in database
+        all_tables = set(inspector.get_table_names(schema))
+        unknown_tables = set(tables) - all_tables
+        if len(unknown_tables) > 0:
+            print("Unknown tables (not found in database):")
+            print("\t" + "\n\t".join(unknown_tables))
+            return
+
 
     if include_dependent_tables:
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
@@ -330,7 +339,7 @@ def process_args_and_run(dbname, host, port, username, password, schema,
             export_all(conn, inspector, schema, directory, tables)
         )
     else:
-        # Determine tables based no files in directory
+        # Determine tables based on files in directory
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
         import_files = [f for f in all_files if re.match(r".*\.csv", f)]
         dest_tables = [f[:-4] for f in import_files]
