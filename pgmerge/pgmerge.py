@@ -291,8 +291,12 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def process_args_and_run(dbname, host, port, username, password, schema,
-                         export, directory, tables, disable_foreign_keys, include_dependent_tables):
+def combine_db_configs_to_get_url(dbname, host, port, username, password):
+    """
+    Combine command-line parameters with default config and request password if not yet provided.
+
+    Command-line parameters take priority over defaults in config file.
+    """
     config_db_user = {'host': host, 'port': port, 'username': username, 'password': password}
     config_db = load_config_for_db(APP_NAME, dbname, config_db_user)
     if config_db is None:
@@ -301,6 +305,12 @@ def process_args_and_run(dbname, host, port, username, password, schema,
         config_db['password'] = getpass.getpass()
 
     url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
+    return url
+
+
+def process_args_and_run(dbname, host, port, username, password, schema,
+                         export, directory, tables, disable_foreign_keys, include_dependent_tables):
+    url = combine_db_configs_to_get_url(dbname, host, port, username, password)
     engine = create_engine(url)
     inspector = inspect(engine)
     if schema is None:
