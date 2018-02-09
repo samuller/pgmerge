@@ -306,6 +306,10 @@ def process_args_and_run(dbname, host, port, username, password, schema,
     if schema is None:
         schema = inspector.default_schema_name
 
+    if not os.path.exists(directory):
+        print("Directory not found: '{}'".format(directory))
+        return
+
     if len(tables) == 0:
         tables = None
     else:
