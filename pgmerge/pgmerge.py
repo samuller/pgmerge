@@ -157,10 +157,8 @@ def combine_db_configs_to_get_url(dbname, host, port, username, password):
     return url
 
 
-def process_args_and_run(dbname, host, port, username, password, schema,
-                         export, directory, tables, disable_foreign_keys, include_dependent_tables):
-    url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-    engine = create_engine(url)
+def process_args_and_run(db_url, schema, export, directory, tables, disable_foreign_keys, include_dependent_tables):
+    engine = create_engine(db_url)
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
@@ -246,8 +244,8 @@ def main(dbname, host, port, username, password, schema,
     """
     setup_logging()
     try:
-        process_args_and_run(dbname, host, port, username, password, schema,
-                             export, directory, tables, disable_foreign_keys, include_dependent_tables)
+        url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        process_args_and_run(url, schema, export, directory, tables, disable_foreign_keys, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
 
