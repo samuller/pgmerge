@@ -1,6 +1,14 @@
 # pgmerge - PostgreSQL data import and merge utility
 
-    Usage: pgmerge.py [OPTIONS] [DIRECTORY] [TABLES]...
+This utility will read CSV files, one per table, and *merge* it into a database. This means that it will:
+
+* Import rows that don't yet exist.
+* Update rows that are already found in the database.
+* Ignore unchanged or missing rows.
+
+This allows you to move data between active/in-use databases to keep them up to date and in sync, although it does not handle removals.
+
+    Usage: pgmerge [OPTIONS] [DIRECTORY] [TABLES]...
 
     Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
     If one or more tables are specified then only they will be used and any data for other tables
