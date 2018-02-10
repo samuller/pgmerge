@@ -1,6 +1,6 @@
-# pgmerge - PostgreSQL data import and merge utility
+# pgmerge - a PostgreSQL data import and merge utility
 
-This utility will read CSV files, one per table, and *merge* its rows into a database. This means that it will:
+This utility will read CSV files and *merge* each CSV's rows into a table of a PostgreSQL database. The merge process means that it will:
 
 * Import rows that don't yet exist.
 * Update rows that are already found in the database.
