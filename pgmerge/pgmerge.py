@@ -217,7 +217,7 @@ def process_args_and_run(db_url, schema, do_export, directory, tables, disable_f
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
-            db_export.export_all(conn, inspector, schema, directory, tables)
+            db_export.export_all(conn, schema, directory, tables)
         )
     else:
         # Determine tables based on files in directory
