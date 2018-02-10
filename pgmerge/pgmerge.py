@@ -16,24 +16,24 @@ LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 # Shared command line options for connecting to a database
 db_connect_options = [
-    click.option('--dbname', '-d', help='database name to connect to', required=True),
-    click.option('--host', '-h', help='database server host or socket directory',
+    click.option('--dbname', '-d', help='Database name to connect to.', required=True),
+    click.option('--host', '-h', help='Database server host or socket directory.',
                  default='localhost', show_default=True),
-    click.option('--port', '-p', help='database server port', default='5432', show_default=True),
-    click.option('--username', '-U', help='database user name',
+    click.option('--port', '-p', help='Database server port.', default='5432', show_default=True),
+    click.option('--username', '-U', help='Database user name.',
                  default=lambda: os.environ.get('USER', default='postgres')),
-    click.option('--schema', '-s', default="public", help='database schema to use',
+    click.option('--schema', '-s', default="public", help='Database schema to use.',
                  show_default=True),
     click.option('--password', '-W', hide_input=True, prompt=False, default=None,
-                 help='database password (default is to prompt for password or read config)')
+                 help='Database password (default is to prompt for password or read config).')
 ]
 
 # Shared command line arguments for importing/exporting tables to a directory
 dir_tables_arguments = [
     click.option(
         '--include-dependent-tables', '-i', is_flag=True,
-        help='when selecting specific tables, also include ' +
-             'all tables that depend on those tables due to foreign key constraints'),
+        help='When selecting specific tables, also include ' +
+             'all tables that depend on those tables due to foreign key constraints.'),
     click.argument('directory', default='tmp', nargs=1),
     click.argument('tables', default=None, nargs=-1)
 ]
@@ -274,8 +274,8 @@ def export(dbname, host, port, username, password, schema,
 @main.command(name="import")
 @decorate(db_connect_options)
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
-              help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
-                   'requires superuser rights)')
+              help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
+                   'requires superuser rights).')
 @decorate(dir_tables_arguments)
 def upsert(dbname, host, port, username, password, schema,
            include_dependent_tables, disable_foreign_keys,
