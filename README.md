@@ -21,6 +21,7 @@ These features allow you to move data between active/in-use databases to keep th
     Commands:
     export  Export each table to a CSV file.
     import  Import/merge each CSV file into a table.
+    inspect  Inspect database schema in various ways.
 
 Import:
 
