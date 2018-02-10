@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-import os
-import click
-import db_graph
 import networkx as nx
+from . import db_graph
 from sqlalchemy import create_engine, inspect
 
 found_config = True
@@ -112,41 +110,10 @@ def transferability(inspector, schema):
     # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, knowledge), name='knowledge')
 
 
-@click.command(context_settings=dict(max_content_width=120))
-@click.option('--engine', '-e', help='database engine (default: postgresql)', default='postgresql')
-@click.option('--dbname', '-d', help='database name to connect to', required=True)
-@click.option('--host', '-h', help='database server host or socket directory', default='localhost')
-@click.option('--port', '-p', help='database server port', default='5432')
-@click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
-@click.option('--schema', '-s', default="public", help='database schema to use (default: public)')
-@click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
-@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
-@click.option('--table-details', '-td', is_flag=True,
-              help="Output all tables along with column and foreign key information")
-@click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
-@click.option('--insert-order', '-i', is_flag=True,
-              help='Output the insertion order of tables based on the foreign-key dependency graph. ' +
-              'This can be used by importer scripts if there are no circular dependency issues.')
-@click.option('--partition', '-pt', is_flag=True,
-              help='Partition and list sub-graphs of foreign-key dependency graph')
-@click.option('--export-graph', '-x', is_flag=True,
-              help='Output dot format description of foreign-key dependency graph.' +
-                   ' To use graphviz to generate a PDF from this format, pipe the output to:' +
-                   ' dot -Tpdf > graph.pdf')
-@click.option('--transferable', '-tf', is_flag=True, help='Output info related to table transfers')
-# Either type password or avoid manual input with config file
-@click.option('--password', '-W', hide_input=True, prompt=not found_config,
-              default=config.DB_PASSWORD if found_config else None,
-              help='database password (default is to prompt for password or read config)')
-@click.version_option(version='0.5.0')
-def main(engine, dbname, host, port, username, password, schema,
+def main(engine, schema,
          warnings, list_tables, table_details, partition,
          cycles, insert_order, export_graph, transferable):
 
-    url = "%s://%s:%s@%s:%s/%s" % (engine, username, password, host, port, dbname)
-    engine = create_engine(url)
-    if engine is None:
-        return
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
@@ -190,7 +157,3 @@ def main(engine, dbname, host, port, username, password, schema,
         print_insertion_order(table_graph)
     if export_graph:
         graph_export_to_dot_file(table_graph)
-
-
-if __name__ == "__main__":
-    main()

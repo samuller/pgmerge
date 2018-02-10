@@ -4,12 +4,12 @@ import re
 import click
 import logging
 import getpass
+import sqlalchemy
 from .utils import *
 from .db_config import *
 from appdirs import user_log_dir
-from . import db_graph, db_import, db_export
-from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
+from . import db_graph, db_import, db_export, db_inspect
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
@@ -164,25 +164,26 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def combine_db_configs_to_get_url(dbname, host, port, username, password):
+def combine_db_configs_to_get_url(dbname, host, port, username, password, type="postgresql"):
     """
     Combine command-line parameters with default config and request password if not yet provided.
 
     Command-line parameters take priority over defaults in config file.
     """
-    config_db_user = {'host': host, 'port': port, 'username': username, 'password': password}
+    config_db_user = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
     config_db = load_config_for_db(APP_NAME, dbname, config_db_user)
     if config_db is None:
         return
     if config_db['password'] is None:
         config_db['password'] = getpass.getpass()
 
-    url = "postgresql://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
+    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
     return url
 
 
 def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
-    inspector = inspect(engine)
+    inspector = sqlalchemy.inspect(engine)
+
     if schema is None:
         schema = inspector.default_schema_name
 
@@ -265,7 +266,7 @@ def export(dbname, host, port, username, password, schema,
     """
     try:
         db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-        engine = create_engine(db_url)
+        engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, True, directory, tables, False, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
@@ -289,8 +290,45 @@ def upsert(dbname, host, port, username, password, schema,
     """
     try:
         db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-        engine = create_engine(db_url)
+        engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
+    except Exception as e:
+        logging.exception(e)
+
+
+@main.command(context_settings=dict(max_content_width=120))
+@click.option('--engine', '-e', help='database engine (default: postgresql)', default='postgresql')
+@decorate(db_connect_options)
+@click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
+@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
+@click.option('--table-details', '-td', is_flag=True,
+              help="Output all tables along with column and foreign key information")
+@click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
+@click.option('--insert-order', '-i', is_flag=True,
+              help='Output the insertion order of tables based on the foreign-key dependency graph. ' +
+                   'This can be used by importer scripts if there are no circular dependency issues.')
+@click.option('--partition', '-pt', is_flag=True,
+              help='Partition and list sub-graphs of foreign-key dependency graph')
+@click.option('--export-graph', '-x', is_flag=True,
+              help='Output dot format description of foreign-key dependency graph.' +
+                   ' To use graphviz to generate a PDF from this format, pipe the output to:' +
+                   ' dot -Tpdf > graph.pdf')
+@click.option('--transferable', '-tf', is_flag=True, help='Output info related to table transfers')
+def inspect(engine, dbname, host, port, username, password, schema,
+            warnings, list_tables, table_details, partition,
+            cycles, insert_order, export_graph, transferable):
+    """
+    Inspect database schema in various ways.
+
+    Defaults to PostgreSQL but should support multiple database engines thanks to SQLAlchemy (see:
+    http://docs.sqlalchemy.org/en/latest/dialects/).
+    """
+    try:
+        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password, type=engine)
+        engine = sqlalchemy.create_engine(db_url)
+        db_inspect.main(engine, schema,
+                        warnings, list_tables, table_details, partition,
+                        cycles, insert_order, export_graph, transferable)
     except Exception as e:
         logging.exception(e)
 
