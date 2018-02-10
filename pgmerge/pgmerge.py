@@ -181,8 +181,7 @@ def combine_db_configs_to_get_url(dbname, host, port, username, password):
     return url
 
 
-def process_args_and_run(db_url, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
-    engine = create_engine(db_url)
+def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name
@@ -265,8 +264,9 @@ def export(dbname, host, port, username, password, schema,
     will all be exported into the given directory (default: 'tmp').
     """
     try:
-        url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-        process_args_and_run(url, schema, True, directory, tables, False, include_dependent_tables)
+        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        engine = create_engine(db_url)
+        process_args_and_run(engine, schema, True, directory, tables, False, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
 
@@ -288,8 +288,9 @@ def upsert(dbname, host, port, username, password, schema,
     found will be selected.
     """
     try:
-        url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-        process_args_and_run(url, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
+        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        engine = create_engine(db_url)
+        process_args_and_run(engine, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
 
