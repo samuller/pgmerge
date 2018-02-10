@@ -8,25 +8,40 @@ This utility will read CSV files, one per table, and *merge* it into a database.
 
 This allows you to move data between active/in-use databases to keep them up to date and in sync, although it does not handle removals.
 
-    Usage: pgmerge [OPTIONS] [DIRECTORY] [TABLES]...
 
-    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
-    If one or more tables are specified then only they will be used and any data for other tables
-    will be ignored.
+    Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
+
+    Merges data in CSV files into a Postgresql database.
 
     Options:
-    -d, --dbname TEXT               database name to connect to  [required]
-    -h, --host TEXT                 database server host or socket directory  [default: localhost]
-    -p, --port TEXT                 database server port  [default: 5432]
-    -U, --username TEXT             database user name
-    -s, --schema TEXT               database schema to use  [default: public]
-    -W, --password TEXT             database password (default is to prompt for password or read config)
-    -i, --include-dependent-tables  when selecting specific tables, also include all tables that depend on those
-                                    tables due to foreign key constraints
-    -f, --disable-foreign-keys      disable foreign key constraint checking during import (necessary if you have
-                                    cycles, but requires superuser rights)
-    -e, --export                    instead of import/merge, export all tables to directory
-    --version                       Show the version and exit.
+    --version  Show the version and exit.
+    --help     Show this message and exit.
+
+    Commands:
+    export  Export each table to a CSV file.
+    import  Import/merge each CSV file into a table.
+
+Import:
+
+    Usage: pgmerge import [OPTIONS] [DIRECTORY] [TABLES]...
+
+    Import/merge each CSV file into a table.
+
+    All CSV files need the same name as their matching table and have to be located in the given directory
+    (default: 'tmp'). If one or more tables are specified then only they will be used, otherwise all tables found
+    will be selected.
+
+    Options:
+    -d, --dbname TEXT               Database name to connect to.  [required]
+    -h, --host TEXT                 Database server host or socket directory.  [default: localhost]
+    -p, --port TEXT                 Database server port.  [default: 5432]
+    -U, --username TEXT             Database user name.
+    -s, --schema TEXT               Database schema to use.  [default: public]
+    -W, --password TEXT             Database password (default is to prompt for password or read config).
+    -f, --disable-foreign-keys      Disable foreign key constraint checking during import (necessary if you have
+                                    cycles, but requires superuser rights).
+    -i, --include-dependent-tables  When selecting specific tables, also include all tables that depend on those
+                                    tables due to foreign key constraints.
     --help                          Show this message and exit.
 
 ## Installation
