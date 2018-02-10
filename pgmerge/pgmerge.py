@@ -117,7 +117,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     import_pairs = list(zip(import_files, dest_tables))
     import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
     # Stats
-    total_stats = {'skip': 0, 'insert': 0, 'update': 0}
+    total_stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
     error_tables = list(unknown_tables)
 
     if suspend_foreign_keys:
