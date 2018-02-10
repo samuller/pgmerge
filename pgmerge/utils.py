@@ -40,3 +40,17 @@ def ensure_file_exists(file_path):
     # Create file if it doesn't exist, but don't alter it if it does
     with open(file_path, 'a'):
         pass
+
+
+def decorate(decorators):
+    """
+    A decorator function to apply a list of decorators to a function. Useful when sharing a common
+    group of decorators among functions.
+
+    The original use case is with click decorators (see: https://github.com/pallets/click/issues/108)
+    """
+    def func_with_shared_decorators(func):
+        for option in reversed(decorators):
+            func = option(func)
+        return func
+    return func_with_shared_decorators

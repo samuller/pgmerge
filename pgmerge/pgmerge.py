@@ -4,15 +4,39 @@ import re
 import click
 import logging
 import getpass
+from .utils import *
 from .db_config import *
 from appdirs import user_log_dir
-from .utils import NoExceptionFormatter
 from . import db_graph, db_import, db_export
 from sqlalchemy import create_engine, inspect
 from logging.handlers import RotatingFileHandler
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
+
+# Shared command line options for connecting to a database
+db_connect_options = [
+    click.option('--dbname', '-d', help='database name to connect to', required=True),
+    click.option('--host', '-h', help='database server host or socket directory',
+                 default='localhost', show_default=True),
+    click.option('--port', '-p', help='database server port', default='5432', show_default=True),
+    click.option('--username', '-U', help='database user name',
+                 default=lambda: os.environ.get('USER', default='postgres')),
+    click.option('--schema', '-s', default="public", help='database schema to use',
+                 show_default=True),
+    click.option('--password', '-W', hide_input=True, prompt=False, default=None,
+                 help='database password (default is to prompt for password or read config)')
+]
+
+# Shared command line arguments for importing/exporting tables to a directory
+dir_tables_arguments = [
+    click.option(
+        '--include-dependent-tables', '-i', is_flag=True,
+        help='when selecting specific tables, also include ' +
+             'all tables that depend on those tables due to foreign key constraints'),
+    click.argument('directory', default='tmp', nargs=1),
+    click.argument('tables', default=None, nargs=-1)
+]
 
 
 def setup_logging():
@@ -157,7 +181,7 @@ def combine_db_configs_to_get_url(dbname, host, port, username, password):
     return url
 
 
-def process_args_and_run(db_url, schema, export, directory, tables, disable_foreign_keys, include_dependent_tables):
+def process_args_and_run(db_url, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
     engine = create_engine(db_url)
     inspector = inspect(engine)
     if schema is None:
@@ -186,7 +210,7 @@ def process_args_and_run(db_url, schema, export, directory, tables, disable_fore
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
-    if export:
+    if do_export:
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
@@ -218,34 +242,54 @@ def process_args_and_run(db_url, schema, export, directory, tables, disable_fore
         )
 
 
-@click.command(context_settings=dict(max_content_width=120))
-@click.option('--dbname', '-d', help='database name to connect to', required=True)
-@click.option('--host', '-h', help='database server host or socket directory', default='localhost', show_default=True)
-@click.option('--port', '-p', help='database server port', default='5432', show_default=True)
-@click.option('--username', '-U', help='database user name', default=lambda: os.environ.get('USER', 'postgres'))
-@click.option('--schema', '-s', default="public", help='database schema to use',  show_default=True)
-@click.option('--password', '-W', hide_input=True, prompt=False, default=None,
-              help='database password (default is to prompt for password or read config)')
+@click.group(context_settings=dict(max_content_width=120))
 # @click.option('--config', '-c', help='config file')
-@click.option('--include-dependent-tables', '-i', is_flag=True, help='when selecting specific tables, also include ' +
-              'all tables that depend on those tables due to foreign key constraints')
+@click.version_option(version='0.9.0')
+def main():
+    """
+    Merges data in CSV files into a Postgresql database.
+    """
+    setup_logging()
+
+
+@main.command()
+@decorate(db_connect_options)
+@decorate(dir_tables_arguments)
+def export(dbname, host, port, username, password, schema,
+           include_dependent_tables,
+           directory, tables):
+    """
+    Export each table to a CSV file.
+
+    If one or more tables are specified then only they will be used, otherwise all tables found will be selected. They
+    will all be exported into the given directory (default: 'tmp').
+    """
+    try:
+        url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        process_args_and_run(url, schema, True, directory, tables, False, include_dependent_tables)
+    except Exception as e:
+        logging.exception(e)
+
+
+@main.command(name="import")
+@decorate(db_connect_options)
 @click.option('--disable-foreign-keys', '-f', is_flag=True,
               help='disable foreign key constraint checking during import (necessary if you have cycles, but ' +
                    'requires superuser rights)')
-@click.option('--export', '-e', is_flag=True, help='instead of import/merge, export all tables to directory')
-@click.argument('directory', default='tmp', nargs=1)
-@click.argument('tables', default=None, nargs=-1)
-@click.version_option(version='0.9.0')
-def main(dbname, host, port, username, password, schema,
-         export, directory, tables, disable_foreign_keys, include_dependent_tables):
+@decorate(dir_tables_arguments)
+def upsert(dbname, host, port, username, password, schema,
+           include_dependent_tables, disable_foreign_keys,
+           directory, tables):
     """
-    Merges data in CSV files (from the given directory, default: 'tmp') into a Postgresql database.
-    If one or more tables are specified then only they will be used, otherwise all tables found will be selected.
+    Import/merge each CSV file into a table.
+
+    All CSV files need the same name as their matching table and have to be located in the given directory
+    (default: 'tmp'). If one or more tables are specified then only they will be used, otherwise all tables
+    found will be selected.
     """
-    setup_logging()
     try:
         url = combine_db_configs_to_get_url(dbname, host, port, username, password)
-        process_args_and_run(url, schema, export, directory, tables, disable_foreign_keys, include_dependent_tables)
+        process_args_and_run(url, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
 
