@@ -1,13 +1,14 @@
 # pgmerge - PostgreSQL data import and merge utility
 
-This utility will read CSV files, one per table, and *merge* it into a database. This means that it will:
+This utility will read CSV files, one per table, and *merge* its rows into a database. This means that it will:
 
 * Import rows that don't yet exist.
 * Update rows that are already found in the database.
 * Ignore unchanged or missing rows.
 
-This allows you to move data between active/in-use databases to keep them up to date and in sync, although it does not handle removals.
+This tool can also export data in the same format expected for import.
 
+These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling removals.
 
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
 
