@@ -297,7 +297,7 @@ def upsert(dbname, host, port, username, password, schema,
 
 
 @main.command(context_settings=dict(max_content_width=120))
-@click.option('--engine', '-e', help='database engine (default: postgresql)', default='postgresql')
+@click.option('--engine', '-e', help='Database engine.', default='postgresql', show_default=True)
 @decorate(db_connect_options)
 @click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
 @click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
