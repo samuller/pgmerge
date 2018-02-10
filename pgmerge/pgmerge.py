@@ -297,23 +297,23 @@ def upsert(dbname, host, port, username, password, schema,
 
 
 @main.command(context_settings=dict(max_content_width=120))
-@click.option('--engine', '-e', help='Database engine.', default='postgresql', show_default=True)
+@click.option('--engine', '-e', help="Database engine.", default='postgresql', show_default=True)
 @decorate(db_connect_options)
-@click.option('--warnings', '-w', is_flag=True, help='Output any issues detected in database schema')
-@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema")
+@click.option('--warnings', '-w', is_flag=True, help="Output any issues detected in database schema.")
+@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema.")
 @click.option('--table-details', '-td', is_flag=True,
-              help="Output all tables along with column and foreign key information")
-@click.option('--cycles', '-c', is_flag=True, help='Find and list cycles in foreign-key dependency graph')
+              help="Output all tables along with column and foreign key information.")
+@click.option('--cycles', '-c', is_flag=True, help="Find and list cycles in foreign-key dependency graph.")
 @click.option('--insert-order', '-i', is_flag=True,
-              help='Output the insertion order of tables based on the foreign-key dependency graph. ' +
-                   'This can be used by importer scripts if there are no circular dependency issues.')
+              help="Output the insertion order of tables based on the foreign-key dependency graph. " +
+                   "This can be used by importer scripts if there are no circular dependency issues.")
 @click.option('--partition', '-pt', is_flag=True,
-              help='Partition and list sub-graphs of foreign-key dependency graph')
+              help="Partition and list sub-graphs of foreign-key dependency graph.")
 @click.option('--export-graph', '-x', is_flag=True,
-              help='Output dot format description of foreign-key dependency graph.' +
-                   ' To use graphviz to generate a PDF from this format, pipe the output to:' +
-                   ' dot -Tpdf > graph.pdf')
-@click.option('--transferable', '-tf', is_flag=True, help='Output info related to table transfers')
+              help="Output dot format description of foreign-key dependency graph." +
+                   " To use graphviz to generate a PDF from this format, pipe the output to:" +
+                   " dot -Tpdf > graph.pdf")
+@click.option('--transferable', '-tf', is_flag=True, help="Output info related to table transfers.")
 def inspect(engine, dbname, host, port, username, password, schema,
             warnings, list_tables, table_details, partition,
             cycles, insert_order, export_graph, transferable):
