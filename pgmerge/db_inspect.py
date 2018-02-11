@@ -66,8 +66,8 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):
 
 
 def transferability(inspector, schema):
-    operational = []
-    knowledge = []
+    surrogate_key_tables = []
+    natural_key_tables = []
     transformable = []
     pk_contains_fk = []
     tables = sorted(inspector.get_table_names(schema))
@@ -96,18 +96,18 @@ def transferability(inspector, schema):
                 auto_transformable = True
 
         if auto_id and not auto_transformable:
-            operational.append(table)
+            surrogate_key_tables.append(table)
         elif auto_id and auto_transformable:
             transformable.append(table)
         else:
-            knowledge.append(table)
+            natural_key_tables.append(table)
 
-    print("\nOperational:\n", operational)
-    print("\nKnowledge:\n", knowledge)
-    print("\nAuto-transformable to knowledge:\n", transformable)
+    print("\nSurrogate keys:\n", surrogate_key_tables)
+    print("\nNatural keys:\n", natural_key_tables)
+    print("\nAuto-transformable to natural keys:\n", transformable)
     print("\nPK contains FK:\n", pk_contains_fk)
-    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, operational), name='operational')
-    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, knowledge), name='knowledge')
+    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, surrogate_key_tables), name='surrogate_key_tables')
+    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, natural_key_tables), name='natural_key_tables')
 
 
 def main(engine, schema,
