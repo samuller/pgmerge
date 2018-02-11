@@ -2,9 +2,11 @@
 
 This utility will read CSV files and *merge* each CSV's rows into a table of a PostgreSQL database. The merge process means that it will:
 
-* Import rows that don't yet exist.
-* Update rows that are already found in the database.
+* Import rows whose primary key doesn't yet exist.
+* Update row values when the primary key already exists.
 * Ignore unchanged or missing rows.
+
+This is also called an *upsert* operation as it performs either an update or an insert.
 
 This tool can also export data in the same format expected for import.
 
@@ -37,7 +39,7 @@ Import:
     -d, --dbname TEXT               Database name to connect to.  [required]
     -h, --host TEXT                 Database server host or socket directory.  [default: localhost]
     -p, --port TEXT                 Database server port.  [default: 5432]
-    -U, --username TEXT             Database user name.
+    -U, --username TEXT             Database user name.  [default: postgres]
     -s, --schema TEXT               Database schema to use.  [default: public]
     -W, --password TEXT             Database password (default is to prompt for password or read config).
     -f, --disable-foreign-keys      Disable foreign key constraint checking during import (necessary if you have
