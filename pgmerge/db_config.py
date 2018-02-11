@@ -1,5 +1,6 @@
 import os
 import yaml
+import getpass
 from .utils import *
 from rxjson import Rx
 from appdirs import user_config_dir, user_log_dir
@@ -40,3 +41,20 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
     if priority_config_for_db is not None:
         recursive_update_ignore_none(final_config[dbname], priority_config_for_db)
     return final_config[dbname]
+
+
+def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username, password, type="postgresql"):
+    """
+    Combine command-line parameters with default config to get database connnection URL.
+
+    Command-line parameters take priority over defaults in config file. Will request password if not yet provided.
+    """
+    config_db_user = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
+    config_db = load_config_for_db(appname, dbname, config_db_user)
+    if config_db is None:
+        return
+    if config_db['password'] is None:
+        config_db['password'] = getpass.getpass()
+
+    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
+    return url

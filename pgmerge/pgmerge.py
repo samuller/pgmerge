@@ -3,7 +3,6 @@ import os
 import re
 import click
 import logging
-import getpass
 import sqlalchemy
 from .utils import *
 from .db_config import *
@@ -164,23 +163,6 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def combine_db_configs_to_get_url(dbname, host, port, username, password, type="postgresql"):
-    """
-    Combine command-line parameters with default config and request password if not yet provided.
-
-    Command-line parameters take priority over defaults in config file.
-    """
-    config_db_user = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
-    config_db = load_config_for_db(APP_NAME, dbname, config_db_user)
-    if config_db is None:
-        return
-    if config_db['password'] is None:
-        config_db['password'] = getpass.getpass()
-
-    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
-    return url
-
-
 def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
     inspector = sqlalchemy.inspect(engine)
 
@@ -265,7 +247,7 @@ def export(dbname, host, port, username, password, schema,
     will all be exported into the given directory (default: 'tmp').
     """
     try:
-        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, True, directory, tables, False, include_dependent_tables)
     except Exception as e:
@@ -289,7 +271,7 @@ def upsert(dbname, host, port, username, password, schema,
     found will be selected.
     """
     try:
-        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password)
+        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
     except Exception as e:
@@ -324,7 +306,7 @@ def inspect(engine, dbname, host, port, username, password, schema,
     http://docs.sqlalchemy.org/en/latest/dialects/).
     """
     try:
-        db_url = combine_db_configs_to_get_url(dbname, host, port, username, password, type=engine)
+        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password, type=engine)
         engine = sqlalchemy.create_engine(db_url)
         db_inspect.main(engine, schema,
                         warnings, list_tables, table_details, partition,
