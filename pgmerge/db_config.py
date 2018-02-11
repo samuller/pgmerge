@@ -3,7 +3,7 @@ import yaml
 import getpass
 from .utils import *
 from rxjson import Rx
-from appdirs import user_config_dir, user_log_dir
+from appdirs import user_config_dir
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
 DB_CONFIG_FILE = "db_config.yml"
