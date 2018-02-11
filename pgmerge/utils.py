@@ -54,3 +54,7 @@ def decorate(decorators):
             func = option(func)
         return func
     return func_with_shared_decorators
+
+
+def is_windows():
+    return os.name == 'nt'

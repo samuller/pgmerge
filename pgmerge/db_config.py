@@ -3,10 +3,12 @@ import yaml
 import getpass
 from .utils import *
 from rxjson import Rx
+from .pg_pass import *
 from appdirs import user_config_dir
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
 DB_CONFIG_FILE = "db_config.yml"
+PGPASS_FILE = ".pgpass"
 
 
 def load_config_for_db(appname, dbname, priority_config_for_db=None):
@@ -45,7 +47,7 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
 
 def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username, password, type="postgresql"):
     """
-    Combine command-line parameters with default config to get database connnection URL.
+    Combine command-line parameters with default config to get database connection URL.
 
     Command-line parameters take priority over defaults in config file. Will request password if not yet provided.
     """
@@ -54,7 +56,15 @@ def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username,
     if config_db is None:
         return
     if config_db['password'] is None:
-        config_db['password'] = getpass.getpass("Password for {}: ".format(config_db['username']))
+        pgpass_path = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
+        if not os.path.isfile(pgpass_path):
+            pgpass_path = None
+        pgpass = load_pgpass(config_db['host'], config_db['port'], dbname, config_db['username'],
+                             pgpass_path=pgpass_path)
+        if pgpass is None:
+            config_db['password'] = getpass.getpass("Password for {}: ".format(config_db['username']))
+        else:
+            config_db['password'] = pgpass
 
     url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
     return url
