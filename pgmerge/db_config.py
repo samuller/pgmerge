@@ -54,7 +54,7 @@ def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username,
     if config_db is None:
         return
     if config_db['password'] is None:
-        config_db['password'] = getpass.getpass()
+        config_db['password'] = getpass.getpass("Password for {}: ".format(config_db['username']))
 
     url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
     return url
