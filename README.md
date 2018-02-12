@@ -50,6 +50,8 @@ Import:
 
 ## Installation
 
+> WARNING: Note that in no way is the reliability of this tool guaranteed and any loss or corruption of data is not the liability of the author.
+
 With `Python 3` installed on your system, you can run:
 
     pip install git+https://github.com/samuller/pgmerge
