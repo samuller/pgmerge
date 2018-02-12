@@ -31,8 +31,9 @@ These features allow you to move data between active/in-use databases to keep th
 
     Import/merge each CSV file into a table.
 
-    All CSV files need the same name as their matching table and have to be located in the given directory. If one
-    or more tables are specified then only they will be used, otherwise all tables found will be selected.
+    All CSV files need the same name as their matching table and have to be located in the given directory.
+    If one or more tables are specified then only they will be used, otherwise all tables found will
+    be selected.
 
     Options:
     -d, --dbname TEXT               Database name to connect to.  [required]
