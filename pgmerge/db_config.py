@@ -1,10 +1,13 @@
 import os
 import yaml
+import logging
 import getpass
 from .utils import *
 from rxjson import Rx
 from .pg_pass import *
 from appdirs import user_config_dir
+
+log = logging.getLogger(__name__)
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
 DB_CONFIG_FILE = "db_config.yml"

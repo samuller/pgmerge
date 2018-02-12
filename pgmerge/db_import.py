@@ -1,3 +1,6 @@
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def get_unique_columns(inspector, table, schema):

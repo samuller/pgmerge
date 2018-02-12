@@ -1,5 +1,7 @@
 import os
+import logging
 
+log = logging.getLogger(__name__)
 
 def export_all(connection, schema, output_dir, tables=None, file_format="FORMAT CSV, HEADER"):
     cursor = connection.cursor()

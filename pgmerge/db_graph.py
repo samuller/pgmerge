@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+import logging
 import networkx as nx
+
+log = logging.getLogger(__name__)
 
 
 def get_simple_cycles(graph):

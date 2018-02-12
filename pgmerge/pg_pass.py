@@ -1,5 +1,8 @@
 import os
+import logging
 from .utils import is_windows
+
+log = logging.getLogger(__name__)
 
 # A string that is hopefully unused in hostnames, ports, databases, usernames or passwords
 COLON_REPLACE_STRING = "<|\t COLON \t|>"  # string can't contain a colon or escaped backslash

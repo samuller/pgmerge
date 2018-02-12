@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+import logging
 import networkx as nx
 from . import db_graph
 from sqlalchemy import create_engine, inspect
+
+log = logging.getLogger(__name__)
 
 found_config = True
 try:
