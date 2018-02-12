@@ -60,7 +60,7 @@ You can uninstall at any time with:
 If you have trouble installing and you're running a Debian-based Linux that uses Python2 as it's system default, then you might need to run:
 
     sudo apt install python3-pip python3-setuptools
-    sudo pip3 install git+https://github.com/samuller/pgmerge
+    sudo -H pip3 install git+https://github.com/samuller/pgmerge
 
 
 
