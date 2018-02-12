@@ -32,7 +32,7 @@ dir_tables_arguments = [
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
              'all tables that depend on those tables due to foreign key constraints.'),
-    click.argument('directory', default='tmp', nargs=1),
+    click.argument('directory', nargs=1),
     click.argument('tables', default=None, nargs=-1)
 ]
 
@@ -243,7 +243,7 @@ def export(dbname, host, port, username, password, schema,
     Export each table to a CSV file.
 
     If one or more tables are specified then only they will be used, otherwise all tables found will be selected. They
-    will all be exported into the given directory (default: 'tmp').
+    will all be exported into the given directory.
     """
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
@@ -265,8 +265,8 @@ def upsert(dbname, host, port, username, password, schema,
     """
     Import/merge each CSV file into a table.
 
-    All CSV files need the same name as their matching table and have to be located in the given directory
-    (default: 'tmp'). If one or more tables are specified then only they will be used, otherwise all tables
+    All CSV files need the same name as their matching table and have to be located in the given directory.
+    If one or more tables are specified then only they will be used, otherwise all tables
     found will be selected.
     """
     try:
