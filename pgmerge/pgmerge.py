@@ -205,6 +205,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
         run_in_session(engine, lambda conn:
             db_export.export_all(conn, schema, directory, tables)
         )
+        print("Exported {} tables".format(len(tables)))
     else:
         # Determine tables based on files in directory
         all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
