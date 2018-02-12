@@ -10,7 +10,7 @@ This is also called an *upsert* operation as it performs either an update or an 
 
 This tool can also export data in the same format expected for import.
 
-These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling removals.
+These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling deleted data.
 
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
 
@@ -25,7 +25,7 @@ These features allow you to move data between active/in-use databases to keep th
     import  Import/merge each CSV file into a table.
     inspect  Inspect database schema in various ways.
 
-Import:
+### Import
 
     Usage: pgmerge import [OPTIONS] [DIRECTORY] [TABLES]...
 
