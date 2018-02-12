@@ -43,7 +43,8 @@ def load_pgpass(hostname, port, database, username, pgpass_path=None):
             # "The password field from the first line that matches the current connection parameters will be used."
             if not line_matches(fields):
                 continue
-            return fields[4]
+            # Remove any trailing newlines
+            return fields[4].splitlines()[0]
 
     return None
 
