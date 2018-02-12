@@ -173,7 +173,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
     if schema is None:
         schema = inspector.default_schema_name
 
-    if not os.path.exists(directory):
+    if not os.path.isdir(directory):
         print("Directory not found: '{}'".format(directory))
         return
 
