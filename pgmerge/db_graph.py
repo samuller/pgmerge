@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+pgmerge - a PostgreSQL data import and merge utility
+
+Copyright 2018 Simon Muller (samullers@gmail.com)
+"""
 import logging
 import networkx as nx
 
