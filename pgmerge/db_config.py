@@ -21,10 +21,14 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
     """
     # Load YAML defining schema for validation of default config
     schema_path = SCHEMA_FILE
-    with open(schema_path, 'r') as config_file:
-        schema_config = yaml.safe_load(config_file)
-        rx = Rx.Factory({"register_core_types": True})
-        schema = rx.make_schema(schema_config)
+    schema = None
+    if os.path.isfile(schema_path):
+        with open(schema_path, 'r') as config_file:
+            schema_config = yaml.safe_load(config_file)
+            rx = Rx.Factory({"register_core_types": True})
+            schema = rx.make_schema(schema_config)
+    else:
+        log.warning('Schema file missing (re-install recommended): {}'.format(schema_path))
 
     # Load default config
     config_path = os.path.join(user_config_dir(appname, appauthor=False), DB_CONFIG_FILE)
@@ -33,7 +37,7 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
         yaml_config = yaml.safe_load(config_file)
 
     # Validate config if it's not empty
-    if yaml_config is not None and not schema.check(yaml_config):
+    if yaml_config is not None and schema is not None and not schema.check(yaml_config):
         print("Default config is invalid: '%s'" % (config_path,))
         return None
 
