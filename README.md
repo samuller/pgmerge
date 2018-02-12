@@ -50,14 +50,19 @@ Import:
 
 ## Installation
 
+With `Python 3` installed on your system, you can run:
+
     pip install git+https://github.com/samuller/pgmerge
+
+To test that installation worked, run:
+
     pgmerge --help
 
 You can uninstall at any time with:
 
     pip uninstall pgmerge
 
-If you have trouble installing and you're running a Debian-based Linux that uses Python2 as it's system default, then you might need to run:
+If you have trouble installing and you're running a Debian-based Linux that uses `Python 2` as its system default, then you might need to run:
 
     sudo apt install python3-pip python3-setuptools
     sudo -H pip3 install git+https://github.com/samuller/pgmerge
