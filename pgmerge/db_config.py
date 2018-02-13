@@ -33,7 +33,7 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
             rx = Rx.Factory({"register_core_types": True})
             schema = rx.make_schema(schema_config)
     else:
-        log.warning('Schema file missing (re-install recommended): {}'.format(schema_path))
+        log.debug('Schema file missing (re-install recommended): {}'.format(schema_path))
 
     # Load default config
     config_path = os.path.join(user_config_dir(appname, appauthor=False), DB_CONFIG_FILE)
