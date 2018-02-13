@@ -78,5 +78,5 @@ def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username,
         else:
             config_db['password'] = pgpass
 
-    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db, dbname=dbname)
+    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(dbname=dbname, **config_db)
     return url
