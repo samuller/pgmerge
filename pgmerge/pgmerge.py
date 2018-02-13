@@ -67,7 +67,7 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
     def print_message(msg):
         print(msg)
         print()
-        print("See --help regarding the --disable-foreign-keys option.")
+        print("Import will require the --disable-foreign-keys option.")
 
     simple_cycles = db_graph.get_cycles(table_graph)
 
