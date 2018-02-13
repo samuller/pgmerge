@@ -8,6 +8,15 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def log_sql(sql):
+    log.debug('SQL: {}'.format(sql))
+
+
+def exec_sql(cursor, sql):
+    log_sql(sql)
+    cursor.execute(sql)
+
+
 def get_unique_columns(inspector, table, schema):
     """
     If the combination of primary key and unique constraints is used to identify a row, then you'll miss rows where
@@ -73,32 +82,33 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format="FO
     input_file = open(input_file, 'r')
     # Create temporary table with same columns and types as target table
     create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, dest_table)
-    cursor.execute(create_sql)
+    exec_sql(cursor, create_sql)
     # Import data into temporary table
     copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (temp_table_name, file_format)
+    log_sql(copy_sql)
     cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
     # Delete rows in temp table that are already identical to those in destination table
-    cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
     stats['skip'] = cursor.rowcount
 
     # Insert rows from temp table that are not in destination table (according to id columns)
-    cursor.execute(sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
+    exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
     stats['insert'] = cursor.rowcount
     # Delete rows that were just inserted
-    cursor.execute(sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
 
     # Update rows whose id columns match in destination table
-    cursor.execute(sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, all_columns))
+    exec_sql(cursor, sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, all_columns))
     stats['update'] = cursor.rowcount
 
     drop_sql = "DROP TABLE %s" % (temp_table_name,)
-    cursor.execute(drop_sql)
+    exec_sql(cursor, drop_sql)
 
     # VACUUM is useful for each table that had major updates/import, but it has to run outside a transaction
     # and requires connection to be in autocommit mode
-    # cursor.execute("VACUUM ANALYZE %s" % (dest_table,))
+    # exec_sql(cursor, "VACUUM ANALYZE %s" % (dest_table,))
 
     return stats
 
@@ -135,9 +145,9 @@ def disable_foreign_key_constraints(cursor):
     [4][https://www.postgresql.org/docs/current/static/sql-altertable.html]
     """
     sql = "SET session_replication_role = REPLICA;"
-    cursor.execute(sql)
+    exec_sql(cursor, sql)
 
 
 def enable_foreign_key_constraints(cursor):
     sql = "SET session_replication_role = DEFAULT;"
-    cursor.execute(sql)
+    exec_sql(cursor, sql)
