@@ -8,7 +8,7 @@ This utility will read CSV files and *merge* each CSV's rows into a table of a P
 
 This is also called an *upsert* operation as it performs either an update or an insert.
 
-This tool can also export data in the same format expected for import.
+pgmerge can also export data in the same format expected for import.
 
 These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling deleted data.
 
@@ -50,7 +50,7 @@ These features allow you to move data between active/in-use databases to keep th
 
 ## Installation
 
-> WARNING: Note that in no way is the reliability of this tool guaranteed and loss or corruption of data is always a possibility.
+> WARNING: Note that in no way is the reliability of this utility guaranteed and loss or corruption of data is always a possibility.
 
 With `Python 3` installed on your system, you can run:
 
