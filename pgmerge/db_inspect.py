@@ -40,7 +40,7 @@ def print_cycle_info_and_break_cycles(table_graph):
 
     # Break simple cycles and self-references to help find bigger cycles
     copy_of_graph = table_graph.copy()
-    db_graph.break_simple_cycles(copy_of_graph)
+    db_graph.break_cycles(copy_of_graph)
 
     try:
         cycle = nx.find_cycle(copy_of_graph)

@@ -69,7 +69,7 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
         print()
         print("See --help regarding the --disable-foreign-keys option.")
 
-    simple_cycles = db_graph.get_simple_cycles(table_graph)
+    simple_cycles = db_graph.get_cycles(table_graph)
 
     relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
     if len(relevant_cycles) > 0:

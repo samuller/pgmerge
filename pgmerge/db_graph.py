@@ -10,11 +10,11 @@ import networkx as nx
 log = logging.getLogger(__name__)
 
 
-def get_simple_cycles(graph):
+def get_cycles(graph):
     return list(nx.simple_cycles(graph))
 
 
-def break_simple_cycles(graph):
+def break_cycles(graph):
     edges_removed = []
     for cycle in nx.simple_cycles(graph):
         # Only remove one direction of dependency and also remove self-references
@@ -27,9 +27,7 @@ def convert_to_dag(directed_graph):
     """
     Convert graph to directed acyclic graph by breaking cycles.
     """
-    edges_removed = break_simple_cycles(directed_graph)
-    assert nx.is_directed_acyclic_graph(directed_graph), "Only simple cycles are currently supported."
-    # cycle = nx.find_cycle(copy_of_graph)
+    edges_removed = break_cycles(directed_graph)
     return edges_removed
 
 
@@ -38,9 +36,9 @@ def get_dependents(directed_acyclic_graph, node):
     return nx.descendants(directed_acyclic_graph, node)
 
 
-def get_fks_for_simple_cycles(table_graph, simple_cycles):
-    fks = [table_graph.get_edge_data(cycle[0], cycle[1])['name'] for cycle in simple_cycles if len(cycle) == 2]
-    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])['name'] for cycle in simple_cycles if len(cycle) == 2])
+def get_fks_for_direct_cycles(table_graph, direct_cycles):
+    fks = [table_graph.get_edge_data(cycle[0], cycle[1])['name'] for cycle in direct_cycles if len(cycle) == 2]
+    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])['name'] for cycle in direct_cycles if len(cycle) == 2])
     return fks
 
 
@@ -65,9 +63,9 @@ def build_fk_dependency_graph(inspector, schema, tables=None):
     return table_graph
 
 
-def get_simple_cycle_fks_per_table(table_graph):
-    simple_cycles = get_simple_cycles(table_graph)
-    cycles = [cycle for cycle in simple_cycles if len(cycle) > 1]
+def get_direct_cycle_fks_per_table(table_graph):
+    cycles = get_cycles(table_graph)
+    cycles = [cycle for cycle in cycles if len(cycle) > 1]
 
     from collections import defaultdict
     cycle_fks_per_table = defaultdict(list)
