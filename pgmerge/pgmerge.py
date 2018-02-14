@@ -42,7 +42,7 @@ dir_tables_arguments = [
 ]
 
 
-def setup_logging():
+def setup_logging(verbose=False):
     log_dir = os.path.dirname(LOG_FILE)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -53,14 +53,21 @@ def setup_logging():
                                        backupCount=file_count - 1, encoding=None, delay=0)
     file_handler.setFormatter(
         logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.INFO)
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(
         NoExceptionFormatter("%(levelname)s: %(message)s"))
     stream_handler.setLevel(logging.WARN)
 
-    logging.basicConfig(handlers=[file_handler, stream_handler])
+    log = logging.getLogger()
+    log.addHandler(file_handler)
+    log.addHandler(stream_handler)
+    log.setLevel(logging.DEBUG)
+
+    if verbose:
+        file_handler.setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.DEBUG)
 
 
 def find_and_warn_about_cycles(table_graph, dest_tables):
