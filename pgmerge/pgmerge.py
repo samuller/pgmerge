@@ -238,12 +238,13 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
 
 @click.group(context_settings=dict(max_content_width=120))
 # @click.option('--config', '-c', help='config file')
+@click.option('--verbose', '-v', is_flag=True, help='Give more verbose output.')
 @click.version_option(version='0.9.0')
-def main():
+def main(verbose):
     """
     Merges data in CSV files into a Postgresql database.
     """
-    setup_logging()
+    setup_logging(verbose)
 
 
 @main.command()
