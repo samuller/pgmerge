@@ -13,7 +13,10 @@ def log_sql(sql):
     log.debug('SQL: {}'.format(sql))
 
 
-def export_all(connection, schema, output_dir, tables=None, file_format="FORMAT CSV, HEADER"):
+def export_all(connection, schema, output_dir, tables, file_format=None):
+    if file_format is None:
+        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+
     cursor = connection.cursor()
 
     for table in tables:

@@ -105,7 +105,7 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
-def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format="FORMAT CSV, HEADER",
+def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format=None,
                    suspend_foreign_keys=False):
     """
     Imports files that introduce new or updated rows. These files have the exact structure

@@ -66,11 +66,14 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format="FORMAT CSV, HEADER"):
+def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None):
     """
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
     """
+    if file_format is None:
+        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+
     id_columns = get_unique_columns(inspector, dest_table, schema)
     if len(id_columns) == 0:
         return None
@@ -79,7 +82,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format="FO
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     temp_table_name = "_tmp_%s" % (dest_table,)
-    input_file = open(input_file, 'r')
+    input_file = open(input_file, 'r', encoding="utf-8")
     # Create temporary table with same columns and types as target table
     create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, dest_table)
     exec_sql(cursor, create_sql)
