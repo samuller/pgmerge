@@ -66,7 +66,7 @@ You can uninstall at any time with:
 
 If you have trouble installing and you're running a Debian-based Linux that uses `Python 2` as its system default, then you might need to run:
 
-    sudo apt install python3-pip python3-setuptools
+    sudo apt install libpq-dev python3-pip python3-setuptools
     sudo -H pip3 install git+https://github.com/samuller/pgmerge
 
 

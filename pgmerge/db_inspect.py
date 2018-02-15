@@ -65,12 +65,36 @@ def print_insertion_order(table_graph):
 
 def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     print('digraph %s {' % (name,))
+    print("node[shape=record];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
+    for node in table_graph.nodes():
+        print("""{0} [label=<{1}>];""".format(node, print_table(node, ['id', 'value'])))
+
     for node in table_graph.nodes():
         for neighbour in table_graph[node]:
             edge = table_graph[node][neighbour].get('name')
             print('"%s" -> "%s" [label="%s"];' % (node, neighbour, edge))
     print('\n}')
+
+
+def print_table(name, columns=None, color='#EBCEF2'):
+    columns_str = ""
+    for column in columns:
+        columns_str += """
+        <tr>
+            <td align='left'><b><i>{column}</i></b></td>
+            <td align='left'> </td>
+            <td align='left'>int4 not null</td>
+        </tr> 
+        """.format(column=column)
+
+    return """<table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
+	<tr>
+		<td colspan='2' bgcolor='{color}' align='left'><b><i>public.{name}</i></b></td>
+		<td bgcolor='{color}' align='right'>[table]</td>
+	</tr>
+	{columns_str}
+	</table>""".format(name=name, color=color, columns_str=columns_str)
 
 
 def transferability(inspector, schema):
