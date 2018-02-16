@@ -59,12 +59,14 @@ def setup_logging(verbose=False):
     stream_handler.setFormatter(
         NoExceptionFormatter("%(levelname)s: %(message)s"))
     stream_handler.setLevel(logging.WARN)
-
+    # Get the root logger to setup logging for all other modules
     log = logging.getLogger()
     log.addHandler(file_handler)
     log.addHandler(stream_handler)
+    # Set the root level to lowest detail otherwise it's never passed on to handlers or other loggers
     log.setLevel(logging.DEBUG)
-
+    # Example of separately controlling log level of imported modules
+    # logging.getLogger(db_export.__name__).setLevel(logging.WARN)
     if verbose:
         file_handler.setLevel(logging.DEBUG)
         stream_handler.setLevel(logging.DEBUG)
