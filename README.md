@@ -12,6 +12,7 @@ pgmerge can also export data in the same format expected for import.
 
 These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling deleted data.
 
+    $ pgmerge --help
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
 
     Merges data in CSV files into a Postgresql database.
@@ -27,6 +28,7 @@ These features allow you to move data between active/in-use databases to keep th
 
 ### Import
 
+    $ pgmerge import --help
     Usage: pgmerge import [OPTIONS] DIRECTORY [TABLES]...
 
     Import/merge each CSV file into a table.
