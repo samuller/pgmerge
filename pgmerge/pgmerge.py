@@ -135,6 +135,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
     if suspend_foreign_keys:
         db_import.disable_foreign_key_constraints(cursor)
     elif find_and_warn_about_cycles(table_graph, dest_tables):
+        log.warning("Import cancelled due to detected cycles")
         return
 
     for file, table in import_pairs:
