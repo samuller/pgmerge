@@ -50,7 +50,7 @@ These features allow you to move data between active/in-use databases to keep th
 
 ## Installation
 
-> WARNING: Note that in no way is the reliability of this utility guaranteed and loss or corruption of data is always a possibility.
+> WARNING: the reliability of this utility is not guaranteed and loss or corruption of data is always a possibility.
 
 With `Python 3` installed on your system, you can run:
 
