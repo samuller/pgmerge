@@ -12,7 +12,7 @@ from rxjson import Rx
 from .pg_pass import *
 from appdirs import user_config_dir
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_config_schema.yml')
 DB_CONFIG_FILE = "db_config.yml"
@@ -33,7 +33,7 @@ def load_config_for_db(appname, dbname, priority_config_for_db=None):
             rx = Rx.Factory({"register_core_types": True})
             schema = rx.make_schema(schema_config)
     else:
-        log.debug('Schema file missing (re-install recommended): {}'.format(schema_path))
+        _log.debug('Schema file missing (re-install recommended): {}'.format(schema_path))
 
     # Load default config
     config_path = os.path.join(user_config_dir(appname, appauthor=False), DB_CONFIG_FILE)

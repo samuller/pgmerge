@@ -5,11 +5,11 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 """
 import logging
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def log_sql(sql):
-    log.debug('SQL: {}'.format(sql))
+    _log.debug('SQL: {}'.format(sql))
 
 
 def exec_sql(cursor, sql):

@@ -7,7 +7,7 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 import logging
 import networkx as nx
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def get_cycles(graph):

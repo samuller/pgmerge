@@ -2,7 +2,7 @@ import os
 import logging
 import collections
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 class NoExceptionFormatter(logging.Formatter):
     """
