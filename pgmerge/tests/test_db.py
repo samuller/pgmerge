@@ -51,6 +51,9 @@ class TestDB(unittest.TestCase):
             conn.execute("CREATE DATABASE " + db_name)
             # conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_DEFAULT)
         # self.connection.close()
+        self.create_db_engine.dispose()
+        self.create_db_engine = None
+
         self.engine = sqlalchemy.create_engine(self.url + db_name)
 
     def drop_db(self, db_name):
@@ -58,9 +61,7 @@ class TestDB(unittest.TestCase):
             self.engine.dispose()
             self.engine = None
 
-        self.create_db_engine.dispose()
         self.create_db_engine = sqlalchemy.create_engine(self.url + self.initial_db)
-
         with self.create_db_engine.connect() as conn:
             conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_AUTOCOMMIT)
             # print(find_open_connections(conn))
