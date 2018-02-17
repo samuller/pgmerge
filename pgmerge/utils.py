@@ -4,6 +4,7 @@ import collections
 
 _log = logging.getLogger(__name__)
 
+
 class NoExceptionFormatter(logging.Formatter):
     """
     Formatter to specifically remove any exception traceback from logging output.

@@ -88,4 +88,3 @@ def get_all_dependent_tables(table_graph, tables):
         dependent_tables.update(set(dependency_tree.keys()))
         dependent_tables.update({node for dependents in dependency_tree.values() for node in dependents})
     return dependent_tables
-

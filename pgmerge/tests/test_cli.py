@@ -47,7 +47,7 @@ class TestCLI(TestDB):
                       extend_existing=True)
         with create_table(self.engine, table):
             stmt = table.insert().values([
-                ('CI','Côte d’Ivoire'),
+                ('CI', 'Côte d’Ivoire'),
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
             ])
