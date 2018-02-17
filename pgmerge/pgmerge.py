@@ -262,12 +262,16 @@ def export(dbname, host, port, username, password, schema,
     If one or more tables are specified then only they will be used, otherwise all tables found will be selected. They
     will all be exported into the given directory.
     """
+    engine = None
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, True, directory, tables, False, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
+    finally:
+        if engine is not None:
+            engine.dispose()
 
 
 @main.command(name="import")
@@ -286,12 +290,16 @@ def upsert(dbname, host, port, username, password, schema,
     If one or more tables are specified then only they will be used, otherwise all tables
     found will be selected.
     """
+    engine = None
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         process_args_and_run(engine, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
     except Exception as e:
         logging.exception(e)
+    finally:
+        if engine is not None:
+            engine.dispose()
 
 
 @main.command(context_settings=dict(max_content_width=120))
@@ -321,6 +329,7 @@ def inspect(engine, dbname, host, port, username, password, schema,
     Defaults to PostgreSQL but should support multiple database engines thanks to SQLAlchemy (see:
     http://docs.sqlalchemy.org/en/latest/dialects/).
     """
+    engine = None
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password, type=engine)
         engine = sqlalchemy.create_engine(db_url)
@@ -329,6 +338,9 @@ def inspect(engine, dbname, host, port, username, password, schema,
                         cycles, insert_order, export_graph, transferable)
     except Exception as e:
         logging.exception(e)
+    finally:
+        if engine is not None:
+            engine.dispose()
 
 
 if __name__ == "__main__":
