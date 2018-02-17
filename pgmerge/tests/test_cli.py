@@ -7,10 +7,11 @@ from click.testing import CliRunner
 
 class TestCLI(TestDB):
 
+    output_dir = '_tmp_test'
+
     @classmethod
     def setUpClass(cls):
         super(TestCLI, cls).setUpClass()
-        cls.output_dir = '_tmp_test'
         os.makedirs(cls.output_dir)
         cls.runner = CliRunner()
         cls.metadata = MetaData()
