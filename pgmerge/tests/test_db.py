@@ -23,58 +23,61 @@ class TestDB(unittest.TestCase):
     Class for setting up a test database and handling connections to it.
     """
 
-    db_name = ''
+    env_var = "DB_TEST_URL"
+    url = ''
+    db_name = 'testdb'
+    initial_db = 'template1'
 
     @classmethod
     def setUpClass(cls):
         # Create class variables to be re-used between tests
         cls.create_db_engine = None
-        cls.initial_db = 'template1'
         cls.engine = None
-        cls.db_name = 'testdb'
 
         try:
-            TestDB.create_db(cls, cls.db_name)
+            cls.create_db(cls.db_name)
         except Exception as err:
-            TestDB.drop_db(cls, cls.db_name)
+            cls.drop_db(cls.db_name)
             raise err
 
     @classmethod
     def tearDownClass(cls):
-        TestDB.drop_db(cls, cls.db_name)
+        cls.drop_db(cls.db_name)
 
-    def create_db(self, db_name):
+    @classmethod
+    def create_db(cls, db_name):
         # Environment variable for test database, e.g.:
         #  DB_TEST_URL=postgres://postgres:password@localhost:5432/
-        self.url = os.getenv("DB_TEST_URL")
-        if not self.url:
-            self.skipTest("No database URL set")
+        cls.url = os.getenv(cls.env_var)
+        if not cls.url:
+            assert False, "No database URL set in '{}'".format(cls.env_var)
         # Open connection to template database (could build url with sqlalchemy.engine.url.URL)
-        self.create_db_engine = sqlalchemy.create_engine(self.url + self.initial_db)
-        with self.create_db_engine.connect() as conn:
+        cls.create_db_engine = sqlalchemy.create_engine(cls.url + cls.initial_db)
+        with cls.create_db_engine.connect() as conn:
             conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_AUTOCOMMIT)
             conn.execute("DROP DATABASE IF EXISTS " + db_name)
             conn.execute("CREATE DATABASE " + db_name)
             # conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_DEFAULT)
         # self.connection.close()
-        self.create_db_engine.dispose()
-        self.create_db_engine = None
+        cls.create_db_engine.dispose()
+        cls.create_db_engine = None
 
-        self.engine = sqlalchemy.create_engine(self.url + db_name)
+        cls.engine = sqlalchemy.create_engine(cls.url + db_name)
 
-    def drop_db(self, db_name):
-        if self.engine is not None:
-            self.engine.dispose()
-            self.engine = None
+    @classmethod
+    def drop_db(cls, db_name):
+        if cls.engine is not None:
+            cls.engine.dispose()
+            cls.engine = None
 
-        self.create_db_engine = sqlalchemy.create_engine(self.url + self.initial_db)
-        with self.create_db_engine.connect() as conn:
+        cls.create_db_engine = sqlalchemy.create_engine(cls.url + cls.initial_db)
+        with cls.create_db_engine.connect() as conn:
             conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_AUTOCOMMIT)
             # print(find_open_connections(conn))
             conn.execute("DROP DATABASE IF EXISTS " + db_name)
             # self.connection.connection.set_isolation_level(psyext.ISOLATION_LEVEL_DEFAULT)
         # self.connection.close()
-        self.create_db_engine.dispose()
+        cls.create_db_engine.dispose()
 
     def setUp(self):
         # Open connection before each test
