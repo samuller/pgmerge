@@ -303,7 +303,7 @@ def upsert(dbname, host, port, username, password, schema,
 
 
 @main.command(context_settings=dict(max_content_width=120))
-@click.option('--engine', '-e', help="Database engine.", default='postgresql', show_default=True)
+@click.option('--engine', '-e', help="Type of database engine.", default='postgresql', show_default=True)
 @decorate(db_connect_options)
 @click.option('--warnings', '-w', is_flag=True, help="Output any issues detected in database schema.")
 @click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema.")
@@ -329,18 +329,18 @@ def inspect(engine, dbname, host, port, username, password, schema,
     Defaults to PostgreSQL but should support multiple database engines thanks to SQLAlchemy (see:
     http://docs.sqlalchemy.org/en/latest/dialects/).
     """
-    engine = None
+    _engine = None
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password, type=engine)
-        engine = sqlalchemy.create_engine(db_url)
-        db_inspect.main(engine, schema,
+        _engine = sqlalchemy.create_engine(db_url)
+        db_inspect.main(_engine, schema,
                         warnings, list_tables, table_details, partition,
                         cycles, insert_order, export_graph, transferable)
     except Exception as e:
         logging.exception(e)
     finally:
-        if engine is not None:
-            engine.dispose()
+        if _engine is not None:
+            _engine.dispose()
 
 
 if __name__ == "__main__":
