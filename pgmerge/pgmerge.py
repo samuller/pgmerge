@@ -62,7 +62,6 @@ def setup_logging(verbose=False):
         NoExceptionFormatter("%(levelname)s: %(message)s"))
     stream_handler.setLevel(logging.WARN)
     # Get the root logger to setup logging for all other modules
-    log = logging.getLogger()
     log.addHandler(file_handler)
     log.addHandler(stream_handler)
     # Set the root level to lowest detail otherwise it's never passed on to handlers or other loggers
@@ -200,7 +199,6 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
             print("\t" + "\n\t".join(unknown_tables))
             return
 
-
     if include_dependent_tables and tables is None:
         print('Option to specifically include dependent tables has been ignored as all tables will be imported.')
         print()
@@ -215,8 +213,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
-            db_export.export_all(conn, schema, directory, tables)
-        )
+                       db_export.export_all(conn, schema, directory, tables))
         print("Exported {} tables".format(len(tables)))
     else:
         # Determine tables based on files in directory
@@ -236,9 +233,8 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
         import_files = [os.path.join(directory, f) for f in import_files]
 
         run_in_session(engine, lambda conn:
-            import_all_new(conn, inspector, schema, import_files, dest_tables,
-                           suspend_foreign_keys=disable_foreign_keys)
-        )
+                       import_all_new(conn, inspector, schema, import_files, dest_tables,
+                                      suspend_foreign_keys=disable_foreign_keys))
 
 
 @click.group(context_settings=dict(max_content_width=120))
