@@ -11,8 +11,14 @@ class TestCLI(TestDB):
     def setUpClass(cls):
         super(TestCLI, cls).setUpClass()
         cls.output_dir = '_tmp_test'
+        os.makedirs(cls.output_dir)
         cls.runner = CliRunner()
         cls.metadata = MetaData()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestCLI, cls).tearDownClass()
+        os.rmdir(cls.output_dir)
 
     def test_basics(self):
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'NOTICE'])
