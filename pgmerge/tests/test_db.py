@@ -14,6 +14,10 @@ def create_table(engine, table):
         table.drop(engine, checkfirst=False)
 
 
+def find_open_connections(connection):
+    return connection.execute("SELECT * FROM pg_stat_activity").fetchall()
+
+
 class TestDB(unittest.TestCase):
     """
     Class for setting up a test database and handling connections to it.
@@ -86,6 +90,3 @@ class TestDB(unittest.TestCase):
     def close_db_conn(self):
         self.connection.close()
         self.connection = None
-
-    def find_open_connections(self, connection):
-        return connection.execute("SELECT * FROM pg_stat_activity").fetchall()
