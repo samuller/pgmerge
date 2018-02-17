@@ -18,6 +18,8 @@ from . import db_graph, db_import, db_export, db_inspect
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
+log = logging.getLogger()
+
 # Shared command line options for connecting to a database
 db_connect_options = [
     click.option('--dbname', '-d', help='Database name to connect to.', required=True),
