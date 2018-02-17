@@ -40,6 +40,8 @@ class TestDB(unittest.TestCase):
         TestDB.drop_db(cls, cls.db_name)
 
     def create_db(self, db_name):
+        # Environment variable for test database, e.g.:
+        #  DB_TEST_URL=postgres://postgres:password@localhost:5432/
         self.url = os.getenv("DB_TEST_URL")
         if not self.url:
             self.skipTest("No database URL set")
