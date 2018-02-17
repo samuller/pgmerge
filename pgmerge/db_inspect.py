@@ -89,12 +89,12 @@ def print_table(name, columns=None, color='#EBCEF2'):
         """.format(column=column)
 
     return """<table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
-	<tr>
-		<td colspan='2' bgcolor='{color}' align='left'><b><i>public.{name}</i></b></td>
-		<td bgcolor='{color}' align='right'>[table]</td>
-	</tr>
-	{columns_str}
-	</table>""".format(name=name, color=color, columns_str=columns_str)
+    <tr>
+        <td colspan='2' bgcolor='{color}' align='left'><b><i>public.{name}</i></b></td>
+        <td bgcolor='{color}' align='right'>[table]</td>
+    </tr>
+    {columns_str}
+    </table>""".format(name=name, color=color, columns_str=columns_str)
 
 
 def transferability(inspector, schema):
