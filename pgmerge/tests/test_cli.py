@@ -1,6 +1,7 @@
 import os
+from .test_db import *
+from sqlalchemy import *
 from pgmerge import pgmerge
-from .test_db import TestDB
 from click.testing import CliRunner
 
 
@@ -10,6 +11,7 @@ class TestCLI(TestDB):
     def setUpClass(cls):
         super(TestCLI, cls).setUpClass()
         cls.runner = CliRunner()
+        cls.metadata = MetaData()
 
     def test_basics(self):
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'NOTICE'])
@@ -20,21 +22,12 @@ class TestCLI(TestDB):
         self.assertEquals(result.output, "Exported 0 tables\n")
 
     def test_export_table(self):
-        self.connection.execute("DROP TABLE IF EXISTS films;")
-        self.connection.execute("""
-        CREATE TABLE films (
-            code        char(5) CONSTRAINT firstkey PRIMARY KEY,
-            title       varchar(40) NOT NULL,
-            did         integer NOT NULL,
-            date_prod   date,
-            kind        varchar(10),
-            len         interval hour to minute
-        );
-        """)
-
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'tmp'])
-        self.assertEquals(result.output, "Exported 1 tables\n")
-        os.remove('tmp/films.csv')
-
-        self.connection.execute("DROP TABLE IF EXISTS films;")
-
+        table_name = 'film'
+        film = Table(table_name, self.metadata,
+                     Column('code', Integer, primary_key=True),
+                     Column('name', String(16), nullable=False)
+                     )
+        with create_table(self.engine, film):
+            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'tmp'])
+            self.assertEquals(result.output, "Exported 1 tables\n")
+            os.remove('tmp/{}.csv'.format(table_name))

@@ -2,6 +2,16 @@ import os
 import unittest
 import sqlalchemy
 import psycopg2.extensions as psyext
+from contextlib import contextmanager
+
+
+@contextmanager
+def create_table(engine, table):
+    table.create(engine, checkfirst=True)
+    try:
+        yield
+    finally:
+        table.drop(engine, checkfirst=False)
 
 
 class TestDB(unittest.TestCase):
