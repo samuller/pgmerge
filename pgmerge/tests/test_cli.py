@@ -36,7 +36,7 @@ class TestCLI(TestDB):
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
-            os.remove('{}/{}.csv'.format(self.output_dir, table_name))
+            os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_export_and_import_with_utf8_values(self):
         table_name = 'country'
@@ -59,4 +59,4 @@ class TestCLI(TestDB):
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
             self.assertEquals(result_lines[-1], "1 tables imported successfully")
 
-            os.remove('{}/{}.csv'.format(self.output_dir, table_name))
+            os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
