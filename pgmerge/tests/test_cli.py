@@ -14,7 +14,6 @@ class TestCLI(TestDB):
         super(TestCLI, cls).setUpClass()
         os.makedirs(cls.output_dir, exist_ok=True)
         cls.runner = CliRunner()
-        cls.metadata = MetaData()
 
     @classmethod
     def tearDownClass(cls):
@@ -31,10 +30,9 @@ class TestCLI(TestDB):
 
     def test_export_table(self):
         table_name = 'country'
-        table = Table(table_name, self.metadata,
+        table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
-                      Column('name', String, nullable=False),
-                      extend_existing=True)
+                      Column('name', String, nullable=False))
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
@@ -42,19 +40,15 @@ class TestCLI(TestDB):
 
     def test_export_and_import_with_utf8_values(self):
         table_name = 'country'
-        table = Table(table_name, self.metadata,
+        table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
-                      Column('name', String, nullable=False),
-                      # Temporarily use this setting as previous test's "drop table" transaction causes conflict
-                      # when trying to create table with same name again
-                      extend_existing=True)
+                      Column('name', String, nullable=False))
         with create_table(self.engine, table):
             stmt = table.insert().values([
                 ('CI', 'Côte d’Ivoire'),
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
             ])
-
             self.connection.execute(stmt)
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
