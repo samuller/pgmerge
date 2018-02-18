@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
+from pgmerge import __version__
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
     name='pgmerge',
-    version='0.9',
+    version=__version__,
     author='Simon Muller',
     author_email='samullers@gmail.com',
     url='https://github.com/samuller/pgmerge',

@@ -13,7 +13,7 @@ from .utils import *
 from .db_config import *
 from appdirs import user_log_dir
 from logging.handlers import RotatingFileHandler
-from . import db_graph, db_import, db_export, db_inspect
+from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
@@ -240,7 +240,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
 @click.group(context_settings=dict(max_content_width=120))
 # @click.option('--config', '-c', help='config file')
 @click.option('--verbose', '-v', is_flag=True, help='Give more verbose output.')
-@click.version_option(version='0.9.6')
+@click.version_option(version=__version__, message="%(prog)s, version %(version)s\nSimon Muller <samullers@gmail.com>")
 def main(verbose):
     """
     Merges data in CSV files into a Postgresql database.
