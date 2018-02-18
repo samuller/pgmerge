@@ -45,6 +45,8 @@ class TestCLI(TestDB):
         table = Table(table_name, self.metadata,
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False),
+                      # Temporarily use this setting as previous test's "drop table" transaction causes conflict
+                      # when trying to create table with same name again
                       extend_existing=True)
         with create_table(self.engine, table):
             stmt = table.insert().values([
