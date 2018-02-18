@@ -12,7 +12,7 @@ class TestCLI(TestDB):
     @classmethod
     def setUpClass(cls):
         super(TestCLI, cls).setUpClass()
-        os.makedirs(cls.output_dir)
+        os.makedirs(cls.output_dir, exist_ok=True)
         cls.runner = CliRunner()
         cls.metadata = MetaData()
 
