@@ -66,21 +66,22 @@ class TestCLI(TestDB):
         table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False))
+        # Create table with data to export
         with create_table(self.engine, table):
             stmt = table.insert().values([
                 ('CI', 'Côte d’Ivoire'),
                 ('EG', 'Egypt'),
-                ('RE', 'Re-union'),
+                ('RE', 'Réunion'),
             ])
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
-
+        # Import the exported data into a table with different data
         with create_table(self.engine, table):
             stmt = table.insert().values([
                 ('EG', 'Egypt'),
-                ('RE', 'Réunion'),
+                ('RE', 'Re-union'),
                 ('ST', 'São Tomé and Príncipe'),
             ])
             self.connection.execute(stmt)
@@ -90,5 +91,13 @@ class TestCLI(TestDB):
             self.assertEquals(result_lines[0], "country:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
             self.assertEquals(result_lines[-1], "1 tables imported successfully")
+
+            stmt = select([table]).order_by('code')
+            result = self.connection.execute(stmt)
+            self.assertEquals(result.fetchall(), [
+                ('CI', 'Côte d’Ivoire'), ('EG', 'Egypt'), ('RE', 'Réunion'), ('ST', 'São Tomé and Príncipe')])
+            result.close()
+            # Select requires us to close the connection before dropping the table
+            self.connection.close()
 
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
