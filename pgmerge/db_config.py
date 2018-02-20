@@ -63,10 +63,7 @@ def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username,
 
     Command-line parameters take priority over defaults in config file. Will request password if not yet provided.
     """
-    config_db_user = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
-    config_db = load_config_for_db(appname, dbname, config_db_user)
-    if config_db is None:
-        return
+    config_db = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
     if config_db['password'] is None:
         pgpass_path = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
         if not os.path.isfile(pgpass_path):
