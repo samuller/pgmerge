@@ -178,8 +178,27 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables,
-                         columns=None):
+def get_import_files_and_tables(directory, tables):
+    # Determine tables based on files in directory
+    all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    import_files = [f for f in all_files if re.match(r".*\.csv", f)]
+    dest_tables = [f[:-4] for f in import_files]
+    if tables is not None and len(tables) != 0:
+        # Look for files based on given tables
+        import_files = ["%s.csv" % (table,) for table in tables]
+        dest_tables = tables
+        unknown_files = set(import_files).difference(set(all_files))
+        if len(unknown_files) > 0:
+            print("No files found for the following tables:")
+            for file in unknown_files:
+                print("\t", file)
+            return
+    import_files = [os.path.join(directory, f) for f in import_files]
+
+    return import_files, dest_tables
+
+
+def process_args(engine, schema, directory, tables, include_dependent_tables, columns=None):
     inspector = sqlalchemy.inspect(engine)
 
     if schema is None:
@@ -207,35 +226,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
-    if do_export:
-        if tables is None:
-            tables = sorted(inspector.get_table_names(schema))
-        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
-        find_and_warn_about_cycles(table_graph, tables)
-
-        run_in_session(engine, lambda conn:
-                       db_export.export_columns(conn, schema, directory, tables, columns=columns))
-        print("Exported {} tables".format(len(tables)))
-    else:
-        # Determine tables based on files in directory
-        all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
-        import_files = [f for f in all_files if re.match(r".*\.csv", f)]
-        dest_tables = [f[:-4] for f in import_files]
-        if tables is not None and len(tables) != 0:
-            # Look for files based on given tables
-            import_files = ["%s.csv" % (table,) for table in tables]
-            dest_tables = tables
-            unknown_files = set(import_files).difference(set(all_files))
-            if len(unknown_files) > 0:
-                print("No files found for the following tables:")
-                for file in unknown_files:
-                    print("\t", file)
-                return
-        import_files = [os.path.join(directory, f) for f in import_files]
-
-        run_in_session(engine, lambda conn:
-                       import_all_new(conn, inspector, schema, import_files, dest_tables,
-                                      suspend_foreign_keys=disable_foreign_keys))
+    return engine, inspector, schema, directory, tables, columns
 
 
 @click.group(context_settings=dict(max_content_width=120))
@@ -265,7 +256,18 @@ def export(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        process_args_and_run(engine, schema, True, directory, tables, False, include_dependent_tables)
+        engine, inspector, schema, directory, tables, columns = process_args(
+            engine, schema, directory, tables, include_dependent_tables, columns=None)
+
+        if tables is None:
+            tables = sorted(inspector.get_table_names(schema))
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        find_and_warn_about_cycles(table_graph, tables)
+
+        run_in_session(engine, lambda conn:
+                       db_export.export_columns(conn, schema, directory, tables, columns=columns))
+        print("Exported {} tables".format(len(tables)))
+
     except Exception as e:
         logging.exception(e)
     finally:
@@ -293,7 +295,14 @@ def upsert(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        process_args_and_run(engine, schema, False, directory, tables, disable_foreign_keys, include_dependent_tables)
+        engine, inspector, schema, directory, tables, columns = process_args(
+            engine, schema, directory, tables, include_dependent_tables)
+
+        import_files, dest_tables = get_import_files_and_tables(directory, tables)
+        run_in_session(engine, lambda conn:
+                       import_all_new(conn, inspector, schema, import_files, dest_tables,
+                                      suspend_foreign_keys=disable_foreign_keys))
+
     except Exception as e:
         logging.exception(e)
     finally:
