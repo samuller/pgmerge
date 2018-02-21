@@ -178,7 +178,8 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables):
+def process_args_and_run(engine, schema, do_export, directory, tables, disable_foreign_keys, include_dependent_tables,
+                         columns=None):
     inspector = sqlalchemy.inspect(engine)
 
     if schema is None:
@@ -213,7 +214,7 @@ def process_args_and_run(engine, schema, do_export, directory, tables, disable_f
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
-                       db_export.export_all(conn, schema, directory, tables))
+                       db_export.export_columns(conn, schema, directory, tables, columns=columns))
         print("Exported {} tables".format(len(tables)))
     else:
         # Determine tables based on files in directory
