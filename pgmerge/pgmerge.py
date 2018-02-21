@@ -205,8 +205,8 @@ def process_args(engine, schema, directory, tables, include_dependent_tables, co
         schema = inspector.default_schema_name
 
     if not os.path.isdir(directory):
-        print("Directory not found: '{}'".format(directory))
-        return
+        print("Directory not found: '{dir}'".format(dir=directory))
+        return None
 
     if len(tables) == 0:
         tables = None
@@ -217,7 +217,7 @@ def process_args(engine, schema, directory, tables, include_dependent_tables, co
         if len(unknown_tables) > 0:
             print("Unknown tables (not found in database):")
             print("\t" + "\n\t".join(unknown_tables))
-            return
+            return None
 
     if include_dependent_tables and tables is None:
         print('Option to specifically include dependent tables has been ignored as all tables will be imported.')
@@ -256,8 +256,11 @@ def export(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        engine, inspector, schema, directory, tables, columns = process_args(
+        args = process_args(
             engine, schema, directory, tables, include_dependent_tables, columns=None)
+        if args is None:
+            return
+        engine, inspector, schema, directory, tables, columns = args
 
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
@@ -295,8 +298,11 @@ def upsert(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        engine, inspector, schema, directory, tables, columns = process_args(
+        args = process_args(
             engine, schema, directory, tables, include_dependent_tables)
+        if args is None:
+            return
+        engine, inspector, schema, directory, tables, columns = args
 
         import_files, dest_tables = get_import_files_and_tables(directory, tables)
         run_in_session(engine, lambda conn:
