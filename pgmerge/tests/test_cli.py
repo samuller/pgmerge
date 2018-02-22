@@ -21,12 +21,17 @@ class TestCLI(TestDB):
         os.rmdir(cls.output_dir)
 
     def test_basics(self):
+        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+        self.assertEquals(result.output, "Exported 0 tables\n")
+
+    def test_dir_invalid(self):
+        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'dir'])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output, "Directory not found: 'dir'\n")
+        # If directory given is actually a file
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'NOTICE'])
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.output, "Directory not found: 'NOTICE'\n")
-
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
-        self.assertEquals(result.output, "Exported 0 tables\n")
 
     def test_export_table(self):
         table_name = 'country'
@@ -50,6 +55,7 @@ class TestCLI(TestDB):
                 ('ST', 'São Tomé and Príncipe')
             ])
             self.connection.execute(stmt)
+
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
 
