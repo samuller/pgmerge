@@ -10,12 +10,12 @@ An idea/planning list:
 - Insertion order based on dependencies:
   - [x] Table order.
   - [ ] Order of rows within tables (when tables self-reference).
-    - Or disable foreign keys during import and hope that data is consistent once they are re-enabled.
+    - [x] Or disable foreign keys during import and hope that data is consistent once they are re-enabled.
 - Speed vs. impact options:
   - Bulk import: faster, but might lock tables which affects active system which is in use.
   - Incremental import: slower, but [maximizes table availability][1] since locks are for short time.
-- [ ] VACUUM tables after import
-- [ ] Use proper transaction management with sessions/commit
+- [ ] VACUUM tables after import with many changes
+- [x] Use proper transaction management with sessions/commit
 
 [1]:[https://blog.codacy.com/how-to-update-large-tables-in-postgresql-e9aecd197fb7?gi=dc843a01e10b]
 
@@ -40,7 +40,7 @@ Identity columns:
   - Removals: files that contain specific rows to remove.
 - Columns:
   - [x] Exact: files have data for each column in table.
-  - [ ] Partial: files are missing some columns which should then be left untouched (not cleared).
+  - [x] Partial: files are missing some columns which should then be left untouched (not cleared).
   - Additional: files have extra columns that need to be ignored.
   - Modified: files have columns that need to be transformed/processed/merge/split to get final column data.
   - Mixed: files have columns that could be from completely different tables.
@@ -59,5 +59,5 @@ Identity columns:
 
 - Table selection:
   - [x] command-line should support either single table or all tables.
-  - [ ] Config should be used for finer control.
-- [ ] Export and import capabilities should always match.
+  - [x] Config should be used for finer control.
+- [x] Export and import capabilities should always match.
