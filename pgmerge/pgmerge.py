@@ -20,29 +20,6 @@ LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 log = logging.getLogger()
 
-# Shared command line options for connecting to a database
-db_connect_options = [
-    click.option('--dbname', '-d', help='Database name to connect to.', required=True),
-    click.option('--host', '-h', help='Database server host or socket directory.',
-                 default='localhost', show_default=True),
-    click.option('--port', '-p', help='Database server port.', default='5432', show_default=True),
-    click.option('--username', '-U', help='Database user name.', default='postgres', show_default=True),
-    click.option('--schema', '-s', default="public", help='Database schema to use.',
-                 show_default=True),
-    click.option('--password', '-W', hide_input=True, prompt=False, default=None,
-                 help='Database password (default is to prompt for password or read config).')
-]
-
-# Shared command line arguments for importing/exporting tables to a directory
-dir_tables_arguments = [
-    click.option(
-        '--include-dependent-tables', '-i', is_flag=True,
-        help='When selecting specific tables, also include ' +
-             'all tables that depend on those tables due to foreign key constraints.'),
-    click.argument('directory', nargs=1, type=click.Path(exists=True)),
-    click.argument('tables', default=None, nargs=-1)
-]
-
 
 def setup_logging(verbose=False):
     log_dir = os.path.dirname(LOG_FILE)
@@ -214,14 +191,48 @@ def process_args(engine, schema, tables, include_dependent_tables, columns=None)
             print("\t" + "\n\t".join(unknown_tables))
             return None
 
-    if include_dependent_tables and tables is None:
-        print('Option to specifically include dependent tables has been ignored as all tables will be imported.')
-        print()
-    elif include_dependent_tables:
+    if include_dependent_tables:
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
     return inspector, schema, tables, columns
+
+
+def check_table_params(ctx, param, value):
+    """
+    Callback function to check table command-line arguments.
+    """
+    assert param.name == 'tables'
+    other_flag = 'include_dependent_tables'
+    if len(value) == 0 and other_flag in ctx.params and ctx.params[other_flag] is True:
+        raise click.UsageError(
+            "Illegal usage: `{}` option is only valid if `{}` arguments have been specified."
+                .format(other_flag, param.name))
+    return value
+
+
+# Shared command line options for connecting to a database
+db_connect_options = [
+    click.option('--dbname', '-d', help='Database name to connect to.', required=True),
+    click.option('--host', '-h', help='Database server host or socket directory.',
+                 default='localhost', show_default=True),
+    click.option('--port', '-p', help='Database server port.', default='5432', show_default=True),
+    click.option('--username', '-U', help='Database user name.', default='postgres', show_default=True),
+    click.option('--schema', '-s', default="public", help='Database schema to use.',
+                 show_default=True),
+    click.option('--password', '-W', hide_input=True, prompt=False, default=None,
+                 help='Database password (default is to prompt for password or read config).')
+]
+
+# Shared command line arguments for importing/exporting tables to a directory
+dir_tables_arguments = [
+    click.option(
+        '--include-dependent-tables', '-i', is_flag=True,
+        help='When selecting specific tables, also include ' +
+             'all tables that depend on those tables due to foreign key constraints.'),
+    click.argument('directory', nargs=1, type=click.Path(exists=True)),
+    click.argument('tables', default=None, nargs=-1, callback=check_table_params)
+]
 
 
 @click.group(context_settings=dict(max_content_width=120))
