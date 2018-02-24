@@ -28,3 +28,7 @@ If you only want to see the schema for individual tables you can use `pgAdmin3` 
 
 No, if there are other active connections to the database importing will likely fail. The current implementation might require obtaining exclusive locks on the database tables.
 
+## Can pgmerge import data with a custom format or that was created manually?
+
+Not currently, no. While it is easy to create CSV files such that they'll import correctly, it is dangerous as any mistakes can cause your database to contain data in an invalid state. This is because pgmerge might temporarily disable database checks that enforce consistency during import (currently this occurs when using the `--disable-foreign-keys` option). It is currently an assumption that the data provided is completely valid.
+
