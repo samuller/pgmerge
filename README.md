@@ -46,6 +46,7 @@ These features allow you to move data between databases to keep them up to date 
     -W, --password TEXT             Database password (default is to prompt for password or read config).
     -f, --disable-foreign-keys      Disable foreign key constraint checking during import (necessary if you have
                                     cycles, but requires superuser rights).
+    -c, --config PATH               Config file for customizing data import/export.
     -i, --include-dependent-tables  When selecting specific tables, also include all tables that depend on those
                                     tables due to foreign key constraints.
     --help                          Show this message and exit.
