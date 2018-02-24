@@ -273,7 +273,7 @@ def export(dbname, host, port, username, password, schema,
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
-                       db_export.export_columns(conn, schema, directory, tables, columns=columns))
+                       db_export.export_columns(conn, schema, directory, tables, columns=None))
         print("Exported {} tables".format(len(tables)))
     except Exception as e:
         logging.exception(e)
