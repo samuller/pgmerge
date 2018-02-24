@@ -122,11 +122,11 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, col
     for file, table in import_pairs:
         print("%s:" % (table,))
 
-        stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
-                                    columns=columns_per_table.get(table, None))
-
-        if stats is None:
-            print("\tSkipping table as it has no primary key or unique columns!")
+        try:
+            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
+                                        columns=columns_per_table.get(table, None))
+        except db_import.UnsupportedSchemaException as exc:
+            print("\tSkipping table with unsupported schema: {}".format(exc))
             error_tables.append(table)
             continue
 

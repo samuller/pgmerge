@@ -83,15 +83,16 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     id_columns = get_unique_columns(inspector, dest_table, schema)
     if len(id_columns) == 0:
-        return None
+        raise UnsupportedSchemaException("Table has no primary key or unique columns!")
 
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
-        return None
+        raise InputParametersException("Columns provided do not exist in table '{}': {}".format(dest_table, unknown_columns))
 
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
-        return None
+        raise InputParametersException("Columns provided do not include required id"
+                              " columns for table '{}': {}".format(dest_table, unknown_columns))
 
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
@@ -168,3 +169,32 @@ def disable_foreign_key_constraints(cursor):
 def enable_foreign_key_constraints(cursor):
     sql = "SET session_replication_role = DEFAULT;"
     exec_sql(cursor, sql)
+
+
+class PreImportException(Exception):
+    """
+    Exception raised for errors detected before starting import.
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+
+class UnsupportedSchemaException(PreImportException):
+    """
+    Exception raised due to database schema being unsupported by import.
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+
+class InputParametersException(PreImportException):
+    """
+    Exception raised due to incorrect parameters provided to import.
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+
