@@ -26,12 +26,10 @@ class TestCLI(TestDB):
 
     def test_dir_invalid(self):
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'dir'])
-        self.assertEqual(result.exit_code, 0)
-        self.assertEqual(result.output, "Directory not found: 'dir'\n")
+        self.assertEqual(result.exit_code, 2)
         # If directory given is actually a file
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'NOTICE'])
-        self.assertEqual(result.exit_code, 0)
-        self.assertEqual(result.output, "Directory not found: 'NOTICE'\n")
+        self.assertEqual(result.exit_code, 2)
 
     def test_export_table(self):
         table_name = 'country'
