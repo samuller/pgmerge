@@ -206,7 +206,7 @@ def check_table_params(ctx, param, value):
     if len(value) == 0 and other_flag in ctx.params and ctx.params[other_flag] is True:
         raise click.UsageError(
             "Illegal usage: `{}` option is only valid if `{}` arguments have been specified."
-                .format(other_flag, param.name))
+            .format(other_flag, param.name))
     return value
 
 
@@ -274,7 +274,6 @@ def export(dbname, host, port, username, password, schema,
         run_in_session(engine, lambda conn:
                        db_export.export_columns(conn, schema, directory, tables, columns=columns))
         print("Exported {} tables".format(len(tables)))
-
     except Exception as e:
         logging.exception(e)
     finally:
@@ -313,7 +312,6 @@ def upsert(dbname, host, port, username, password, schema,
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
                                       suspend_foreign_keys=disable_foreign_keys))
-
     except Exception as e:
         logging.exception(e)
     finally:
