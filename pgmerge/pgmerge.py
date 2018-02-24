@@ -226,7 +226,7 @@ db_connect_options = [
 # Shared command line arguments for importing/exporting tables to a directory
 dir_tables_arguments = [
     click.option('--config', '-c', type=click.Path(exists=True, dir_okay=False),
-                 help='Config file describing how to import/export data.'),
+                 help='Config file for customizing data import/export.'),
     click.option(
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
