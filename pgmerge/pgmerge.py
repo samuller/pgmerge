@@ -6,6 +6,7 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 """
 import os
 import re
+import sys
 import click
 import logging
 import sqlalchemy
@@ -175,27 +176,25 @@ def get_import_files_and_tables(directory, tables):
     return import_files, dest_tables
 
 
-def process_args(engine, schema, tables, include_dependent_tables, columns=None):
-    inspector = sqlalchemy.inspect(engine)
-
+def validate_schema(inspector, schema):
     if schema is None:
         schema = inspector.default_schema_name
+    if schema not in inspector.get_schema_names():
+        print("Schema not found: '{}'".format(schema))
+        sys.exit()
+    return schema
+
+
+def validate_tables(inspector, schema, tables):
     if len(tables) == 0:
-        tables = None
-    else:
-        # Check tables exist in database
-        all_tables = set(inspector.get_table_names(schema))
-        unknown_tables = set(tables) - all_tables
-        if len(unknown_tables) > 0:
-            print("Unknown tables (not found in database):")
-            print("\t" + "\n\t".join(unknown_tables))
-            return None
-
-    if include_dependent_tables:
-        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
-        tables = db_graph.get_all_dependent_tables(table_graph, tables)
-
-    return inspector, schema, tables, columns
+        return None
+    all_tables = set(inspector.get_table_names(schema))
+    unknown_tables = set(tables) - all_tables
+    if len(unknown_tables) > 0:
+        print("Tables not found in database:")
+        print("\t" + "\n\t".join(unknown_tables))
+        sys.exit()
+    return tables
 
 
 def check_table_params(ctx, param, value):
@@ -262,15 +261,14 @@ def export(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        args = process_args(
-        if args is None:
-            return
-            engine, schema, tables, include_dependent_tables, columns=None)
-        inspector, schema, tables, columns = args
-
+        inspector = sqlalchemy.inspect(engine)
+        schema = validate_schema(inspector, schema)
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        tables = validate_tables(inspector, schema, tables)
+        if include_dependent_tables:
+            tables = db_graph.get_all_dependent_tables(table_graph, tables)
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
-        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
@@ -304,11 +302,12 @@ def upsert(dbname, host, port, username, password, schema,
     try:
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
-        args = process_args(
-            engine, schema, tables, include_dependent_tables)
-        if args is None:
-            return
-        inspector, schema, tables, columns = args
+        inspector = sqlalchemy.inspect(engine)
+        schema = validate_schema(inspector, schema)
+        table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
+        tables = validate_tables(inspector, schema, tables)
+        if include_dependent_tables:
+            tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
         import_files, dest_tables = get_import_files_and_tables(directory, tables)
         run_in_session(engine, lambda conn:
