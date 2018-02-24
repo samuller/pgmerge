@@ -19,7 +19,11 @@ If it worked correctly, the following will be in your path and be able to run an
 
     pgmerge --help
 
-Run tests with:
+To run the tests you'll need to set an environment variable with a database connection URL, e.g.:
+
+    DB_TEST_URL=postgres://postgres:password@localhost:5432/
+
+The user has to have rights to create a new database. Then you can run the tests with:
 
     nosetests
 
