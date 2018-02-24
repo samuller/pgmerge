@@ -45,23 +45,30 @@ def load_config_for_tables(config_path):
     return yaml_config
 
 
-def combine_cli_and_db_configs_to_get_url(appname, dbname, host, port, username, password, type="postgresql"):
-    """
-    Combine command-line parameters with default config to get database connection URL.
 
-    Command-line parameters take priority over defaults in config file. Will request password if not yet provided.
+def retrieve_password(appname, dbname, host, port, username, password, type="postgresql"):
     """
-    config_db = {'type': type, 'host': host, 'port': port, 'username': username, 'password': password}
-    if config_db['password'] is None:
+    If password isn't yet available, make sure to get it. Either by loading it from the appropriate config files
+    or else by asking the user.
+    """
+    if password is not None:
+        return password
+    # With Postgresql we look for a pgpass file
+    if type == "postgresql":
         pgpass_path = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
         if not os.path.isfile(pgpass_path):
             pgpass_path = None
-        pgpass = load_pgpass(config_db['host'], config_db['port'], dbname, config_db['username'],
-                             pgpass_path=pgpass_path)
-        if pgpass is None:
-            config_db['password'] = getpass.getpass("Password for {}: ".format(config_db['username']))
-        else:
-            config_db['password'] = pgpass
+        password = load_pgpass(host, port, dbname, username, pgpass_path=pgpass_path)
 
-    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(dbname=dbname, **config_db)
+    if password is None:
+        password = getpass.getpass("Password for {}: ".format(username))
+
+    return password
+
+
+def generate_url(dbname, host, port, username, password, type="postgresql"):
+    config_db = {'type': type, 'host': host, 'port': port,
+                 'username': username, 'password': password,
+                 'dbname': dbname}
+    url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db)
     return url

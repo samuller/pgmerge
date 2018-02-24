@@ -259,7 +259,8 @@ def export(dbname, host, port, username, password, schema,
     """
     engine = None
     try:
-        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        db_url = generate_url(dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
         schema = validate_schema(inspector, schema)
@@ -299,7 +300,8 @@ def upsert(dbname, host, port, username, password, schema,
     """
     engine = None
     try:
-        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        db_url = generate_url(dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
         schema = validate_schema(inspector, schema)
@@ -348,7 +350,8 @@ def inspect(engine, dbname, host, port, username, password, schema,
     """
     _engine = None
     try:
-        db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password, type=engine)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        db_url = generate_url(dbname, host, port, username, password, type=engine)
         _engine = sqlalchemy.create_engine(db_url)
         db_inspect.main(_engine, schema,
                         warnings, list_tables, table_details, partition,
