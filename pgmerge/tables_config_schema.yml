@@ -2,6 +2,11 @@ type: //map
 values:
   type: //rec
   optional:
-    columns: //str
-    pk: //str
-
+    columns: 
+        type: //arr
+        length: { min: 1 }
+        contents: { type: //str }
+    pk:
+        type: //arr
+        length: { min: 1 }
+        contents: { type: //str }
