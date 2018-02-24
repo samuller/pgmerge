@@ -66,7 +66,7 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None):
+def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, columns=None):
     """
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
@@ -74,17 +74,31 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     if file_format is None:
         file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 
+    all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
+    columns_str = '*'
+    if columns is not None:
+        columns_str = ','.join(columns)
+    if columns is None:
+        columns = all_columns
+
     id_columns = get_unique_columns(inspector, dest_table, schema)
     if len(id_columns) == 0:
         return None
 
-    all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
+    unknown_columns = set(columns) - set(all_columns)
+    if len(unknown_columns) > 0:
+        return None
+
+    skipped_id_columns = set(id_columns) - set(columns)
+    if len(skipped_id_columns) > 0:
+        return None
+
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     temp_table_name = "_tmp_%s" % (dest_table,)
     input_file = open(input_file, 'r', encoding="utf-8")
     # Create temporary table with same columns and types as target table
-    create_sql = "CREATE TEMP TABLE %s AS SELECT * FROM %s LIMIT 0;" % (temp_table_name, dest_table)
+    create_sql = "CREATE TEMP TABLE {} AS SELECT {} FROM {} LIMIT 0;".format(temp_table_name, columns_str, dest_table)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
     copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (temp_table_name, file_format)
@@ -93,17 +107,17 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     stats['total'] = cursor.rowcount
 
     # Delete rows in temp table that are already identical to those in destination table
-    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, columns))
     stats['skip'] = cursor.rowcount
 
     # Insert rows from temp table that are not in destination table (according to id columns)
     exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
     stats['insert'] = cursor.rowcount
     # Delete rows that were just inserted
-    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, all_columns))
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, columns))
 
     # Update rows whose id columns match in destination table
-    exec_sql(cursor, sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, all_columns))
+    exec_sql(cursor, sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, columns))
     stats['update'] = cursor.rowcount
 
     drop_sql = "DROP TABLE %s" % (temp_table_name,)

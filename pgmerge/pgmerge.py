@@ -86,13 +86,15 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
-def import_all_new(connection, inspector, schema, import_files, dest_tables, file_format=None,
-                   suspend_foreign_keys=False):
+def import_all_new(connection, inspector, schema, import_files, dest_tables, columns_per_table=None,
+                   file_format=None, suspend_foreign_keys=False):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
     """
     assert len(import_files) == len(dest_tables), "Files without matching tables"
+    if columns_per_table is None:
+        columns_per_table = {}
     # Use copy of lists since they might be altered and are passed by reference
     import_files = list(import_files)
     dest_tables = list(dest_tables)
@@ -119,7 +121,10 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, fil
 
     for file, table in import_pairs:
         print("%s:" % (table,))
-        stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format)
+
+        stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
+                                    columns=columns_per_table.get(table, None))
+
         if stats is None:
             print("\tSkipping table as it has no primary key or unique columns!")
             error_tables.append(table)
@@ -322,9 +327,20 @@ def upsert(dbname, host, port, username, password, schema,
         if include_dependent_tables:
             tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
+        columns_per_table = None
+        if config is not None:
+            table_config = load_config_for_tables(config)
+            config_valid, reason = validate_table_config_with_schema(inspector, schema, table_config)
+            if not config_valid:
+                print(reason)
+                sys.exit()
+            columns_per_table = {key: table_config[key]['columns']
+                                for key in table_config.keys() if 'columns' in table_config[key]}
+
         import_files, dest_tables = get_import_files_and_tables(directory, tables)
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
+                                      columns_per_table=columns_per_table,
                                       suspend_foreign_keys=disable_foreign_keys))
     except Exception as e:
         logging.exception(e)
