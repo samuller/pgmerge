@@ -24,3 +24,7 @@ If you only want to see the schema for individual tables you can use `pgAdmin3` 
 
     \d table_name
 
+## Can `pgmerge` import data while the database currently in-use?
+
+No, if there are other active connections to the database importing will likely fail. The current implementation might require obtaining exclusive locks on the database tables.
+

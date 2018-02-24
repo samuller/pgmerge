@@ -10,7 +10,7 @@ This is also called an *upsert* operation as it performs either an update or an 
 
 pgmerge can also export data in the same format expected for import.
 
-These features allow you to move data between active/in-use databases to keep them up to date and in sync, although it does not cover handling deleted data.
+These features allow you to move data between databases to keep them up to date and in sync, although it does not cover handling deleted data.
 
     $ pgmerge --help
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
@@ -62,7 +62,7 @@ To test that installation worked, run:
 
     pgmerge --help
 
-You can uninstall at any time with:
+and you can uninstall at any time with:
 
     pip uninstall pgmerge
 
