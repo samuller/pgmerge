@@ -1,3 +1,8 @@
+"""
+pgmerge - a PostgreSQL data import and merge utility
+
+Copyright 2018 Simon Muller (samullers@gmail.com)
+"""
 import os
 from .test_db import *
 from sqlalchemy import *
