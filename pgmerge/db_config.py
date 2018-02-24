@@ -45,6 +45,31 @@ def load_config_for_tables(config_path):
     return yaml_config
 
 
+def validate_table_config_with_schema(inspector, schema, table_config):
+    table_names = inspector.get_table_names(schema)
+    unknown_tables = set(table_config.keys()) - set(table_names)
+    if len(unknown_tables) > 0:
+        return False, "Configuration is invalid:\n table not found in database: {}".format(list(unknown_tables))
+
+    for config_table in table_config:
+        columns = inspector.get_columns(config_table, schema)
+        actual_columns = [col['name'] for col in columns]
+        actual_pk_columns = inspector.get_primary_keys(config_table, schema)
+
+        config_columns = table_config[config_table].get('columns', [])
+
+        unknown_columns = set(config_columns) - set(actual_columns)
+        if len(unknown_columns) > 0:
+            return False, "Configuration for '{}' table is invalid:\n 'columns' not found in table: {}"\
+                .format(config_table, list(unknown_columns))
+
+        missing_pk_columns = set(actual_pk_columns) - set(config_columns)
+        if len(missing_pk_columns) > 0:
+            return False, "Configuration for '{}' table is invalid:\n 'columns' has to also contain primary keys,"\
+                          " but doesn't contain {}".format(config_table, list(missing_pk_columns))
+
+    return True, ""
+
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql"):
     """

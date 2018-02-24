@@ -225,6 +225,8 @@ db_connect_options = [
 
 # Shared command line arguments for importing/exporting tables to a directory
 dir_tables_arguments = [
+    click.option('--config', '-c', type=click.Path(exists=True, dir_okay=False),
+                 help='Config file describing how to import/export data.'),
     click.option(
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
@@ -235,7 +237,6 @@ dir_tables_arguments = [
 
 
 @click.group(context_settings=dict(max_content_width=120))
-# @click.option('--config', '-c', help='config file')
 @click.option('--verbose', '-v', is_flag=True, help='Give more verbose output.')
 @click.version_option(version=__version__, message="%(prog)s, version %(version)s\nSimon Muller <samullers@gmail.com>")
 def main(verbose):
@@ -249,7 +250,7 @@ def main(verbose):
 @decorate(db_connect_options)
 @decorate(dir_tables_arguments)
 def export(dbname, host, port, username, password, schema,
-           include_dependent_tables,
+           config, include_dependent_tables,
            directory, tables):
     """
     Export each table to a CSV file.
@@ -270,10 +271,21 @@ def export(dbname, host, port, username, password, schema,
             tables = db_graph.get_all_dependent_tables(table_graph, tables)
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
+
+        colums_per_table = None
+        if config is not None:
+            table_config = load_config_for_tables(config)
+            config_valid, reason = validate_table_config_with_schema(inspector, schema, table_config)
+            if not config_valid:
+                print(reason)
+                sys.exit()
+            colums_per_table = {key: table_config[key]['columns']
+                                for key in table_config.keys() if 'columns' in table_config[key]}
+
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
-                       db_export.export_columns(conn, schema, directory, tables, columns=None))
+                       db_export.export_columns(conn, schema, directory, tables, columns=colums_per_table))
         print("Exported {} tables".format(len(tables)))
     except Exception as e:
         logging.exception(e)
@@ -289,7 +301,7 @@ def export(dbname, host, port, username, password, schema,
                    'requires superuser rights).')
 @decorate(dir_tables_arguments)
 def upsert(dbname, host, port, username, password, schema,
-           include_dependent_tables, disable_foreign_keys,
+           config, include_dependent_tables, disable_foreign_keys,
            directory, tables):
     """
     Import/merge each CSV file into a table.
