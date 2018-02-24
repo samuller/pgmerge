@@ -39,7 +39,7 @@ dir_tables_arguments = [
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
              'all tables that depend on those tables due to foreign key constraints.'),
-    click.argument('directory', nargs=1),
+    click.argument('directory', nargs=1, type=click.Path(exists=True)),
     click.argument('tables', default=None, nargs=-1)
 ]
 
@@ -203,11 +203,6 @@ def process_args(engine, schema, directory, tables, include_dependent_tables, co
 
     if schema is None:
         schema = inspector.default_schema_name
-
-    if not os.path.isdir(directory):
-        print("Directory not found: '{dir}'".format(dir=directory))
-        return None
-
     if len(tables) == 0:
         tables = None
     else:
