@@ -205,7 +205,7 @@ def check_table_params(ctx, param, value):
     other_flag = 'include_dependent_tables'
     if len(value) == 0 and other_flag in ctx.params and ctx.params[other_flag] is True:
         raise click.UsageError(
-            "Illegal usage: `{}` option is only valid if `{}` arguments have been specified."
+            "Illegal usage: '{}' option is only valid if '{}' arguments have been specified."
             .format(other_flag, param.name))
     return value
 
