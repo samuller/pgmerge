@@ -198,7 +198,7 @@ def get_import_files_and_tables(directory, tables):
     return import_files, dest_tables
 
 
-def process_args(engine, schema, directory, tables, include_dependent_tables, columns=None):
+def process_args(engine, schema, tables, include_dependent_tables, columns=None):
     inspector = sqlalchemy.inspect(engine)
 
     if schema is None:
@@ -221,7 +221,7 @@ def process_args(engine, schema, directory, tables, include_dependent_tables, co
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
-    return engine, inspector, schema, directory, tables, columns
+    return engine, inspector, schema, tables, columns
 
 
 @click.group(context_settings=dict(max_content_width=120))
@@ -252,10 +252,10 @@ def export(dbname, host, port, username, password, schema,
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         args = process_args(
-            engine, schema, directory, tables, include_dependent_tables, columns=None)
         if args is None:
             return
-        engine, inspector, schema, directory, tables, columns = args
+            engine, schema, tables, include_dependent_tables, columns=None)
+        engine, inspector, schema, tables, columns = args
 
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
@@ -294,10 +294,10 @@ def upsert(dbname, host, port, username, password, schema,
         db_url = combine_cli_and_db_configs_to_get_url(APP_NAME, dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         args = process_args(
-            engine, schema, directory, tables, include_dependent_tables)
+            engine, schema, tables, include_dependent_tables)
         if args is None:
             return
-        engine, inspector, schema, directory, tables, columns = args
+        engine, inspector, schema, tables, columns = args
 
         import_files, dest_tables = get_import_files_and_tables(directory, tables)
         run_in_session(engine, lambda conn:
