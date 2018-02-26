@@ -57,7 +57,7 @@ These features allow you to move data between databases to keep them up to date 
 
 With `Python 3` installed on your system, you can run:
 
-    pip install git+https://github.com/samuller/pgmerge
+    pip install pgmerge
 
 To test that installation worked, run:
 
@@ -70,4 +70,8 @@ and you can uninstall at any time with:
 If you have trouble installing and you're running a Debian-based Linux that uses `Python 2` as its system default, then you might need to run:
 
     sudo apt install libpq-dev python3-pip python3-setuptools
-    sudo -H pip3 install git+https://github.com/samuller/pgmerge
+    sudo -H pip3 install pgmerge
+
+To install the newest code directly from Github:
+
+    pip install git+https://github.com/samuller/pgmerge
