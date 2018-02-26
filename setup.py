@@ -31,4 +31,14 @@ setup(
             'pgmerge=pgmerge.pgmerge:main',
         ],
     },
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: Database',
+        'Topic :: Utilities',
+    ],
 )
