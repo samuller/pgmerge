@@ -6,6 +6,7 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 import os
 import logging
 
+DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 _log = logging.getLogger(__name__)
 
 
@@ -15,7 +16,7 @@ def log_sql(sql):
 
 def export_table(cursor, inspector, schema, output_path, table, columns=None, file_format=None):
     if file_format is None:
-        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+        file_format = DEFAULT_FILE_FORMAT
 
     all_columns = inspector.get_columns(table, schema)
     pks = inspector.get_primary_keys(table, schema)
@@ -41,7 +42,7 @@ def export_table(cursor, inspector, schema, output_path, table, columns=None, fi
 
 def export_columns(connection, inspector, schema, output_dir, tables, columns_per_table=None, file_format=None):
     if file_format is None:
-        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+        file_format = DEFAULT_FILE_FORMAT
 
     cursor = connection.cursor()
 
@@ -75,7 +76,7 @@ def sql_join_alias_for_foreign_key(foreign_key):
 def export_alternate_keys(cursor, inspector, output_path, schema, main_table,
                           table_columns=None, order_columns=None, file_format=None):
     if file_format is None:
-        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+        file_format = DEFAULT_FILE_FORMAT
 
     fks = inspector.get_foreign_keys(main_table, schema)
     # Joins TODO: Add more joins based on alternate keys of joined tables
