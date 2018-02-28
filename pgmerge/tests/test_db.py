@@ -26,6 +26,10 @@ def find_open_connections(connection):
 class TestDB(unittest.TestCase):
     """
     Class for setting up a test database and handling connections to it.
+
+    Requires environment variable with connection details/URL to database, e.g.:
+        DB_TEST_URL=postgres://postgres:password@localhost:5432/
+    User has to have create database permissions.
     """
 
     env_var = "DB_TEST_URL"
@@ -51,8 +55,6 @@ class TestDB(unittest.TestCase):
 
     @classmethod
     def create_db(cls, db_name):
-        # Environment variable for test database, e.g.:
-        #  DB_TEST_URL=postgres://postgres:password@localhost:5432/
         cls.url = os.getenv(cls.env_var)
         if not cls.url:
             assert False, "No database URL set in '{}'".format(cls.env_var)
