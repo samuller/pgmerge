@@ -56,14 +56,14 @@ def export_columns(connection, inspector, schema, output_dir, tables, columns_pe
     connection.commit()
 
 
-def sql_join_from_foreign_key(foreign_key, table, join_alias=None):
+def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None):
     assert len(foreign_key['constrained_columns']) == len(foreign_key['referred_columns'])
     if join_alias is None:
         join_alias = sql_join_alias_for_foreign_key(foreign_key)
     comparisons = []
     for col, ref_col in zip(foreign_key['constrained_columns'], foreign_key['referred_columns']):
         comparisons.append('({t}.{c} = {rt}.{rc} OR ({t}.{c} IS NULL AND {rt}.{rc} IS NULL))'.format(
-            t=table, c=col, rt=join_alias, rc=ref_col
+            t=table_or_alias, c=col, rt=join_alias, rc=ref_col
         ))
     return "LEFT JOIN {referred_schema}.{referred_table} AS {join_alias} ON {cmps}"\
         .format(**foreign_key, join_alias=join_alias, cmps=" AND ".join(comparisons))
