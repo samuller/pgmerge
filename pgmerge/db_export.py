@@ -82,7 +82,7 @@ def export_alternate_keys(cursor, inspector, output_path, schema, main_table,
     # Joins TODO: Add more joins based on alternate keys of joined tables
     joins_sql = " " + " ".join([sql_join_from_foreign_key(fk, main_table) for fk in fks])
     # Columns
-    join_columns = ["{}.{}".format(sql_join_alias_for_foreign_key(fk), col)
+    join_columns = ["{0}.{1} AS fk_{2}_{1}".format(sql_join_alias_for_foreign_key(fk), col, fk['name'])
                     for fk in fks for col in fk['referred_columns']]
     columns_sql = '{}.*'.format(main_table)
     if len(join_columns) > 0:
