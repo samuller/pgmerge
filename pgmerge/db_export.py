@@ -73,7 +73,45 @@ def sql_join_alias_for_foreign_key(foreign_key):
     return 'join_{}'.format(foreign_key['name'])
 
 
-def sql_select_table_with_foreign_columns(inspector, schema, table, order_columns=None):
+def sql_select_table_with_foreign_columns(inspector, schema, table, columns=None, order_columns=None):
+    if columns is None:
+        all_columns = inspector.get_columns(table, schema)
+        columns = [(col['name'], []) for col in all_columns]
+
+    all_fks = inspector.get_foreign_keys(table, schema)
+
+    per_column_sql = []
+    per_join_sql = []
+    for column_name, foreign_key_path in columns:
+        prev_fk_alias = table
+        foreign_table_fks_by_name = {fk['name']: fk for fk in all_fks}
+        for foreign_key_name in foreign_key_path:
+            if foreign_key_name not in foreign_table_fks_by_name:
+                raise ExportException('Unknown foreign key {} found in path {} of provided columns: {}'
+                                      .format(foreign_key_name, foreign_key_path, columns))
+            foreign_key = foreign_table_fks_by_name[foreign_key_name]
+            per_join_sql.append(sql_join_from_foreign_key(foreign_key, prev_fk_alias))
+            # For next iteration
+            foreign_table_fks_by_name = {fk['name']: fk for fk in inspector.get_foreign_keys(
+                foreign_key['referred_table'], foreign_key['referred_schema'])}
+            prev_fk_alias = sql_join_alias_for_foreign_key(foreign_key)
+
+        per_column_sql.append('{join_alias}.{column} AS {join_alias}_{column}'.format(
+            join_alias=prev_fk_alias, column=column_name))
+
+    joins_sql = " " + " ".join(per_join_sql)
+    columns_sql = ', '.join(per_column_sql)
+    order_sql = ''
+    if order_columns is not None and len(order_columns) > 0:
+        order_sql = ' ORDER BY ' + ','.join(order_columns)
+
+    select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{order_sql}' \
+        .format(columns_sql=columns_sql, schema=schema, main_table=table, joins_sql=joins_sql, order_sql=order_sql)
+
+    return select_sql
+
+
+def sql_select_table_with_foreign_key_columns(inspector, schema, table, order_columns=None):
     fks = inspector.get_foreign_keys(table, schema)
     # Joins TODO: Add more joins based on alternate keys of joined tables
     joins_sql = " " + " ".join([sql_join_from_foreign_key(fk, table) for fk in fks])
@@ -105,3 +143,13 @@ def export_alternate_keys(cursor, inspector, output_path, schema, main_table,
 
     output_file = open(output_path, 'wb')
     cursor.copy_expert(copy_sql, output_file)
+
+
+class ExportException(Exception):
+    """
+    Exception raised for errors detected before or during export.
+    """
+
+    def __init__(self, message):
+        self.message = message
+
