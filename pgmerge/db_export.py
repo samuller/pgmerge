@@ -73,30 +73,35 @@ def sql_join_alias_for_foreign_key(foreign_key):
     return 'join_{}'.format(foreign_key['name'])
 
 
+def sql_select_table_with_foreign_columns(inspector, schema, table, order_columns=None):
+    fks = inspector.get_foreign_keys(table, schema)
+    # Joins TODO: Add more joins based on alternate keys of joined tables
+    joins_sql = " " + " ".join([sql_join_from_foreign_key(fk, table) for fk in fks])
+    # Columns
+    join_columns = ["{0}.{1} AS fk_{2}_{1}".format(sql_join_alias_for_foreign_key(fk), col, fk['name'])
+                    for fk in fks for col in fk['referred_columns']]
+    columns_sql = '{}.*'.format(table)
+    if len(join_columns) > 0:
+        columns_sql += ', ' + ', '.join(join_columns)
+    # Ordering
+    order_sql = ''
+    if order_columns is not None and len(order_columns) > 0:
+        order_sql = ' ORDER BY ' + ','.join(order_columns)
+
+    select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{order_sql}'\
+        .format(columns_sql=columns_sql, schema=schema, main_table=table, joins_sql=joins_sql, order_sql=order_sql)
+
+    return select_sql
+
 def export_alternate_keys(cursor, inspector, output_path, schema, main_table,
                           table_columns=None, order_columns=None, file_format=None):
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
 
-    fks = inspector.get_foreign_keys(main_table, schema)
-    # Joins TODO: Add more joins based on alternate keys of joined tables
-    joins_sql = " " + " ".join([sql_join_from_foreign_key(fk, main_table) for fk in fks])
-    # Columns
-    join_columns = ["{0}.{1} AS fk_{2}_{1}".format(sql_join_alias_for_foreign_key(fk), col, fk['name'])
-                    for fk in fks for col in fk['referred_columns']]
-    columns_sql = '{}.*'.format(main_table)
-    if len(join_columns) > 0:
-        columns_sql += ', ' + ', '.join(join_columns)
-    # Order
-    order_sql = ''
-    if order_columns is not None and len(order_columns) > 0:
-        order_sql = ' ORDER BY ' + ','.join(order_columns)
+    select_sql = sql_select_table_with_foreign_columns(inspector, schema, main_table, order_columns)
+    copy_sql = 'COPY ({select_sql}) TO STDOUT WITH ({file_format})'\
+        .format(select_sql=select_sql, file_format=file_format)
+    log_sql(copy_sql)
 
     output_file = open(output_path, 'wb')
-
-    select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{order_sql}'\
-        .format(columns_sql=columns_sql, schema=schema, main_table=main_table, joins_sql=joins_sql, order_sql=order_sql)
-    copy_sql = 'COPY ({select_sql}) TO STDOUT WITH ({file_format})'\
-        .format(columns_str=columns_sql, select_sql=select_sql, file_format=file_format)
-    log_sql(copy_sql)
     cursor.copy_expert(copy_sql, output_file)
