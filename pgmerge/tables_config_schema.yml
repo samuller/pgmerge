@@ -6,7 +6,7 @@ values:
         type: //arr
         length: { min: 1 }
         contents: { type: //str }
-    pk:
+    alternate_key:
         type: //arr
         length: { min: 1 }
         contents: { type: //str }

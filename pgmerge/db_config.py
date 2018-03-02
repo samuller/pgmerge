@@ -58,6 +58,7 @@ def validate_table_config_with_schema(inspector, schema, table_config):
         actual_pk_columns = inspector.get_primary_keys(config_table, schema)
 
         config_columns = table_config[config_table].get('columns', [])
+        config_pks = table_config[config_table].get('alternate_key', [])
 
         unknown_columns = set(config_columns) - set(actual_columns)
         if len(unknown_columns) > 0:
@@ -74,6 +75,12 @@ def validate_table_config_with_schema(inspector, schema, table_config):
         if len(missing_pk_columns) > 0:
             return False, "Configuration for '{}' table is invalid:\n 'columns' has to also contain primary keys,"\
                           " but doesn't contain {}".format(config_table, list(missing_pk_columns))
+
+
+        unknown_pk_columns = set(config_pks) - set(actual_columns)
+        if len(unknown_pk_columns) > 0:
+            return False, "Configuration for '{}' table is invalid:\n 'alternate_key' columns not found in table: {}"\
+                .format(config_table, list(unknown_pk_columns))
 
     return True, ""
 
