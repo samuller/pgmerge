@@ -115,8 +115,9 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
     table_name_tmp_final = "_tmp_final_%s" % (dest_table,)
-    create_sql = "CREATE TEMP TABLE {} AS SELECT * FROM {};".format(
-        table_name_tmp_final, table_name_tmp_copy)
+    select_sql = sql_select_table_with_local_columns(inspector, schema, table_name_tmp_copy, foreign_columns)
+    create_sql = "CREATE TEMP TABLE {} AS {select_sql};".format(
+        table_name_tmp_final, select_sql=select_sql)
     exec_sql(cursor, create_sql)
 
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
@@ -149,6 +150,10 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     stats['update'] = cursor.rowcount
 
     return stats
+
+
+def sql_select_table_with_local_columns(inspector, schema, src_table, foreign_columns, columns_subset=None):
+    return "SELECT * FROM {};".format(src_table)
 
 
 def disable_foreign_key_constraints(cursor):
