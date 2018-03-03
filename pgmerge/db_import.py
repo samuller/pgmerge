@@ -4,6 +4,7 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018 Simon Muller (samullers@gmail.com)
 """
 import logging
+from .db_export import *
 
 _log = logging.getLogger(__name__)
 
@@ -87,7 +88,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
-        raise InputParametersException("Columns provided do not exist in table '{}': {}".format(dest_table, unknown_columns))
+        raise InputParametersException("Columns provided do not exist in table '{}': {}"
+                                       .format(dest_table, unknown_columns))
 
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
@@ -96,28 +98,38 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
-    temp_table_name = "_tmp_%s" % (dest_table,)
+    table_name_tmp_copy = "_tmp_copy_%s" % (dest_table,)
     input_file = open(input_file, 'r', encoding="utf-8")
+
+    foreign_columns = [(col, []) for col in columns]
+    select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns,
+                                                       alias_columns=False)
     # Create temporary table with same columns and types as target table
-    create_sql = "CREATE TEMP TABLE {} AS SELECT {} FROM {} LIMIT 0;".format(temp_table_name, columns_sql, dest_table)
+    create_sql = "CREATE TEMP TABLE {} AS {select_sql} LIMIT 0;".format(table_name_tmp_copy, select_sql=select_sql)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
-    copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (temp_table_name, file_format)
+    copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (table_name_tmp_copy, file_format)
     log_sql(copy_sql)
     cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
-    upsert_stats = upsert_table_to_table(cursor, temp_table_name, dest_table, id_columns, columns)
+    # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
+    table_name_tmp_final = "_tmp_final_%s" % (dest_table,)
+    create_sql = "CREATE TEMP TABLE {} AS SELECT * FROM {};".format(
+        table_name_tmp_final, table_name_tmp_copy)
+    exec_sql(cursor, create_sql)
+
+    upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
     stats.update(upsert_stats)
 
-    drop_sql = "DROP TABLE %s" % (temp_table_name,)
+    drop_sql = "DROP TABLE %s" % (table_name_tmp_copy,)
     exec_sql(cursor, drop_sql)
 
-    # VACUUM is useful for each table that had major updates/import, but it has to run outside a transaction
-    # and requires connection to be in autocommit mode
-    # exec_sql(cursor, "VACUUM ANALYZE %s" % (dest_table,))
+    drop_sql = "DROP TABLE %s" % (table_name_tmp_final,)
+    exec_sql(cursor, drop_sql)
 
     return stats
+
 
 def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     stats = {'skip': 0, 'insert': 0, 'update': 0}
@@ -135,9 +147,6 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     # Update rows whose id columns match in destination table
     exec_sql(cursor, sql_update_rows_between_tables(dest_table, src_table, id_columns, columns))
     stats['update'] = cursor.rowcount
-
-    return stats
-
 
     return stats
 
