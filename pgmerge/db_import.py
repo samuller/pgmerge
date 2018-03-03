@@ -107,19 +107,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
-    # Delete rows in temp table that are already identical to those in destination table
-    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, columns))
-    stats['skip'] = cursor.rowcount
-
-    # Insert rows from temp table that are not in destination table (according to id columns)
-    exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, temp_table_name, id_columns))
-    stats['insert'] = cursor.rowcount
-    # Delete rows that were just inserted
-    exec_sql(cursor, sql_delete_identical_rows_between_tables(temp_table_name, dest_table, columns))
-
-    # Update rows whose id columns match in destination table
-    exec_sql(cursor, sql_update_rows_between_tables(dest_table, temp_table_name, id_columns, columns))
-    stats['update'] = cursor.rowcount
+    upsert_stats = upsert_table_to_table(cursor, temp_table_name, dest_table, id_columns, columns)
+    stats.update(upsert_stats)
 
     drop_sql = "DROP TABLE %s" % (temp_table_name,)
     exec_sql(cursor, drop_sql)
@@ -127,6 +116,28 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     # VACUUM is useful for each table that had major updates/import, but it has to run outside a transaction
     # and requires connection to be in autocommit mode
     # exec_sql(cursor, "VACUUM ANALYZE %s" % (dest_table,))
+
+    return stats
+
+def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
+    stats = {'skip': 0, 'insert': 0, 'update': 0}
+
+    # Delete rows in temp table that are already identical to those in destination table
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
+    stats['skip'] = cursor.rowcount
+
+    # Insert rows from temp table that are not in destination table (according to id columns)
+    exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, src_table, id_columns))
+    stats['insert'] = cursor.rowcount
+    # Delete rows that were just inserted
+    exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
+
+    # Update rows whose id columns match in destination table
+    exec_sql(cursor, sql_update_rows_between_tables(dest_table, src_table, id_columns, columns))
+    stats['update'] = cursor.rowcount
+
+    return stats
+
 
     return stats
 
