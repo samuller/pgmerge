@@ -52,7 +52,8 @@ def sql_join_alias_for_foreign_key(foreign_key):
     return 'join_{}'.format(foreign_key['name'])
 
 
-def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_columns=None, order_columns=None):
+def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_columns=None, order_columns=None,
+                                          alias_columns=True):
     """
     :param foreign_columns: A list of tuples describing which columns to export. Columns can be from any other tables
         that are dependencies of this one. Each tuple should be of the format: (column_name, list_of_foreign_key_names).
@@ -81,8 +82,12 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
                 foreign_key['referred_table'], foreign_key['referred_schema'])}
             prev_fk_alias = sql_join_alias_for_foreign_key(foreign_key)
 
-        per_column_sql.append('{join_alias}.{column} AS {join_alias}_{column}'.format(
-            join_alias=prev_fk_alias, column=column_name))
+        alias_sql = ''
+        if alias_columns:
+            alias_sql = ' AS {join_alias}_{column}'.format(join_alias=prev_fk_alias, column=column_name)
+
+        per_column_sql.append('{join_alias}.{column}{alias_sql}'.format(
+            join_alias=prev_fk_alias, column=column_name, alias_sql=alias_sql))
 
     joins_sql = " " + " ".join(per_join_sql)
     columns_sql = ', '.join(per_column_sql)
