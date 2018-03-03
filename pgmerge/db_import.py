@@ -75,9 +75,9 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
         file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
-    columns_str = '*'
+    columns_sql = '*'
     if columns is not None:
-        columns_str = ','.join(columns)
+        columns_sql = ','.join(columns)
     if columns is None:
         columns = all_columns
 
@@ -99,7 +99,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     temp_table_name = "_tmp_%s" % (dest_table,)
     input_file = open(input_file, 'r', encoding="utf-8")
     # Create temporary table with same columns and types as target table
-    create_sql = "CREATE TEMP TABLE {} AS SELECT {} FROM {} LIMIT 0;".format(temp_table_name, columns_str, dest_table)
+    create_sql = "CREATE TEMP TABLE {} AS SELECT {} FROM {} LIMIT 0;".format(temp_table_name, columns_sql, dest_table)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
     copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (temp_table_name, file_format)
