@@ -35,12 +35,15 @@ def export_columns(connection, inspector, schema, output_dir, tables, columns_pe
     connection.commit()
 
 
-def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None):
-    assert len(foreign_key['constrained_columns']) == len(foreign_key['referred_columns'])
+def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
+                              local_columns_key='constrained_columns', foreign_columns_key='referred_columns'):
+    assert len(foreign_key[local_columns_key]) == len(foreign_key[foreign_columns_key])
+    assert local_columns_key in foreign_key
+    assert foreign_columns_key in foreign_key
     if join_alias is None:
         join_alias = sql_join_alias_for_foreign_key(foreign_key)
     comparisons = []
-    for col, ref_col in zip(foreign_key['constrained_columns'], foreign_key['referred_columns']):
+    for col, ref_col in zip(foreign_key[local_columns_key], foreign_key[foreign_columns_key]):
         comparisons.append('({t}.{c} = {rt}.{rc} OR ({t}.{c} IS NULL AND {rt}.{rc} IS NULL))'.format(
             t=table_or_alias, c=col, rt=join_alias, rc=ref_col
         ))
