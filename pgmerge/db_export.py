@@ -117,8 +117,8 @@ def export_table_with_any_columns(cursor, inspector, output_path, schema, main_t
         .format(select_sql=select_sql, file_format=file_format)
     log_sql(copy_sql)
 
-    output_file = open(output_path, 'wb')
-    cursor.copy_expert(copy_sql, output_file)
+    with open(output_path, 'wb') as output_file:
+        cursor.copy_expert(copy_sql, output_file)
 
 
 class ExportException(Exception):

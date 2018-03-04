@@ -99,7 +99,6 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     table_name_tmp_copy = "_tmp_copy_%s" % (dest_table,)
-    input_file = open(input_file, 'r', encoding="utf-8")
 
     foreign_columns = [(col, []) for col in columns]
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns,
@@ -110,7 +109,9 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     # Import data into temporary table
     copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (table_name_tmp_copy, file_format)
     log_sql(copy_sql)
-    cursor.copy_expert(copy_sql, input_file)
+
+    with open(input_file, 'r', encoding="utf-8") as input_file:
+        cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
@@ -221,5 +222,3 @@ class InputParametersException(PreImportException):
 
     def __init__(self, message):
         self.message = message
-
-
