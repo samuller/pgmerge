@@ -116,7 +116,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
     table_name_tmp_final = "_tmp_final_%s" % (dest_table,)
-    select_sql = sql_select_table_with_local_columns(inspector, schema, table_name_tmp_copy, foreign_columns)
+    select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
+                                                     table_name_tmp_copy, foreign_columns)
     create_sql = "CREATE TEMP TABLE {} AS {select_sql};".format(
         table_name_tmp_final, select_sql=select_sql)
     exec_sql(cursor, create_sql)
@@ -153,8 +154,62 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     return stats
 
 
-def sql_select_table_with_local_columns(inspector, schema, src_table, foreign_columns, columns_subset=None):
-    return "SELECT * FROM {};".format(src_table)
+def sql_select_table_with_local_columns(inspector, schema, schema_table, src_table,
+                                        foreign_columns, local_columns_subset=None):
+    """
+    :param schema_table: Has foreign keys
+    :param src_table: Will be selected from
+    """
+     # Check correctness of paths and build up all foreign keys possibly needed
+    all_fks = inspector.get_foreign_keys(schema_table, schema)
+    fks_by_name = {fk['name']: fk for fk in all_fks}
+
+    grouped_foreign_columns = {tuple(path): path for _, path in foreign_columns}
+    paths = list(grouped_foreign_columns.keys())
+    paths.sort(key=lambda path: len(path))
+    for path in paths:
+        if len(path) == 0:
+            continue
+        if path[-1] not in fks_by_name:
+            # To be able to join to path [fk1, fk2, fk3] we also need path [fk1, fk2] somewhere
+            raise InputParametersException("Partial path missing for: {}".format(path))
+        final_fk = fks_by_name[path[-1]]
+        new_fks = inspector.get_foreign_keys(final_fk['referred_table'], schema)
+        fks_by_name.update({fk['name']: fk for fk in new_fks})
+    # Go through all foreign columns and collect all 'replaced columns'
+    for path in paths:
+        if len(path) == 0:
+            continue
+        foreign_column = grouped_foreign_columns[path]
+        final_fk = fks_by_name[path[-1]]
+        final_fk.setdefault('replaced_columns', []).append(foreign_column[0])
+    # Create joins for all foreign keys
+    per_join_sql = []
+    for path in paths:
+        if len(path) == 0:
+            continue
+        elif len(path) == 1:
+            cur_table = src_table
+        else:
+            cur_table = sql_join_alias_for_foreign_key(path[-2])
+
+        final_fk = fks_by_name[path[-1]]
+        # TODO: consider if join using only last reference can work when foreign key path is known
+        per_join_sql.append(sql_join_from_foreign_key(final_fk, cur_table,
+                                                      local_columns_key='replaced_columns',
+                                                      foreign_columns_key='replaced_columns'))
+
+    joins_sql = " " + " ".join(per_join_sql)
+    # TODO: add non-local columns
+    columns_sql = ','.join(["{}".format(col) for col, path in foreign_columns if len(path) == 0])
+
+    # We don't use {schema}.{src_table} since that doesn't allow temporary tables
+    return "SELECT {columns_sql} FROM {src_table}{joins_sql};".format(
+        columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql)
+
+
+def sql_join_alias_for_foreign_key(foreign_key_name):
+    return 'join_{}'.format(foreign_key_name)
 
 
 def disable_foreign_key_constraints(cursor):
