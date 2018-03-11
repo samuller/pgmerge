@@ -141,19 +141,21 @@ class TestCLI(TestDB):
                       Column('code', String(2), nullable=False),
                       Column('name', String))
 
-        data = {'the_table': {'alternate_key': ['code']}, 'other_table': None}
-        with write_file(os.path.join(self.output_dir, 'test.yml')) as config_file, \
+        data = {'the_table': {'alternate_key': ['code']}}  # 'other_table': {'columns'}
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
                 create_table(self.engine, the_table):
-            yaml.dump(data, config_file, default_flow_style=False)
             self.connection.execute(other_table.insert(), [
                 {'code': 'IS', 'name': 'Iceland'},
             ])
             self.connection.execute(other_table.insert(), [
                 {'code': 'IN'},
             ])
+            yaml.dump(data, config_file, default_flow_style=False)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                         '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 2 tables\n")
 
             os.remove(os.path.join(self.output_dir, "the_table.csv"))
