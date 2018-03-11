@@ -258,7 +258,7 @@ class PreImportException(Exception):
     """
 
     def __init__(self, message):
-        self.message = message
+        super().__init__(message)
 
 
 class UnsupportedSchemaException(PreImportException):
@@ -267,7 +267,7 @@ class UnsupportedSchemaException(PreImportException):
     """
 
     def __init__(self, message):
-        self.message = message
+        super().__init__(message)
 
 
 class InputParametersException(PreImportException):
@@ -276,4 +276,4 @@ class InputParametersException(PreImportException):
     """
 
     def __init__(self, message):
-        self.message = message
+        super().__init__(message)
