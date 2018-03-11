@@ -4,10 +4,27 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018 Simon Muller (samullers@gmail.com)
 """
 import os
+import sys
+import yaml
+import logging
 from .test_db import *
+from io import StringIO
 from sqlalchemy import *
 from pgmerge import pgmerge
 from click.testing import CliRunner
+
+logger = logging.getLogger()
+logger.level = logging.WARN
+
+
+@contextmanager
+def write_file(path):
+    file = open(path, 'w')
+    try:
+        yield file
+    finally:
+        file.close()
+        os.remove(path)
 
 
 class TestCLI(TestDB):
@@ -110,3 +127,34 @@ class TestCLI(TestDB):
             self.connection.close()
 
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
+
+    def test_references(self):
+        # Use a new metadata for each test since the database schema should be empty
+        metadata = MetaData()
+        the_table = Table('the_table', metadata,
+                      Column('id', Integer, primary_key=True),
+                      Column('code', String(2), nullable=False),
+                      Column('name', String),
+                      Column('ref_other_table', Integer, ForeignKey("other_table.id")))
+        other_table = Table('other_table', metadata,
+                      Column('id', Integer, primary_key=True),
+                      Column('code', String(2), nullable=False),
+                      Column('name', String))
+
+        data = {'the_table': {'alternate_key': ['code']}, 'other_table': None}
+        with write_file(os.path.join(self.output_dir, 'test.yml')) as config_file, \
+                create_table(self.engine, other_table), \
+                create_table(self.engine, the_table):
+            yaml.dump(data, config_file, default_flow_style=False)
+            self.connection.execute(other_table.insert(), [
+                {'code': 'IS', 'name': 'Iceland'},
+            ])
+            self.connection.execute(other_table.insert(), [
+                {'code': 'IN'},
+            ])
+
+            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+            self.assertEquals(result.output, "Exported 2 tables\n")
+
+            os.remove(os.path.join(self.output_dir, "the_table.csv"))
+            os.remove(os.path.join(self.output_dir, "other_table.csv"))
