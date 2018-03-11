@@ -57,30 +57,32 @@ def validate_table_config_with_schema(inspector, schema, table_config):
         actual_skippable_columns = [col['name'] for col in columns if col['nullable'] or col['default'] is not None]
         actual_pk_columns = inspector.get_primary_keys(config_table, schema)
 
-        config_columns = table_config[config_table].get('columns', [])
-        config_pks = table_config[config_table].get('alternate_key', [])
+        config_columns = table_config[config_table].get('columns', None)
 
-        unknown_columns = set(config_columns) - set(actual_columns)
-        if len(unknown_columns) > 0:
-            return False, "Configuration for '{}' table is invalid:\n 'columns' not found in table: {}"\
-                .format(config_table, list(unknown_columns))
+        if config_columns is not None:
+            unknown_columns = set(config_columns) - set(actual_columns)
+            if len(unknown_columns) > 0:
+                return False, "Configuration for table '{}' is invalid:\n 'columns' not found in table: {}"\
+                    .format(config_table, list(unknown_columns))
 
-        skipped_columns = set(actual_columns) - set(config_columns)
-        unallowable_skipped_columns = set(skipped_columns) - set(actual_skippable_columns)
-        if len(unallowable_skipped_columns) > 0:
-            return False, "Configuration for '{}' table is invalid:\n 'columns' can't skip columns that aren't"\
-                          " nullable or don't have defaults: {}".format(config_table, list(unallowable_skipped_columns))
+            skipped_columns = set(actual_columns) - set(config_columns)
+            unallowable_skipped_columns = set(skipped_columns) - set(actual_skippable_columns)
+            if len(unallowable_skipped_columns) > 0:
+                return False, "Configuration for table '{}' is invalid:\n 'columns' can't skip columns that aren't"\
+                              " nullable or don't have defaults: {}".format(config_table, list(unallowable_skipped_columns))
 
-        missing_pk_columns = set(actual_pk_columns) - set(config_columns)
-        if len(missing_pk_columns) > 0:
-            return False, "Configuration for '{}' table is invalid:\n 'columns' has to also contain primary keys,"\
-                          " but doesn't contain {}".format(config_table, list(missing_pk_columns))
+            missing_pk_columns = set(actual_pk_columns) - set(config_columns)
+            if len(missing_pk_columns) > 0:
+                return False, "Configuration for table '{}' is invalid:\n 'columns' has to also contain primary keys,"\
+                              " but doesn't contain {}".format(config_table, list(missing_pk_columns))
 
+        config_pks = table_config[config_table].get('alternate_key', None)
 
-        unknown_pk_columns = set(config_pks) - set(actual_columns)
-        if len(unknown_pk_columns) > 0:
-            return False, "Configuration for '{}' table is invalid:\n 'alternate_key' columns not found in table: {}"\
-                .format(config_table, list(unknown_pk_columns))
+        if config_pks is not None:
+            unknown_pk_columns = set(config_pks) - set(actual_columns)
+            if len(unknown_pk_columns) > 0:
+                return False, "Configuration for '{}' table is invalid:\n 'alternate_key' columns not found in table: {}"\
+                    .format(config_table, list(unknown_pk_columns))
 
     return True, ""
 
