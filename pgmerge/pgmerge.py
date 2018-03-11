@@ -280,9 +280,10 @@ def export(dbname, host, port, username, password, schema,
         columns_per_table = None
         if config is not None:
             table_config = load_config_for_tables(config)
-            config_valid, reason = validate_table_config_with_schema(inspector, schema, table_config)
-            if not config_valid:
-                print(reason)
+            try:
+                validate_table_config_with_schema(inspector, schema, table_config)
+            except ConfigInvalidException as e:
+                print(e)
                 sys.exit()
             columns_per_table = {key: table_config[key]['columns']
                                 for key in table_config.keys() if 'columns' in table_config[key]}
@@ -331,9 +332,10 @@ def upsert(dbname, host, port, username, password, schema,
         columns_per_table = None
         if config is not None:
             table_config = load_config_for_tables(config)
-            config_valid, reason = validate_table_config_with_schema(inspector, schema, table_config)
-            if not config_valid:
-                print(reason)
+            try:
+                validate_table_config_with_schema(inspector, schema, table_config)
+            except ConfigInvalidException as e:
+                print(e)
                 sys.exit()
             columns_per_table = {key: table_config[key]['columns']
                                 for key in table_config.keys() if 'columns' in table_config[key]}

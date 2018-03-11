@@ -49,7 +49,7 @@ def validate_table_config_with_schema(inspector, schema, table_config):
     table_names = inspector.get_table_names(schema)
     unknown_tables = set(table_config.keys()) - set(table_names)
     if len(unknown_tables) > 0:
-        return False, "Configuration is invalid:\n table not found in database: {}".format(list(unknown_tables))
+        raise ConfigInvalidException("table not found in database: {}".format(list(unknown_tables)))
 
     for config_table in table_config:
         columns = inspector.get_columns(config_table, schema)
@@ -62,29 +62,31 @@ def validate_table_config_with_schema(inspector, schema, table_config):
         if config_columns is not None:
             unknown_columns = set(config_columns) - set(actual_columns)
             if len(unknown_columns) > 0:
-                return False, "Configuration for table '{}' is invalid:\n 'columns' not found in table: {}"\
-                    .format(config_table, list(unknown_columns))
+                raise ConfigInvalidException(
+                    "'columns' not found in table: {}".format(list(unknown_columns)),
+                    config_table)
 
             skipped_columns = set(actual_columns) - set(config_columns)
             unallowable_skipped_columns = set(skipped_columns) - set(actual_skippable_columns)
             if len(unallowable_skipped_columns) > 0:
-                return False, "Configuration for table '{}' is invalid:\n 'columns' can't skip columns that aren't"\
-                              " nullable or don't have defaults: {}".format(config_table, list(unallowable_skipped_columns))
+                raise ConfigInvalidException(
+                    "'columns' can't skip columns that aren't nullable or don't have defaults: {}"
+                        .format(list(unallowable_skipped_columns)), config_table)
 
             missing_pk_columns = set(actual_pk_columns) - set(config_columns)
             if len(missing_pk_columns) > 0:
-                return False, "Configuration for table '{}' is invalid:\n 'columns' has to also contain primary keys,"\
-                              " but doesn't contain {}".format(config_table, list(missing_pk_columns))
+                raise ConfigInvalidException(
+                    "'columns' has to also contain primary keys, but doesn't contain {}"
+                        .format(list(missing_pk_columns)), config_table)
 
         config_pks = table_config[config_table].get('alternate_key', None)
 
         if config_pks is not None:
             unknown_pk_columns = set(config_pks) - set(actual_columns)
             if len(unknown_pk_columns) > 0:
-                return False, "Configuration for '{}' table is invalid:\n 'alternate_key' columns not found in table: {}"\
-                    .format(config_table, list(unknown_pk_columns))
-
-    return True, ""
+                raise ConfigInvalidException(
+                    "'alternate_key' columns not found in table: {}".format(list(unknown_pk_columns)),
+                    config_table)
 
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql"):
@@ -113,3 +115,16 @@ def generate_url(dbname, host, port, username, password, type="postgresql"):
                  'dbname': dbname}
     url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db)
     return url
+
+
+class ConfigInvalidException(Exception):
+    """
+    Exception raised for invalid config file.
+    """
+
+    def __init__(self, message, table=None):
+        if table is not None:
+            message = "Configuration for table '{}' is invalid:\n {}".format(table, message)
+        else:
+            message = "Configuration is invalid:\n {}".format(message)
+        super().__init__(message)
