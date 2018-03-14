@@ -128,7 +128,7 @@ class TestCLI(TestDB):
 
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
-    def test_references(self):
+    def test_config_references(self):
         # Use a new metadata for each test since the database schema should be empty
         metadata = MetaData()
         the_table = Table('the_table', metadata,
@@ -157,6 +157,15 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 2 tables\n")
+
+            with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
+                header_columns = cmd_output.readlines()[0].strip().split(',')
+                self.assertEquals(header_columns, ['the_table_id', 'the_table_code',
+                                                   'the_table_name', 'the_table_ref_other_table'])
+
+            with open(os.path.join(self.output_dir, "other_table.csv")) as cmd_output:
+                header_columns = cmd_output.readlines()[0].strip().split(',')
+                self.assertEquals(header_columns, ['other_table_id', 'other_table_code', 'other_table_name'])
 
             os.remove(os.path.join(self.output_dir, "the_table.csv"))
             os.remove(os.path.join(self.output_dir, "other_table.csv"))
