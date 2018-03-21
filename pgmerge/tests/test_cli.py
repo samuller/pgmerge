@@ -158,6 +158,15 @@ class TestCLI(TestDB):
                                                          '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 2 tables\n")
 
+            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
+                                                         '--dbname', 'testdb', self.output_dir])
+            result_lines = result.output.splitlines()
+            self.assertEquals(result_lines[0], "other_table:")
+            self.assertEquals(result_lines[1].strip().split(), ["skip:", "2", "insert:", "0", "update:", "0"])
+            self.assertEquals(result_lines[2], "the_table:")
+            self.assertEquals(result_lines[3].strip().split(), ["skip:", "0", "insert:", "0", "update:", "0"])
+            self.assertEquals(result_lines[-1], "2 tables imported successfully")
+
             with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
                 self.assertEquals(header_columns, ['the_table_id', 'the_table_code',
