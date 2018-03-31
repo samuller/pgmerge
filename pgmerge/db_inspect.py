@@ -78,7 +78,7 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     print('\n}')
 
 
-def print_table(name, columns=None, color='#EBCEF2'):
+def print_table(name, columns=None, color='#aec7e8'):
     columns_str = ""
     for column in columns:
         columns_str += """
