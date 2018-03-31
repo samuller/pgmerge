@@ -68,7 +68,8 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     print("node[shape=plaintext];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
     for node in table_graph.nodes():
-        print("""{0} [label=<{1}>];""".format(node, print_table(node, ['id', 'value'])))
+        print("""{0} [label=<{1}>];""".format(
+            node, print_table(node, [])))
 
     for node in table_graph.nodes():
         for neighbour in table_graph[node]:
@@ -83,10 +84,10 @@ def print_table(name, columns=None, color='#EBCEF2'):
         columns_str += """
         <tr>
             <td align='left'><b><i>{column}</i></b></td>
-            <td align='left'> </td>
-            <td align='left'>int4 not null</td>
+            <td align='left'></td>
+            <td align='left'>{details}</td>
         </tr> 
-        """.format(column=column)
+        """.format(column=column, details="")
 
     return """<table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
     <tr>
