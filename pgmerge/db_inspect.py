@@ -65,7 +65,7 @@ def print_insertion_order(table_graph):
 
 def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     print('digraph %s {' % (name,))
-    print("node[shape=record];")
+    print("node[shape=plaintext];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
     for node in table_graph.nodes():
         print("""{0} [label=<{1}>];""".format(node, print_table(node, ['id', 'value'])))
