@@ -89,11 +89,12 @@ def print_table(name, columns=None, color='#aec7e8'):
         </tr> 
         """.format(column=column, details="")
 
-    return """<table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
-    <tr>
-        <td colspan='2' bgcolor='{color}' align='left'><b><i>public.{name}</i></b></td>
-        <td bgcolor='{color}' align='right'>[table]</td>
-    </tr>
+    return """
+    <table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
+        <tr>
+            <td colspan='2' bgcolor='{color}' align='left'><b><i>public.{name}</i></b></td>
+            <td bgcolor='{color}' align='right'>[table]</td>
+        </tr>
     {columns_str}
     </table>""".format(name=name, color=color, columns_str=columns_str)
 
