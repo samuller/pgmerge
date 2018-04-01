@@ -74,7 +74,7 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     for node in table_graph.nodes():
         for neighbour in table_graph[node]:
             edge = table_graph[node][neighbour].get('name')
-            print('"%s" -> "%s":name [label="%s"];' % (node, neighbour, edge))
+            print('"%s":name -> "%s":name [label="%s"];' % (node, neighbour, edge))
     print('\n}')
 
 
