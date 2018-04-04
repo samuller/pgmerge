@@ -48,7 +48,7 @@ def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
             t=table_or_alias, c=col, rt=join_alias, rc=ref_col
         ))
     return "LEFT JOIN {referred_schema}.{referred_table} AS {join_alias} ON {cmps}"\
-        .format(**foreign_key, join_alias=join_alias, cmps=" AND ".join(comparisons))
+        .format(join_alias=join_alias, cmps=" AND ".join(comparisons), **foreign_key)
 
 
 def sql_join_alias_for_foreign_key(foreign_key):
