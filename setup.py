@@ -9,8 +9,8 @@ with open(path.join(here, 'requirements.txt')) as f:
 
 # Get the long description from the README file
 # pandoc --from=markdown --to=rst --output=README.rst README.md
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
+    with open(readme_path, encoding='utf-8') as f:
 
 setup(
     name='pgmerge',
