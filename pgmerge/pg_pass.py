@@ -4,6 +4,7 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018 Simon Muller (samullers@gmail.com)
 """
 import os
+import errno
 import logging
 from .utils import is_windows
 
@@ -37,22 +38,27 @@ def load_pgpass(hostname, port, database, username, pgpass_path=None):
                 return False
         return True
 
-    with open(pgpass_path, 'r') as pgpass_file:
-        lines = pgpass_file.readlines()
-        # Filter out comments
-        lines = [line for line in lines if not line.startswith('#')]
-        for line in lines:
-            # "If an entry needs to contain : or \, escape this character with \."
-            line = line.replace("\\:", COLON_REPLACE_STRING)
-            line = line.replace("\\\\", "\\")
+    try:
+        with open(pgpass_path, 'r') as pgpass_file:
+            lines = pgpass_file.readlines()
+            # Filter out comments
+            lines = [line for line in lines if not line.startswith('#')]
+            for line in lines:
+                # "If an entry needs to contain : or \, escape this character with \."
+                line = line.replace("\\:", COLON_REPLACE_STRING)
+                line = line.replace("\\\\", "\\")
 
-            fields = line.split(":")
-            fields = [field.replace(COLON_REPLACE_STRING, ":") for field in fields]
-            # "The password field from the first line that matches the current connection parameters will be used."
-            if not line_matches(fields):
-                continue
-            # Return password after removing any trailing newlines
-            return fields[4].splitlines()[0]
+                fields = line.split(":")
+                fields = [field.replace(COLON_REPLACE_STRING, ":") for field in fields]
+                # "The password field from the first line that matches the current connection parameters will be used."
+                if not line_matches(fields):
+                    continue
+                # Return password after removing any trailing newlines
+                return fields[4].splitlines()[0]
+    except IOError as e:
+        if (e.errno == errno.EACCES):
+            return None
+        raise e
 
     return None
 

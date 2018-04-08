@@ -7,6 +7,7 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 import os
 import re
 import sys
+import errno
 import click
 import logging
 import sqlalchemy
@@ -25,7 +26,13 @@ log = logging.getLogger()
 def setup_logging(verbose=False):
     log_dir = os.path.dirname(LOG_FILE)
     if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+        try:
+            os.makedirs(log_dir)
+        except OSError as e:
+            if (e.errno == errno.EACCES):
+                print('WARN: No permissions to create logging directory: ' + log_dir)
+                return
+            raise e
 
     max_total_size = 1024 * 1024
     file_count = 2
