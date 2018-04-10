@@ -18,18 +18,6 @@ def exec_sql(cursor, sql):
     cursor.execute(sql)
 
 
-def get_unique_columns(inspector, table, schema):
-    """
-    If the combination of primary key and unique constraints is used to identify a row, then you'll miss rows where
-    values in separate unique constraints have been swapped. This means that extra INSERTS or missed UPDATES could
-    happen if these columns are collectively used as an identifier.
-    """
-    pks = inspector.get_primary_keys(table, schema)
-    unique_constraints = inspector.get_unique_constraints(table, schema)
-    unique = [col for constraint in unique_constraints for col in constraint['column_names']]
-    return pks + unique
-
-
 def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_name, all_column_names):
     # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)

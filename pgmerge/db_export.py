@@ -14,6 +14,18 @@ def log_sql(sql):
     _log.debug('SQL: {}'.format(sql))
 
 
+def get_unique_columns(inspector, table, schema):
+    """
+    If the combination of primary key and unique constraints is used to identify a row, then you'll miss rows where
+    values in separate unique constraints have been swapped. This means that extra INSERTS or missed UPDATES could
+    happen if these columns are collectively used as an identifier.
+    """
+    pks = inspector.get_primary_keys(table, schema)
+    unique_constraints = inspector.get_unique_constraints(table, schema)
+    unique = [col for constraint in unique_constraints for col in constraint['column_names']]
+    return pks + unique
+
+
 def export_columns(connection, inspector, schema, output_dir, tables, columns_per_table=None, file_format=None):
     """
     Exports all given tables with the columns specified in the columns_per_table dictionary.
@@ -29,8 +41,11 @@ def export_columns(connection, inspector, schema, output_dir, tables, columns_pe
             columns = columns_per_table[table]
             foreign_columns = [(col, []) for col in columns]
         output_file = os.path.join(output_dir, table + '.csv')
+        order_columns = get_unique_columns(inspector, table, schema)
+        output_file = os.path.join(output_dir, table + '.csv')
         export_table_with_any_columns(cursor, inspector, output_file, schema, table,
-                                      any_columns=foreign_columns, file_format=file_format)
+                                      any_columns=foreign_columns, order_columns=order_columns,
+                                      file_format=file_format)
 
     connection.commit()
 
