@@ -124,7 +124,7 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
 
     where_sql = ''
     if where_clause is not None:
-        where_sql = ' ' + where_clause
+        where_sql = ' WHERE ' + where_clause
 
     select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{where_sql}{order_sql}' \
         .format(columns_sql=columns_sql, schema=schema, main_table=table, joins_sql=joins_sql,
