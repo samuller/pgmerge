@@ -81,8 +81,3 @@ If you have trouble installing and you're running a Debian-based Linux that uses
 
     sudo apt install libpq-dev python3-pip python3-setuptools
     sudo -H pip3 install pgmerge
-
-or:
-
-    sudo apt install libpq-dev python3-setuptools
-    sudo -H python3 -m pip install pgmerge
