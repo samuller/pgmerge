@@ -40,7 +40,6 @@ def export_columns(connection, inspector, schema, output_dir, tables, columns_pe
         if columns_per_table is not None and table in columns_per_table and columns_per_table[table] is not None:
             columns = columns_per_table[table]
             foreign_columns = [(col, []) for col in columns]
-        output_file = os.path.join(output_dir, table + '.csv')
         order_columns = get_unique_columns(inspector, table, schema)
         output_file = os.path.join(output_dir, table + '.csv')
         export_table_with_any_columns(cursor, inspector, output_file, schema, table,
