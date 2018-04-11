@@ -10,3 +10,4 @@ values:
         type: //arr
         length: { min: 1 }
         contents: { type: //str }
+    where: //str
