@@ -41,10 +41,11 @@ def export_columns(connection, inspector, schema, output_dir, tables, columns_pe
             columns = columns_per_table[table]
             foreign_columns = [(col, []) for col in columns]
         order_columns = get_unique_columns(inspector, table, schema)
+        where_clause=None
         output_file = os.path.join(output_dir, table + '.csv')
         export_table_with_any_columns(cursor, inspector, output_file, schema, table,
                                       any_columns=foreign_columns, order_columns=order_columns,
-                                      file_format=file_format)
+                                      file_format=file_format, where_clause=where_clause)
 
     connection.commit()
 
@@ -70,7 +71,7 @@ def sql_join_alias_for_foreign_key(foreign_key):
 
 
 def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_columns=None, order_columns=None,
-                                          alias_columns=True):
+                                          alias_columns=True, where_clause=None):
     """
     :param foreign_columns: A list of tuples describing which columns to export. Columns can be from any other tables
         that are dependencies of this one. Each tuple should be of the format: (column_name, list_of_foreign_key_names).
@@ -106,27 +107,33 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
         per_column_sql.append('{join_alias}.{column}{alias_sql}'.format(
             join_alias=prev_fk_alias, column=column_name, alias_sql=alias_sql))
 
-    joins_sql = " " + " ".join(per_join_sql)
+    joins_sql = ' ' + ' '.join(per_join_sql)
     columns_sql = ', '.join(per_column_sql)
     order_sql = ''
     if order_columns is not None and len(order_columns) > 0:
         order_sql = ' ORDER BY ' + ','.join(order_columns)
 
-    select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{order_sql}' \
-        .format(columns_sql=columns_sql, schema=schema, main_table=table, joins_sql=joins_sql, order_sql=order_sql)
+    where_sql = ''
+    if where_clause is not None:
+        where_sql = ' ' + where_clause
+
+    select_sql = 'SELECT {columns_sql} from {schema}.{main_table}{joins_sql}{where_sql}{order_sql}' \
+        .format(columns_sql=columns_sql, schema=schema, main_table=table, joins_sql=joins_sql,
+                where_sql=where_sql, order_sql=order_sql)
 
     return select_sql
 
 
 def export_table_with_any_columns(cursor, inspector, output_path, schema, main_table,
-                                  any_columns=None, order_columns=None, file_format=None):
+                                  any_columns=None, order_columns=None, file_format=None, where_clause=None):
     """
     Exports a single table with any of the specified columns. Columns could be in the table or any of it's dependencies.
     """
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
 
-    select_sql = sql_select_table_with_foreign_columns(inspector, schema, main_table, any_columns, order_columns)
+    select_sql = sql_select_table_with_foreign_columns(inspector, schema, main_table, any_columns, order_columns,
+                                                       where_clause=where_clause)
     copy_sql = 'COPY ({select_sql}) TO STDOUT WITH ({file_format})'\
         .format(select_sql=select_sql, file_format=file_format)
     log_sql(copy_sql)
