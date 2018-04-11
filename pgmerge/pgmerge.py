@@ -284,22 +284,20 @@ def export(dbname, host, port, username, password, schema,
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
 
-        columns_per_table = None
+        config_per_table=None
         if config is not None:
-            table_config = load_config_for_tables(config)
+            config_per_table = load_config_for_tables(config)
             try:
-                validate_table_config_with_schema(inspector, schema, table_config)
+                validate_table_config_with_schema(inspector, schema, config_per_table)
             except ConfigInvalidException as e:
                 print(e)
                 sys.exit()
-            columns_per_table = {key: table_config[key]['columns']
-                                for key in table_config.keys() if 'columns' in table_config[key]}
 
         find_and_warn_about_cycles(table_graph, tables)
 
         run_in_session(engine, lambda conn:
                        db_export.export_columns(conn, inspector, schema, directory, tables,
-                                                columns_per_table=columns_per_table))
+                                                config_per_table=config_per_table))
         print("Exported {} tables".format(len(tables)))
     except Exception as e:
         logging.exception(e)

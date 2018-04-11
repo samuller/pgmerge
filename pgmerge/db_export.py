@@ -26,22 +26,31 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
-def export_columns(connection, inspector, schema, output_dir, tables, columns_per_table=None, file_format=None):
+def export_columns(connection, inspector, schema, output_dir, tables, config_per_table=None, file_format=None):
     """
     Exports all given tables with the columns specified in the columns_per_table dictionary.
     """
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
+    if config_per_table is None:
+        config_per_table = {}
 
     cursor = connection.cursor()
 
     for table in tables:
+        if table not in config_per_table or config_per_table[table] is None:
+            config_per_table[table] = {}
+
         foreign_columns = None
-        if columns_per_table is not None and table in columns_per_table and columns_per_table[table] is not None:
-            columns = columns_per_table[table]
+        if 'columns' in config_per_table[table]:
+            columns = config_per_table[table]['columns']
             foreign_columns = [(col, []) for col in columns]
+
+        where_clause = None
+        if 'where' in config_per_table[table]:
+            where_clause = config_per_table[table]['where']
+
         order_columns = get_unique_columns(inspector, table, schema)
-        where_clause=None
         output_file = os.path.join(output_dir, table + '.csv')
         export_table_with_any_columns(cursor, inspector, output_file, schema, table,
                                       any_columns=foreign_columns, order_columns=order_columns,
