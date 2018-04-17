@@ -23,6 +23,7 @@ setup(
     url='https://github.com/samuller/pgmerge',
     description='PostgreSQL data import/export utility',
     long_description=long_description,
+    # long_description_content_type = "text/markdown",
     python_requires='>=3',
     py_modules=['pgmerge'],
     packages=find_packages(exclude=['*.tests*']),
