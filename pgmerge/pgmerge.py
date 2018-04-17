@@ -290,7 +290,7 @@ def export(dbname, host, port, username, no_password, password, schema,
         if config is not None:
             config_per_table = load_config_for_tables(config)
             try:
-                validate_table_config_with_schema(inspector, schema, config_per_table)
+                validate_table_configs_with_schema(inspector, schema, config_per_table)
             except ConfigInvalidException as e:
                 print(e)
                 sys.exit()
@@ -340,7 +340,7 @@ def upsert(dbname, host, port, username, no_password, password, schema,
         if config is not None:
             table_config = load_config_for_tables(config)
             try:
-                validate_table_config_with_schema(inspector, schema, table_config)
+                validate_table_configs_with_schema(inspector, schema, table_config)
             except ConfigInvalidException as e:
                 print(e)
                 sys.exit()
