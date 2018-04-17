@@ -31,3 +31,12 @@ Build wheel with:
 
     python setup.py bdist_wheel
 
+Upload wheel:
+
+    # https://packaging.python.org/guides/using-testpypi/
+    pandoc --from=markdown --to=rst --output=README.rst README.md
+    twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+Test it with:
+
+    sudo pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple --allow-all-external pgmerge
