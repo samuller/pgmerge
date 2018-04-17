@@ -55,7 +55,7 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, columns=None):
+def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, columns=None, alternate_key=None):
     """
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
