@@ -60,6 +60,13 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
         table_config = config_per_table[table]
 
         alternate_key = table_config.get('alternate_key', None)
+        if alternate_key is not None:
+            unknown_pk_columns = set(alternate_key) - set(actual_columns)
+            if len(unknown_pk_columns) > 0:
+                raise ConfigInvalidException(
+                    "'alternate_key' columns not found in table: {}".format(list(unknown_pk_columns)),
+                    table)
+
         config_pk_columns = actual_pk_columns
         if alternate_key is not None:
             config_pk_columns = alternate_key
@@ -84,15 +91,6 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
                 raise ConfigInvalidException(
                     "'columns' has to also contain primary/alternate keys, but doesn't contain {}"
                         .format(list(missing_pk_columns)), table)
-
-        config_pks = config_per_table[table].get('alternate_key', None)
-
-        if config_pks is not None:
-            unknown_pk_columns = set(config_pks) - set(actual_columns)
-            if len(unknown_pk_columns) > 0:
-                raise ConfigInvalidException(
-                    "'alternate_key' columns not found in table: {}".format(list(unknown_pk_columns)),
-                    table)
 
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
