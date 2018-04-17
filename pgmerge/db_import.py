@@ -71,9 +71,12 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     if columns is None:
         columns = all_columns
 
-    id_columns = get_unique_columns(inspector, dest_table, schema)
-    if len(id_columns) == 0:
-        raise UnsupportedSchemaException("Table has no primary key or unique columns!")
+    if alternate_key is None:
+        id_columns = get_unique_columns(inspector, dest_table, schema)
+        if len(id_columns) == 0:
+            raise UnsupportedSchemaException("Table has no primary key or unique columns!")
+    else:
+        id_columns = alternate_key
 
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
