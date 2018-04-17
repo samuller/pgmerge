@@ -110,7 +110,7 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
             prev_fk_alias = sql_join_alias_for_foreign_key(foreign_key)
 
         alias_sql = ''
-        if alias_columns:
+        if alias_columns and prev_fk_alias != table:
             alias_sql = ' AS {join_alias}_{column}'.format(join_alias=prev_fk_alias, column=column_name)
 
         per_column_sql.append('{join_alias}.{column}{alias_sql}'.format(

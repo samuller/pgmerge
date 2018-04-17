@@ -169,12 +169,12 @@ class TestCLI(TestDB):
 
             with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEquals(header_columns, ['the_table_id', 'the_table_code',
-                                                   'the_table_name', 'the_table_ref_other_table'])
+                self.assertEquals(header_columns, ['id', 'code',
+                                                   'name', 'ref_other_table'])
 
             with open(os.path.join(self.output_dir, "other_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEquals(header_columns, ['other_table_id', 'other_table_code', 'other_table_name'])
+                self.assertEquals(header_columns, ['id', 'code', 'name'])
 
             os.remove(os.path.join(self.output_dir, "the_table.csv"))
             os.remove(os.path.join(self.output_dir, "other_table.csv"))
