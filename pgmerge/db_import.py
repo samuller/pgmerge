@@ -82,7 +82,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
         raise InputParametersException("Columns provided do not include required id"
-                              " columns for table '{}': {}".format(dest_table, unknown_columns))
+                              " columns for table '{}': {}".format(dest_table, skipped_id_columns))
 
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
