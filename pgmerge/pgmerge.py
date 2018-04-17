@@ -231,6 +231,8 @@ db_connect_options = [
     click.option('--username', '-U', help='Database user name.', default='postgres', show_default=True),
     click.option('--schema', '-s', default="public", help='Database schema to use.',
                  show_default=True),
+    click.option('--no-password', '-w', is_flag=True,
+                 help='Never prompt for password (e.g. peer authentication).'),
     click.option('--password', '-W', hide_input=True, prompt=False, default=None,
                  help='Database password (default is to prompt for password or read config).')
 ]
@@ -261,7 +263,7 @@ def main(verbose):
 @main.command()
 @decorate(db_connect_options)
 @decorate(dir_tables_arguments)
-def export(dbname, host, port, username, password, schema,
+def export(dbname, host, port, username, no_password, password, schema,
            config, include_dependent_tables,
            directory, tables):
     """
@@ -272,7 +274,7 @@ def export(dbname, host, port, username, password, schema,
     """
     engine = None
     try:
-        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
@@ -312,7 +314,7 @@ def export(dbname, host, port, username, password, schema,
               help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
                    'requires superuser rights).')
 @decorate(dir_tables_arguments)
-def upsert(dbname, host, port, username, password, schema,
+def upsert(dbname, host, port, username, no_password, password, schema,
            config, include_dependent_tables, disable_foreign_keys,
            directory, tables):
     """
@@ -324,7 +326,7 @@ def upsert(dbname, host, port, username, password, schema,
     """
     engine = None
     try:
-        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(dbname, host, port, username, password)
         engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
@@ -375,7 +377,7 @@ def upsert(dbname, host, port, username, password, schema,
                    " To use graphviz to generate a PDF from this format, pipe the output to:" +
                    " dot -Tpdf > graph.pdf")
 @click.option('--transferable', '-tf', is_flag=True, help="Output info related to table transfers.")
-def inspect(engine, dbname, host, port, username, password, schema,
+def inspect(engine, dbname, host, port, username, no_password, password, schema,
             warnings, list_tables, table_details, partition,
             cycles, insert_order, export_graph, transferable):
     """
@@ -386,7 +388,7 @@ def inspect(engine, dbname, host, port, username, password, schema,
     """
     _engine = None
     try:
-        password = retrieve_password(APP_NAME, dbname, host, port, username, password)
+        password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(dbname, host, port, username, password, type=engine)
         _engine = sqlalchemy.create_engine(db_url)
         db_inspect.main(_engine, schema,

@@ -89,7 +89,7 @@ def validate_table_config_with_schema(inspector, schema, table_config):
                     config_table)
 
 
-def retrieve_password(appname, dbname, host, port, username, password, type="postgresql"):
+def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
     """
     If password isn't yet available, make sure to get it. Either by loading it from the appropriate config files
     or else by asking the user.
@@ -103,7 +103,7 @@ def retrieve_password(appname, dbname, host, port, username, password, type="pos
             pgpass_path = None
         password = load_pgpass(host, port, dbname, username, pgpass_path=pgpass_path)
 
-    if password is None:
+    if password is None and not never_prompt:
         password = getpass.getpass("Password for {}: ".format(username))
 
     return password
