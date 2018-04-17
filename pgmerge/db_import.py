@@ -31,15 +31,16 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
     return delete_sql
 
 
-def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names):
+def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names, column_names):
     insert_table_cols = ",".join(["%s.%s" % (insert_table_name, col) for col in id_column_names])
     reference_table_cols = ",".join(["%s.%s" % (reference_table_name, col) for col in id_column_names])
 
     select_sql = "SELECT %s.* FROM %s LEFT JOIN %s ON (%s) = (%s) WHERE (%s) is NULL" %\
                  (reference_table_name, reference_table_name, insert_table_name,
                   insert_table_cols, reference_table_cols, insert_table_cols)
+    columns_sql = ','.join(column_names)
 
-    insert_sql = "INSERT INTO %s (%s) RETURNING NULL;" % (insert_table_name, select_sql)
+    insert_sql = "INSERT INTO %s(%s) (%s) RETURNING NULL;" % (insert_table_name, columns_sql, select_sql)
     return insert_sql
 
 
@@ -130,7 +131,7 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     stats['skip'] = cursor.rowcount
 
     # Insert rows from temp table that are not in destination table (according to id columns)
-    exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, src_table, id_columns))
+    exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, src_table, id_columns, columns))
     stats['insert'] = cursor.rowcount
     # Delete rows that were just inserted
     exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
