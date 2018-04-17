@@ -96,7 +96,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     create_sql = "CREATE TEMP TABLE {} AS {select_sql} LIMIT 0;".format(table_name_tmp_copy, select_sql=select_sql)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
-    copy_sql = 'COPY %s FROM STDOUT WITH (%s)' % (table_name_tmp_copy, file_format)
+    copy_sql = 'COPY %s FROM STDOUT WITH (%s);' % (table_name_tmp_copy, file_format)
     log_sql(copy_sql)
 
     with open(input_file, 'r', encoding="utf-8") as input_file:
@@ -193,7 +193,7 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
     columns_sql = ','.join(["{}".format(col) for col, path in foreign_columns if len(path) == 0])
 
     # We don't use {schema}.{src_table} since that doesn't allow temporary tables
-    return "SELECT {columns_sql} FROM {src_table}{joins_sql};".format(
+    return "SELECT {columns_sql} FROM {src_table}{joins_sql}".format(
         columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql)
 
 
