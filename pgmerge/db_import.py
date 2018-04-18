@@ -36,7 +36,8 @@ def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_col
                                   for col in id_column_names])
     reference_table_cols = ",".join(["{tbl}.{col}".format(tbl=reference_table_name, col=col)
                                      for col in id_column_names])
-
+    # The left join will give nulls for the joined table when no matches are found.
+    # We use '(tuple) is null' to see if all columns (values in the tuple) are null.
     select_sql = "SELECT {ref}.* FROM {ref} LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) WHERE ({ins_cols}) is NULL"\
         .format(ref=reference_table_name, ins=insert_table_name,
                 ins_cols=insert_table_cols, ref_cols=reference_table_cols)
