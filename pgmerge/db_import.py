@@ -113,6 +113,10 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     create_sql = "CREATE TEMP TABLE {} AS {select_sql};".format(
         table_name_tmp_final, select_sql=select_sql)
     exec_sql(cursor, create_sql)
+    # Add index so that comparison for identical rows is much faster
+    index_sql = "CREATE INDEX ON {} ({});".format(table_name_tmp_final,
+                                                  ",".join(id_columns))
+    exec_sql(cursor, index_sql)
 
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
     stats.update(upsert_stats)
