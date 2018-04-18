@@ -39,4 +39,4 @@ Upload wheel:
 
 Test it with:
 
-    sudo pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple --allow-all-external pgmerge
+    sudo pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pgmerge
