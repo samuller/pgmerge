@@ -23,36 +23,39 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
     #                               for col in all_columns])
     where_clause = " AND ".join(
-        ["(%s.%s = %s.%s OR (%s.%s IS NULL AND %s.%s IS NULL))"
-         % (reference_table_name, col, delete_table_name, col, reference_table_name, col, delete_table_name, col)
-         for col in all_column_names])
-    delete_sql = "DELETE FROM %s USING %s WHERE %s;" % \
-                 (delete_table_name, reference_table_name, where_clause)
+         ["({ref}.{col} = {dlt}.{col} OR ({ref}.{col} IS NULL AND {dlt}.{col} IS NULL))".format(
+             ref=reference_table_name, col=col, dlt=delete_table_name) for col in all_column_names])
+
+    delete_sql = "DELETE FROM {dlt} USING {ref} WHERE {where_clause};".format(
+        dlt=delete_table_name, ref=reference_table_name, where_clause=where_clause)
     return delete_sql
 
 
 def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names, column_names):
-    insert_table_cols = ",".join(["%s.%s" % (insert_table_name, col) for col in id_column_names])
-    reference_table_cols = ",".join(["%s.%s" % (reference_table_name, col) for col in id_column_names])
+    insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col)
+                                  for col in id_column_names])
+    reference_table_cols = ",".join(["{tbl}.{col}".format(tbl=reference_table_name, col=col)
+                                     for col in id_column_names])
 
-    select_sql = "SELECT %s.* FROM %s LEFT JOIN %s ON (%s) = (%s) WHERE (%s) is NULL" %\
-                 (reference_table_name, reference_table_name, insert_table_name,
-                  insert_table_cols, reference_table_cols, insert_table_cols)
+    select_sql = "SELECT {ref}.* FROM {ref} LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) WHERE ({ins_cols}) is NULL"\
+        .format(ref=reference_table_name, ins=insert_table_name,
+                ins_cols=insert_table_cols, ref_cols=reference_table_cols)
     columns_sql = ','.join(column_names)
 
-    insert_sql = "INSERT INTO %s(%s) (%s) RETURNING NULL;" % (insert_table_name, columns_sql, select_sql)
+    insert_sql = "INSERT INTO {ins}({cols}) ({select_sql}) RETURNING NULL;".format(
+        ins=insert_table_name, cols=columns_sql, select_sql=select_sql)
     return insert_sql
 
 
 def sql_update_rows_between_tables(update_table_name, reference_table_name, id_column_names, all_column_names):
     # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
     # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
-    set_columns = ",".join(["%s = %s.%s" % (col, reference_table_name, col)
+    set_columns = ",".join(["{} = {}.{}".format(col, reference_table_name, col)
                             for col in all_column_names])
-    where_clause = " AND ".join(["%s.%s = %s.%s" % (update_table_name, col, reference_table_name, col)
+    where_clause = " AND ".join(["{}.{} = {}.{}".format(update_table_name, col, reference_table_name, col)
                                  for col in id_column_names])
-    update_sql = "UPDATE %s SET %s FROM %s WHERE %s" % \
-                 (update_table_name, set_columns, reference_table_name, where_clause)
+    update_sql = "UPDATE {upd} SET {set_columns} FROM {ref} WHERE {where_clause}".format(
+        upd=update_table_name, set_columns=set_columns, ref=reference_table_name, where_clause=where_clause)
     return update_sql
 
 
@@ -90,7 +93,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
-    table_name_tmp_copy = "_tmp_copy_%s" % (dest_table,)
+    table_name_tmp_copy = "_tmp_copy_{}".format(dest_table)
 
     foreign_columns = [(col, []) for col in columns]
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns,
@@ -99,7 +102,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     create_sql = "CREATE TEMP TABLE {} AS {select_sql} LIMIT 0;".format(table_name_tmp_copy, select_sql=select_sql)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
-    copy_sql = 'COPY %s FROM STDOUT WITH (%s);' % (table_name_tmp_copy, file_format)
+    copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
     log_sql(copy_sql)
 
     with open(input_file, 'r', encoding="utf-8") as input_file:
@@ -107,7 +110,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     stats['total'] = cursor.rowcount
 
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
-    table_name_tmp_final = "_tmp_final_%s" % (dest_table,)
+    table_name_tmp_final = "_tmp_final_{}".format(dest_table)
     select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
                                                      table_name_tmp_copy, foreign_columns)
     create_sql = "CREATE TEMP TABLE {} AS {select_sql};".format(
@@ -121,10 +124,10 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
     stats.update(upsert_stats)
 
-    drop_sql = "DROP TABLE %s" % (table_name_tmp_copy,)
+    drop_sql = "DROP TABLE {}".format(table_name_tmp_copy)
     exec_sql(cursor, drop_sql)
 
-    drop_sql = "DROP TABLE %s" % (table_name_tmp_final,)
+    drop_sql = "DROP TABLE {}".format(table_name_tmp_final)
     exec_sql(cursor, drop_sql)
 
     return stats
