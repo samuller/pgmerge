@@ -26,6 +26,42 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
+def replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns):
+    """
+    Create a list of foreign columns from a list of selected local columns of a table.
+    Each foreign key column to a table with an alternate key will be replaced with columns for the alternate key.
+    """
+    foreign_columns = [(col, []) for col in local_columns]
+
+    fks = inspector.get_foreign_keys(table, schema)
+    for fk in fks:
+        fk_columns = fk['constrained_columns']
+        if not set(fk_columns).issubset(set(local_columns)):
+            continue
+
+        foreign_table = fk['referred_table']
+        if foreign_table not in config_per_table:
+            continue
+
+        fk_table_config = config_per_table[foreign_table]
+        if 'alternate_key' not in fk_table_config:
+            continue
+        new_columns = config_per_table[foreign_table]['alternate_key']
+
+        # Delete columns to be replaced
+        foreign_column_names = [col[0] for col in foreign_columns]
+        idxs_to_replace = [foreign_column_names.index(col) for col in fk_columns]
+        for idx in idxs_to_replace:
+            del foreign_columns[idx]
+
+        idx_to_add = min(idxs_to_replace)
+        # Add multiple columns in reverse so that we can always insert them at the same index
+        for col in reversed(new_columns):
+            foreign_columns.insert(idx_to_add, (col, [fk['name']]))
+
+    return foreign_columns
+
+
 def export_columns(connection, inspector, schema, output_dir, tables, config_per_table=None, file_format=None):
     """
     Exports all given tables with the columns specified in the columns_per_table dictionary.
@@ -41,11 +77,12 @@ def export_columns(connection, inspector, schema, output_dir, tables, config_per
         if table not in config_per_table or config_per_table[table] is None:
             config_per_table[table] = {}
 
-        foreign_columns = None
         if 'columns' in config_per_table[table]:
-            columns = config_per_table[table]['columns']
-            foreign_columns = [(col, []) for col in columns]
+            local_columns = config_per_table[table]['columns']
+        else:
+            local_columns = [col['name'] for col in inspector.get_columns(table, schema)]
 
+        foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns)
         where_clause = None
         if 'where' in config_per_table[table]:
             where_clause = config_per_table[table]['where']
