@@ -129,11 +129,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
     for file, table in import_pairs:
         print("%s:" % (table,))
 
-        table_config = config_per_table.get(table, {})
         try:
-            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
-                                        columns=table_config.get('columns', None),
-                                        alternate_key=table_config.get('alternate_key', None))
+            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format, config_per_table)
         except db_import.UnsupportedSchemaException as exc:
             print("\tSkipping table with unsupported schema: {}".format(exc))
             error_tables.append(table)
