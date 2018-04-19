@@ -153,7 +153,7 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
         per_column_sql.append('{join_alias}.{column}{alias_sql}'.format(
             join_alias=prev_fk_alias, column=column_name, alias_sql=alias_sql))
 
-    joins_sql = ' ' + ' '.join(per_join_sql)
+    joins_sql = ' ' + ' '.join(set(per_join_sql))
     columns_sql = ', '.join(per_column_sql)
     order_sql = ''
     if order_columns is not None and len(order_columns) > 0:
