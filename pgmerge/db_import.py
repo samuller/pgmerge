@@ -107,7 +107,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns,
                                                        alias_columns=False)
     # Create temporary table with same columns and types as target table
-    create_sql = "CREATE TEMP TABLE {} AS {select_sql} LIMIT 0;".format(table_name_tmp_copy, select_sql=select_sql)
+    create_sql = "CREATE TEMP TABLE {tmp_copy} AS {select_sql} LIMIT 0;".format(
+        tmp_copy=table_name_tmp_copy, select_sql=select_sql)
     exec_sql(cursor, create_sql)
     # Import data into temporary table
     copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
@@ -121,8 +122,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     table_name_tmp_final = "_tmp_final_{}".format(dest_table)
     select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
                                                      table_name_tmp_copy, foreign_columns)
-    create_sql = "CREATE TEMP TABLE {} AS {select_sql};".format(
-        table_name_tmp_final, select_sql=select_sql)
+    create_sql = "CREATE TEMP TABLE {tmp_final} AS {select_sql};".format(
+        tmp_final=table_name_tmp_final, select_sql=select_sql)
     exec_sql(cursor, create_sql)
     # Add index so that comparison for identical rows is much faster
     index_sql = "CREATE INDEX ON {} ({});".format(table_name_tmp_final,
