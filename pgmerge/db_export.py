@@ -120,9 +120,12 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
                                           alias_columns=True, where_clause=None):
     """
     :param foreign_columns: A list of tuples describing which columns to export. Columns can be from any other tables
-        that are dependencies of this one. Each tuple should be of the format: (column_name, list_of_foreign_key_names).
-        To use a column from the current table, use (column_name, []). A column from a directly linked table would be
-        based on the name of the foreign key link: (column_name, [fk_name]).
+        that are dependencies of this one. Each tuple should be of the format:
+            (column_name, list_of_foreign_key_names_to_reach_table_with_column)
+        To use a column from the current table, use:
+            (column_name, [])
+        A column from a directly linked table would be based on the name of the foreign key link:
+            (column_name, [fk_name])
     """
     if foreign_columns is None:
         all_columns = inspector.get_columns(table, schema)
