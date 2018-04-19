@@ -103,9 +103,9 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     table_name_tmp_copy = "_tmp_copy_{}".format(dest_table)
 
-    foreign_columns = [(col, []) for col in columns]
-    select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns,
-                                                       alias_columns=False)
+    foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table,
+                                                                schema, dest_table, columns)
+    select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns)
     # Create temporary table with same columns and types as target table
     create_sql = "CREATE TEMP TABLE {tmp_copy} AS {select_sql} LIMIT 0;".format(
         tmp_copy=table_name_tmp_copy, select_sql=select_sql)
