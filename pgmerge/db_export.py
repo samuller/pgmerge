@@ -26,10 +26,28 @@ def get_unique_columns(inspector, table, schema):
     return pks + unique
 
 
+def replace_indexes(listy, idxs_to_replace, new_values):
+    """
+    Remove given indexes and insert a new set of values into the given list.
+    """
+    # Delete values to be replaced (remove highest indices first so that indices don't change)
+    for idx in reversed(sorted(idxs_to_replace)):
+        del listy[idx]
+    # We have to add all new values at the first index to be replaced since thats the only index which is now unchanged
+    idx_to_add = min(idxs_to_replace)
+
+    # Add multiple values in reverse so that we can keep the insertion index the same
+    # and their final order will end up correct
+    for value in reversed(new_values):
+        listy.insert(idx_to_add, value)
+
+
 def replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns):
     """
     Create a list of foreign columns from a list of selected local columns of a table.
     Each foreign key column to a table with an alternate key will be replaced with columns for the alternate key.
+
+    TODO: support multiple levels of indirection
     """
     foreign_columns = [(col, []) for col in local_columns]
 
@@ -48,16 +66,10 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
             continue
         new_columns = config_per_table[foreign_table]['alternate_key']
 
-        # Delete columns to be replaced
         foreign_column_names = [col[0] for col in foreign_columns]
         idxs_to_replace = [foreign_column_names.index(col) for col in fk_columns]
-        for idx in idxs_to_replace:
-            del foreign_columns[idx]
-
-        idx_to_add = min(idxs_to_replace)
-        # Add multiple columns in reverse so that we can always insert them at the same index
-        for col in reversed(new_columns):
-            foreign_columns.insert(idx_to_add, (col, [fk['name']]))
+        new_values = [(col, [fk['name']]) for col in new_columns]
+        replace_indexes(foreign_columns, idxs_to_replace, new_values)
 
     return foreign_columns
 
