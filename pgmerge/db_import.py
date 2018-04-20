@@ -76,9 +76,6 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     alternate_key = table_config.get('alternate_key', None)
 
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
-    columns_sql = '*'
-    if columns is not None:
-        columns_sql = ','.join(columns)
     if columns is None:
         columns = all_columns
 
