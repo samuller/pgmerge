@@ -243,7 +243,7 @@ dir_tables_arguments = [
     click.option(
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
-             'all tables that depend on those tables due to foreign key constraints.'),
+             'all tables on which they depend due to foreign key constraints.'),
     click.argument('directory', nargs=1, type=click.Path(exists=True, file_okay=False)),
     click.argument('tables', default=None, nargs=-1, callback=check_table_params)
 ]
