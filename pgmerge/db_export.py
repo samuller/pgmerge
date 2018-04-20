@@ -98,9 +98,9 @@ def export_columns(connection, inspector, schema, output_dir, tables, config_per
 
 def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
                               local_columns_key='constrained_columns', foreign_columns_key='referred_columns'):
-    assert len(foreign_key[local_columns_key]) == len(foreign_key[foreign_columns_key])
     assert local_columns_key in foreign_key
     assert foreign_columns_key in foreign_key
+    assert len(foreign_key[local_columns_key]) == len(foreign_key[foreign_columns_key])
     if join_alias is None:
         join_alias = sql_join_alias_for_foreign_key(foreign_key)
     comparisons = []
