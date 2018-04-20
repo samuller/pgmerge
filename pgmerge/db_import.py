@@ -213,10 +213,6 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
         columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql)
 
 
-def sql_join_alias_for_foreign_key(foreign_key_name):
-    return 'join_{}'.format(foreign_key_name)
-
-
 def disable_foreign_key_constraints(cursor):
     """
     There are different possible approaches for disabling foreign keys. The following are some options that
