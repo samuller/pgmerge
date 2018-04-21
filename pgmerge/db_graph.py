@@ -83,9 +83,22 @@ def get_all_dependent_tables(table_graph, tables):
     tables as well as the given set of tables.
     """
     dependent_tables = set()
-    for table in tables:
+    trees = []
+    for table in sorted(tables):
         dependency_tree = nx.dfs_successors(table_graph, table)
-        dependent_tables.update({table})
+        dependent_tables.add(table)  # Not in tree if it doesn't have any dependents
         dependent_tables.update(set(dependency_tree.keys()))
         dependent_tables.update({node for dependents in dependency_tree.values() for node in dependents})
+        trees.append((table, dependency_tree))
+
+    if len(dependent_tables) > len(set(tables)):
+        print('Also including the following dependent tables:\n')
+        for table, dependency_tree in trees:
+            for node in sorted(dependency_tree.keys(), key=lambda x: '' if x == table else x):
+                indent = '\t' if node == table else '\t  '
+                print(indent + '{} -> {}'.format(node, ', '.join(sorted(dependency_tree[node]))))
+        print('')
+        print('Final tables exported: ' + ' '.join(sorted(list(dependent_tables))))
+        print('')
+
     return dependent_tables
