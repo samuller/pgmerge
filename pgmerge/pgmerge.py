@@ -63,18 +63,21 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
         print(msg)
         print()
         print("Import will require the --disable-foreign-keys option.")
+        print()
 
     simple_cycles = db_graph.get_cycles(table_graph)
 
     relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
     if len(relevant_cycles) > 0:
-        print_message("Table dependencies contain cycles that could prevent import:\n\t%s" % (relevant_cycles,))
+        print_message("Table dependencies contain cycles that could prevent import:\n\t{}"
+                      .format(' '.join(relevant_cycles)))
         return True
 
     self_references = [table for cycle in simple_cycles if len(cycle) == 1 for table in cycle]
     relevant_tables = [table for table in self_references if table in dest_tables]
     if len(relevant_tables) > 0:
-        print_message("Self-referencing tables found that could prevent import:\n\n\t%s" % (relevant_tables,))
+        print_message("Self-referencing tables found that could prevent import:\n\n\t{}"
+                      .format(' '.join(relevant_tables)))
         return True
 
     return False
