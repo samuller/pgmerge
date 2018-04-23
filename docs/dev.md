@@ -29,12 +29,12 @@ The user has to have rights to create a new database. Then you can run the tests
 
 Build wheel with:
 
+    # https://packaging.python.org/guides/using-testpypi/
+    pandoc --from=markdown --to=rst --output=README.rst README.md
     python setup.py bdist_wheel
 
 Upload wheel:
 
-    # https://packaging.python.org/guides/using-testpypi/
-    pandoc --from=markdown --to=rst --output=README.rst README.md
     twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 Test it with:
