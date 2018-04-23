@@ -110,6 +110,11 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
     import_files = list(import_files)
     dest_tables = list(dest_tables)
 
+    if connection.encoding != 'UTF8':
+        # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
+        print('WARNING: Setting database connection encoding to UTF8 instead of {}'.format(connection.encoding))
+        connection.set_client_encoding('UTF8')
+
     cursor = connection.cursor()
 
     tables = sorted(inspector.get_table_names(schema))
