@@ -1,4 +1,4 @@
-psycopg2==2.7.3.2
+psycopg2-binary
 networkx==1.11
 click==6.7
 sqlalchemy==1.1.5
