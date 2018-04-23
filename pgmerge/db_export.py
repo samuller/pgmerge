@@ -78,6 +78,11 @@ def export_columns(connection, inspector, schema, output_dir, tables, config_per
     """
     Exports all given tables with the columns specified in the columns_per_table dictionary.
     """
+    if connection.encoding != 'UTF8':
+        # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
+        print('WARNING: Setting database connection encoding to UTF8 instead of {}'.format(connection.encoding))
+        connection.set_client_encoding('UTF8')
+
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
     if config_per_table is None:
