@@ -25,19 +25,20 @@ log = logging.getLogger()
 
 def setup_logging(verbose=False):
     log_dir = os.path.dirname(LOG_FILE)
-    if not os.path.exists(log_dir):
-        try:
-            os.makedirs(log_dir)
-        except OSError as e:
-            if (e.errno == errno.EACCES):
-                print('WARN: No permissions to create logging directory: ' + log_dir)
-                return
-            raise e
+    try:
+        if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
 
-    max_total_size = 1024 * 1024
-    file_count = 2
-    file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size / file_count,
-                                       backupCount=file_count - 1, encoding=None, delay=0)
+        max_total_size = 1024 * 1024
+        file_count = 2
+        file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size / file_count,
+                                           backupCount=file_count - 1, encoding=None, delay=0)
+    except OSError as e:
+        if (e.errno == errno.EACCES):
+            print('WARN: No permissions to create logging directory or file: ' + LOG_FILE)
+            return
+        raise e
+
     file_handler.setFormatter(
         logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
     file_handler.setLevel(logging.INFO)
