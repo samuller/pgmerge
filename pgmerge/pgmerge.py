@@ -97,7 +97,7 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
 
 
 def import_all_new(connection, inspector, schema, import_files, dest_tables, config_per_table=None,
-                   file_format=None, suspend_foreign_keys=False):
+                   file_format=None, suspend_foreign_keys=False, fail_on_warning=True):
     """
     Imports files that introduce new or updated rows. These files have the exact structure
     of the final desired table except that they might be missing rows.
@@ -130,7 +130,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
 
     if suspend_foreign_keys:
         db_import.disable_foreign_key_constraints(cursor)
-    elif find_and_warn_about_cycles(table_graph, dest_tables):
+    elif find_and_warn_about_cycles(table_graph, dest_tables) and fail_on_warning:
         log.warning("Import cancelled due to detected cycles")
         return
 
@@ -320,12 +320,15 @@ def export(dbname, host, port, username, no_password, password, schema,
 
 @main.command(name="import")
 @decorate(db_connect_options)
-@click.option('--disable-foreign-keys', '-f', is_flag=True,
+@click.option('--ignore-cycles', '-f', is_flag=True,
+              help='Don\'t stop import when cycles are detected in schema' +
+                   ' (will still fail if there are cycles in data)')
+@click.option('--disable-foreign-keys', '-F', is_flag=True,
               help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
                    'requires superuser rights).')
 @decorate(dir_tables_arguments)
 def upsert(dbname, host, port, username, no_password, password, schema,
-           config, include_dependent_tables, disable_foreign_keys,
+           config, include_dependent_tables, ignore_cycles, disable_foreign_keys,
            directory, tables):
     """
     Import/merge each CSV file into a table.
@@ -351,7 +354,8 @@ def upsert(dbname, host, port, username, no_password, password, schema,
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
                                       config_per_table=config_per_table,
-                                      suspend_foreign_keys=disable_foreign_keys))
+                                      suspend_foreign_keys=disable_foreign_keys,
+                                      fail_on_warning=not ignore_cycles))
     except Exception as e:
         logging.exception(e)
     finally:
