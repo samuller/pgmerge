@@ -229,6 +229,18 @@ def check_table_params(ctx, param, value):
     return value
 
 
+def load_table_config_or_exit(inspector, schema, config_file_name):
+    config_per_table = None
+    if config_file_name is not None:
+        try:
+            config_per_table = load_config_for_tables(config_file_name)
+            validate_table_configs_with_schema(inspector, schema, config_per_table)
+        except ConfigInvalidException as e:
+            print(e)
+            sys.exit()
+    return config_per_table
+
+
 # Shared command line options for connecting to a database
 db_connect_options = [
     click.option('--dbname', '-d', help='Database name to connect to.', required=True),
@@ -293,17 +305,8 @@ def export(dbname, host, port, username, no_password, password, schema,
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
 
-        config_per_table=None
-        if config is not None:
-            config_per_table = load_config_for_tables(config)
-            try:
-                validate_table_configs_with_schema(inspector, schema, config_per_table)
-            except ConfigInvalidException as e:
-                print(e)
-                sys.exit()
-
+        config_per_table = load_table_config_or_exit(inspector, schema, config)
         find_and_warn_about_cycles(table_graph, tables)
-
         run_in_session(engine, lambda conn:
                        db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
                                                           config_per_table=config_per_table))
@@ -343,15 +346,7 @@ def upsert(dbname, host, port, username, no_password, password, schema,
         if include_dependent_tables:
             tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
-        config_per_table = None
-        if config is not None:
-            config_per_table = load_config_for_tables(config)
-            try:
-                validate_table_configs_with_schema(inspector, schema, config_per_table)
-            except ConfigInvalidException as e:
-                print(e)
-                sys.exit()
-
+        config_per_table = load_table_config_or_exit(inspector, schema, config)
         import_files, dest_tables = get_import_files_and_tables(directory, tables)
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
