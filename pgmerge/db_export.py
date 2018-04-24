@@ -74,9 +74,10 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
     return foreign_columns
 
 
-def export_columns(connection, inspector, schema, output_dir, tables, config_per_table=None, file_format=None):
+def export_tables_per_config(connection, inspector, schema, output_dir, tables,
+                             config_per_table=None, file_format=None):
     """
-    Exports all given tables with the columns specified in the columns_per_table dictionary.
+    Exports all given tables according to the options specified in the config_per_table dictionary.
     """
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
