@@ -12,6 +12,15 @@ If you want a simple method that'll be the same when importing your initial data
 
 [1]: https://www.postgresql.org/docs/current/static/populate.html
 
+## What alternatives are there to pgmerge?
+
+There are many tools for PostgreSQL that provide import/export functionality. The best tool depends on what your requirements are. Some alternatives are:
+
+* **pg_dump** / **pg_restore**: built-in tools for directly importing/exporting full tables to an SQL or binary format
+* Postgres' **COPY** command: built-in SQL command for importing/exporting any table or query data to various different text, CSV or binary formats
+* **pgloader**: external tool that uses COPY to do bulk imports, but with better error handling
+* **pgmerge**: external tool that uses COPY to import/export full tables or table subsets in CSV format, but on import also does merging using primary key or other unique columns
+
 ## Can pgmerge export the schema for my database/tables?
 
 No, to get your database schema you can use `pg_dump` which comes installed with Postgres:
@@ -24,11 +33,15 @@ If you only want to see the schema for individual tables you can use `pgAdmin3` 
 
     \d table_name
 
-## Can pgmerge import data while the database currently in-use?
+## Can pgmerge import data while the database is currently in-use?
 
-No, if there are other active connections to the database importing will likely fail. The current implementation might require obtaining exclusive locks on the database tables.
+No, if there are other active connections to the database the importing process will likely fail. The current implementation might require obtaining exclusive locks on the database tables.
 
 ## Can pgmerge import data with a custom format or that was created manually?
 
 Not currently, no. While it is easy to create CSV files such that they'll import correctly, it is dangerous as any mistakes can cause your database to contain data in an invalid state. This is because pgmerge might temporarily disable database checks that enforce consistency during import (currently this occurs when using the `--disable-foreign-keys` option). It is currently an assumption that the data provided is completely valid.
+
+## Can pgmerge corrupt data in my database?
+
+Yes, especially when `--disable-foreign-keys` is used as the option disables various database consistency checks during the import process. The import process always assumes the input data is completely valid.
 
