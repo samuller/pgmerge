@@ -75,6 +75,10 @@ To install the newest code directly from Github:
 
     pip install git+https://github.com/samuller/pgmerge
 
+The current status of tests on the `master` branch are:
+
+[![Build Status](https://travis-ci.org/samuller/pgmerge.svg?branch=master)](https://travis-ci.org/samuller/pgmerge)
+
 ### Issues
 
 If you have trouble installing and you're running a Debian-based Linux that uses `Python 2` as its system default, then you might need to run:
