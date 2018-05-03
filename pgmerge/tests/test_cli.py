@@ -76,10 +76,10 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', self.db_name, self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
 
-            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', 'testdb', self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', self.db_name, self.output_dir, table_name])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "country:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
@@ -101,7 +101,7 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', self.db_name, self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
@@ -112,7 +112,7 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', 'testdb', self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', self.db_name, self.output_dir, table_name])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "country:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
@@ -155,11 +155,11 @@ class TestCLI(TestDB):
             yaml.dump(data, config_file, default_flow_style=False)
 
             result = self.runner.invoke(pgmerge.export, ['-w', '--config', config_file_path,
-                                                         '--dbname', 'testdb', self.output_dir])
+                                                         '--dbname', self.db_name, self.output_dir])
             self.assertEquals(result.output, "Exported 2 tables\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['-w', '--config', config_file_path,
-                                                         '--dbname', 'testdb', self.output_dir])
+                                                         '--dbname', self.db_name, self.output_dir])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "other_table:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "2", "insert:", "0", "update:", "0"])
