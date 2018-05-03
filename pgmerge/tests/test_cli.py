@@ -43,14 +43,14 @@ class TestCLI(TestDB):
         os.rmdir(cls.output_dir)
 
     def test_basics(self):
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+        result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
         self.assertEquals(result.output, "Exported 0 tables\n")
 
     def test_dir_invalid(self):
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'dir'])
+        result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', 'dir'])
         self.assertEqual(result.exit_code, 2)
         # If directory given is actually a file
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', 'NOTICE'])
+        result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', 'NOTICE'])
         self.assertEqual(result.exit_code, 2)
 
     def test_export_table(self):
@@ -59,7 +59,7 @@ class TestCLI(TestDB):
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
-            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -76,10 +76,10 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', 'testdb', self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', 'testdb', self.output_dir, table_name])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "country:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
@@ -101,7 +101,7 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 1 tables\n")
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
@@ -112,7 +112,7 @@ class TestCLI(TestDB):
             ])
             self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', 'testdb', self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', 'testdb', self.output_dir, table_name])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "country:")
             self.assertEquals(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
@@ -154,11 +154,11 @@ class TestCLI(TestDB):
             ])
             yaml.dump(data, config_file, default_flow_style=False)
 
-            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+            result = self.runner.invoke(pgmerge.export, ['-w', '--config', config_file_path,
                                                          '--dbname', 'testdb', self.output_dir])
             self.assertEquals(result.output, "Exported 2 tables\n")
 
-            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
+            result = self.runner.invoke(pgmerge.upsert, ['-w', '--config', config_file_path,
                                                          '--dbname', 'testdb', self.output_dir])
             result_lines = result.output.splitlines()
             self.assertEquals(result_lines[0], "other_table:")
