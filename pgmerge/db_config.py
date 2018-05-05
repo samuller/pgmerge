@@ -73,24 +73,29 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
 
         config_columns = table_config.get('columns', None)
         if config_columns is not None:
-            unknown_columns = set(config_columns) - set(actual_columns)
-            if len(unknown_columns) > 0:
-                raise ConfigInvalidException(
-                    "'columns' not found in table: {}".format(list(unknown_columns)),
-                    table)
+            validate_config_columns(table, config_columns, actual_columns, skippable_columns, config_pk_columns)
 
-            skipped_columns = set(actual_columns) - set(config_columns)
-            unallowable_skipped_columns = set(skipped_columns) - set(actual_skippable_columns)
-            if len(unallowable_skipped_columns) > 0:
-                raise ConfigInvalidException(
-                    "'columns' can't skip columns that aren't nullable or don't have defaults: {}"
-                        .format(list(unallowable_skipped_columns)), table)
 
-            missing_pk_columns = set(config_pk_columns) - set(config_columns)
-            if len(missing_pk_columns) > 0:
-                raise ConfigInvalidException(
-                    "'columns' has to also contain primary/alternate keys, but doesn't contain {}"
-                        .format(list(missing_pk_columns)), table)
+def validate_config_columns(table, config_columns, actual_columns, skippable_columns, pk_columns):
+    unknown_columns = set(config_columns) - set(actual_columns)
+    if len(unknown_columns) > 0:
+        raise ConfigInvalidException(
+            "'columns' not found in table: {}".format(list(unknown_columns)),
+            table)
+
+    skipped_columns = set(actual_columns) - set(config_columns)
+    unallowable_skipped_columns = set(skipped_columns) - set(skippable_columns)
+    if len(unallowable_skipped_columns) > 0:
+        raise ConfigInvalidException(
+            "'columns' can't skip columns that aren't nullable or don't have defaults: {}"
+                .format(list(unallowable_skipped_columns)), table)
+
+    missing_pk_columns = set(pk_columns) - set(config_columns)
+    if len(missing_pk_columns) > 0:
+        raise ConfigInvalidException(
+            "'columns' has to also contain primary/alternate keys, but doesn't contain {}"
+                .format(list(missing_pk_columns)), table)
+
 
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
