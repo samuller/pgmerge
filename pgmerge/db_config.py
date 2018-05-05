@@ -40,8 +40,10 @@ def load_config_for_tables(config_path):
 
     # Validate config if it's not empty
     if yaml_config is not None and schema is not None and not schema.check(yaml_config):
-        _log.warning("Config is invalid: '%s'" % (config_path,))
-        return None
+        # _log.warning("Config is invalid: '%s'" % (config_path,))
+        raise ConfigInvalidException("incorrect format for '{}', should match description in '{}'"
+                                     .format(config_path, schema_path))
+        # return None
     return yaml_config
 
 
