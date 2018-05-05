@@ -53,6 +53,7 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
     if len(unknown_tables) > 0:
         raise ConfigInvalidException("table not found in database: {}".format(list(unknown_tables)))
 
+    subset_names = set()
     for table in config_per_table:
         db_columns = inspector.get_columns(table, schema)
         actual_columns = [col['name'] for col in db_columns]
@@ -77,6 +78,11 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
         if config_columns is not None:
             validate_config_columns(table, config_columns, actual_columns, skippable_columns, config_pk_columns)
 
+        subsets = table_config.get('subsets', None)
+        if subsets is not None:
+            validate_config_subsets(table, subsets, table_names, subset_names)
+            subset_names.update(subsets)
+
 
 def validate_config_columns(table, config_columns, actual_columns, skippable_columns, pk_columns):
     unknown_columns = set(config_columns) - set(actual_columns)
@@ -98,6 +104,21 @@ def validate_config_columns(table, config_columns, actual_columns, skippable_col
             "'columns' has to also contain primary/alternate keys, but doesn't contain {}"
                 .format(list(missing_pk_columns)), table)
 
+
+def validate_config_subsets(table, new_subsets, table_names, known_subsets):
+    for subset in new_subsets:
+        name = subset['name']
+        if name in table_names:
+            raise ConfigInvalidException(
+                "subset name can be the same as that of a table in the schema: {}".format(name), table)
+
+    table_subset_names = set()
+    if new_subsets is not None:
+        table_subset_names = {subset['name'] for subset in new_subsets}
+    duplicate_names = known_subsets.intersection(table_subset_names)
+    if len(duplicate_names) > 0:
+        raise ConfigInvalidException(
+            "duplicate subset names: {}".format(sorted(list(duplicate_names))), table)
 
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
