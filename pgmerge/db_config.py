@@ -56,7 +56,7 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
     for table in config_per_table:
         db_columns = inspector.get_columns(table, schema)
         actual_columns = [col['name'] for col in db_columns]
-        actual_skippable_columns = [col['name'] for col in db_columns if col['nullable'] or col['default'] is not None]
+        skippable_columns = [col['name'] for col in db_columns if col['nullable'] or col['default'] is not None]
         actual_pk_columns = inspector.get_primary_keys(table, schema)
 
         table_config = config_per_table[table]
