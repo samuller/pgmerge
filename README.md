@@ -1,5 +1,8 @@
 # pgmerge - a PostgreSQL data import and merge utility
 
+[![Build Status](https://travis-ci.org/samuller/pgmerge.svg?branch=master)](https://travis-ci.org/samuller/pgmerge)
+[![PyPI version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
+
 This utility will read CSV files and *merge* each CSV's rows into a table of a PostgreSQL database. The merge process means that it will:
 
 * Import rows whose primary key doesn't yet exist.
@@ -74,10 +77,6 @@ and you can uninstall at any time with:
 To install the newest code directly from Github:
 
     pip install git+https://github.com/samuller/pgmerge
-
-The current status of tests on the `master` branch are:
-
-[![Build Status](https://travis-ci.org/samuller/pgmerge.svg?branch=master)](https://travis-ci.org/samuller/pgmerge)
 
 ### Issues
 
