@@ -161,6 +161,8 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
         foreign_columns = [(col['name'], []) for col in all_columns]
 
     all_fks = inspector.get_foreign_keys(table, schema)
+    # TODO: consider if all foreign key columns always be exported?
+    # foreign_columns.extend([(fk['referred_columns'][0], [fk['name']]) for fk in all_fks])
 
     per_column_sql = []
     per_join_sql = []
@@ -205,7 +207,7 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
 def export_table_with_any_columns(cursor, inspector, output_path, schema, main_table,
                                   any_columns=None, order_columns=None, file_format=None, where_clause=None):
     """
-    Exports a single table with any of the specified columns. Columns could be in the table or any of it's dependencies.
+    Exports a single table with any of the specified columns. Columns could be in the table or any of its dependencies.
     """
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
