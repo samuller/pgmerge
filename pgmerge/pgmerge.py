@@ -70,7 +70,7 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
     relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
     if len(relevant_cycles) > 0:
         print_message("Table dependencies contain cycles that could prevent import:\n\t{}"
-                      .format(' '.join(relevant_cycles)))
+                      .format(relevant_cycles))
         return True
 
     self_references = [table for cycle in simple_cycles if len(cycle) == 1 for table in cycle]
