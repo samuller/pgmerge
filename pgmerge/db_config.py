@@ -81,7 +81,7 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
         subsets = table_config.get('subsets', None)
         if subsets is not None:
             validate_config_subsets(table, subsets, table_names, subset_names)
-            subset_names.update(subsets)
+            subset_names.update([subset['name'] for subset in subsets])
 
 
 def validate_config_columns(table, config_columns, actual_columns, skippable_columns, pk_columns):
@@ -110,7 +110,7 @@ def validate_config_subsets(table, new_subsets, table_names, known_subsets):
         name = subset['name']
         if name in table_names:
             raise ConfigInvalidException(
-                "subset name can be the same as that of a table in the schema: {}".format(name), table)
+                "subset name can't be the same as that of a table in the schema: {}".format(name), table)
 
     table_subset_names = set()
     if new_subsets is not None:
