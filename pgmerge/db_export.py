@@ -95,21 +95,32 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
         if table not in config_per_table or config_per_table[table] is None:
             config_per_table[table] = {}
 
-        if 'columns' in config_per_table[table]:
-            local_columns = config_per_table[table]['columns']
+        file_configs = []
+        if 'subsets' in config_per_table[table]:
+            file_configs = config_per_table[table]['subsets']
+
+            column_config = config_per_table[table].get('columns')
+            if column_config is not None:
+                for file_config in file_configs:
+                    if file_config.get('columns') is None:
+                        file_config['columns'] = column_config
         else:
-            local_columns = [col['name'] for col in inspector.get_columns(table, schema)]
+            file_configs = [config_per_table[table]]
+            file_configs[0]['name'] = table
 
-        foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns)
-        where_clause = None
-        if 'where' in config_per_table[table]:
-            where_clause = config_per_table[table]['where']
-
-        order_columns = get_unique_columns(inspector, table, schema)
-        output_file = os.path.join(output_dir, table + '.csv')
-        export_table_with_any_columns(cursor, inspector, output_file, schema, table,
-                                      any_columns=foreign_columns, order_columns=order_columns,
-                                      file_format=file_format, where_clause=where_clause)
+        for file_config in file_configs:
+            if 'columns' in file_config:
+                local_columns = file_config['columns']
+            else:
+                local_columns = [col['name'] for col in inspector.get_columns(table, schema)]
+            foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table, schema,
+                                                                        table, local_columns)
+            where_clause = file_config.get('where')
+            order_columns = get_unique_columns(inspector, table, schema)
+            output_file = os.path.join(output_dir, file_config['name'] + '.csv')
+            export_table_with_any_columns(cursor, inspector, output_file, schema, table,
+                                          any_columns=foreign_columns, order_columns=order_columns,
+                                          file_format=file_format, where_clause=where_clause)
 
     connection.commit()
 
