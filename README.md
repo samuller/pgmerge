@@ -13,7 +13,7 @@ This is also called an *upsert* operation as it performs either an update or an 
 
 pgmerge can also export data in the same format expected for import.
 
-These features allow you to move data between databases to keep them up to date and in sync, although it does not cover handling deleted data.
+These features allow you to move data between databases with the same schema to keep them up to date and in sync, although it does not cover handling deleted data.
 
     $ pgmerge --help
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
