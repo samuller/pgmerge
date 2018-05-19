@@ -44,12 +44,15 @@ These features allow you to move data between databases with the same schema to 
     -p, --port TEXT                 Database server port.  [default: 5432]
     -U, --username TEXT             Database user name.  [default: postgres]
     -s, --schema TEXT               Database schema to use.  [default: public]
+    -w, --no-password               Never prompt for password (e.g. peer authentication).
     -W, --password TEXT             Database password (default is to prompt for password or read config).
-    -f, --disable-foreign-keys      Disable foreign key constraint checking during import (necessary if you have
+    -f, --ignore-cycles             Don't stop import when cycles are detected in schema (will still fail if there
+                                    are cycles in data)
+    -F, --disable-foreign-keys      Disable foreign key constraint checking during import (necessary if you have
                                     cycles, but requires superuser rights).
     -c, --config PATH               Config file for customizing how tables are imported/exported.
-    -i, --include-dependent-tables  When selecting specific tables, also include all tables that depend on those
-                                    tables due to foreign key constraints.
+    -i, --include-dependent-tables  When selecting specific tables, also include all tables on which they depend due
+                                    to foreign key constraints.
     --help                          Show this message and exit.
 
 ## Installation
