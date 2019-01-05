@@ -175,11 +175,25 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def get_import_files_and_tables(directory, tables):
+def get_import_files_and_tables(directory, tables, config_per_table):
+    if config_per_table is None:
+        config_per_table = {}
+
     # Determine tables based on files in directory
     all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     import_files = [f for f in all_files if re.match(r".*\.csv", f)]
-    dest_tables = [f[:-4] for f in import_files]
+    dest_tables = [f[:-len('.csv')] for f in import_files]
+
+    # Consider subsets in config
+    subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
+               for table in config_per_table if 'subsets' in config_per_table[table]}
+    subset_files = {filename: table for table in subsets for filename in subsets[table]}
+    for subset_name in subset_files:
+        filename = subset_name + '.csv'
+        actual_table = subset_files[subset_name]
+        if filename in import_files:
+            dest_tables[import_files.index(filename)] = actual_table
+
     if tables is not None and len(tables) != 0:
         # Look for files based on given tables
         import_files = ["%s.csv" % (table,) for table in tables]
@@ -350,7 +364,7 @@ def upsert(dbname, host, port, username, no_password, password, schema,
             tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
         config_per_table = load_table_config_or_exit(inspector, schema, config)
-        import_files, dest_tables = get_import_files_and_tables(directory, tables)
+        import_files, dest_tables = get_import_files_and_tables(directory, tables, config_per_table)
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
                                       config_per_table=config_per_table,
