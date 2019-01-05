@@ -44,7 +44,7 @@ class TestCLI(TestDB):
 
     def test_basics(self):
         result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
-        self.assertEquals(result.output, "Exported 0 tables\n")
+        self.assertEquals(result.output, "Exported 0 tables to 0 files\n")
 
     def test_dir_invalid(self):
         result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', 'dir'])
@@ -60,7 +60,7 @@ class TestCLI(TestDB):
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', 'testdb', self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables\n")
+            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_export_and_import_with_utf8_values(self):
@@ -102,7 +102,7 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', self.db_name, self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables\n")
+            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
             stmt = table.insert().values([
@@ -156,7 +156,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.export, ['-w', '--config', config_file_path,
                                                          '--dbname', self.db_name, self.output_dir])
-            self.assertEquals(result.output, "Exported 2 tables\n")
+            self.assertEquals(result.output, "Exported 2 tables to 2 files\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['-w', '--config', config_file_path,
                                                          '--dbname', self.db_name, self.output_dir])
