@@ -117,6 +117,10 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
                                                                         table, local_columns)
             where_clause = file_config.get('where')
             order_columns = get_unique_columns(inspector, table, schema)
+            # Remove columns that are not selected to be part of export
+            order_columns_to_remove = list(set(order_columns).difference(set(local_columns)))
+            if len(order_columns_to_remove) > 0:
+                order_columns = [col for col in order_columns if col not in order_columns_to_remove]
             output_file = os.path.join(output_dir, file_config['name'] + '.csv')
             export_table_with_any_columns(cursor, inspector, output_file, schema, table,
                                           any_columns=foreign_columns, order_columns=order_columns,
