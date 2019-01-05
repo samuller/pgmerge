@@ -95,18 +95,18 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
         if table not in config_per_table or config_per_table[table] is None:
             config_per_table[table] = {}
 
-        file_configs = []
-        if 'subsets' in config_per_table[table]:
-            file_configs = config_per_table[table]['subsets']
+        # Determine files to be generated: one per table plus one for each of its subsets
+        file_configs = [config_per_table[table]]
+        file_configs[0]['name'] = table
 
+        if 'subsets' in config_per_table[table]:
+            file_configs.extend(config_per_table[table]['subsets'])
+            # Propagate parent's "columns" config to all subsets that haven't defined it
             column_config = config_per_table[table].get('columns')
             if column_config is not None:
                 for file_config in file_configs:
                     if file_config.get('columns') is None:
                         file_config['columns'] = column_config
-        else:
-            file_configs = [config_per_table[table]]
-            file_configs[0]['name'] = table
 
         for file_config in file_configs:
             if 'columns' in file_config:
