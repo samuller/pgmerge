@@ -77,7 +77,7 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['-w', '--dbname', self.db_name, self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables\n")
+            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['-w', '--dbname', self.db_name, self.output_dir, table_name])
             result_lines = result.output.splitlines()
