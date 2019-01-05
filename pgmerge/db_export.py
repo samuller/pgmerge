@@ -90,7 +90,7 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
         config_per_table = {}
 
     cursor = connection.cursor()
-
+    file_count = 0
     for table in tables:
         if table not in config_per_table or config_per_table[table] is None:
             config_per_table[table] = {}
@@ -121,8 +121,10 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
             export_table_with_any_columns(cursor, inspector, output_file, schema, table,
                                           any_columns=foreign_columns, order_columns=order_columns,
                                           file_format=file_format, where_clause=where_clause)
+        file_count += len(file_configs)
 
     connection.commit()
+    return len(tables), file_count
 
 
 def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,

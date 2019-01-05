@@ -96,6 +96,14 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
+def get_table_name_with_file(file_name, table_name):
+    file_name_only = os.path.basename(file_name)
+    file_name_only = os.path.splitext(file_name_only)[0]
+    if file_name_only == table_name:
+        return table_name
+    return '{} [{}]'.format(table_name, file_name_only)
+
+
 def import_all_new(connection, inspector, schema, import_files, dest_tables, config_per_table=None,
                    file_format=None, suspend_foreign_keys=False, fail_on_warning=True):
     """
@@ -135,7 +143,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
         return
 
     for file, table in import_pairs:
-        print("%s:" % (table,))
+        print('{}:'.format(get_table_name_with_file(file, table)))
 
         try:
             stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format, config_per_table)
@@ -170,7 +178,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
 def run_in_session(engine, func):
     conn = engine.raw_connection()
     try:
-        func(conn)
+        return func(conn)
     finally:
         conn.close()
 
@@ -204,8 +212,9 @@ def get_import_files_and_tables(directory, tables, config_per_table):
             for file in unknown_files:
                 print("\t", file)
             return
-    import_files = [os.path.join(directory, f) for f in import_files]
 
+    # Convert filenames to full paths
+    import_files = [os.path.join(directory, f) for f in import_files]
     return import_files, dest_tables
 
 
@@ -321,10 +330,12 @@ def export(dbname, host, port, username, no_password, password, schema,
 
         config_per_table = load_table_config_or_exit(inspector, schema, config)
         find_and_warn_about_cycles(table_graph, tables)
-        run_in_session(engine, lambda conn:
-                       db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
-                                                          config_per_table=config_per_table))
-        print("Exported {} tables".format(len(tables)))
+
+        def export_tables(conn):
+            return db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
+                                                      config_per_table=config_per_table)
+        table_count, file_count = run_in_session(engine, export_tables)
+        print("Exported {} tables to {} files".format(table_count, file_count))
     except Exception as e:
         logging.exception(e)
     finally:
