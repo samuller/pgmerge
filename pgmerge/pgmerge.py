@@ -199,18 +199,22 @@ def get_import_files_and_tables(directory, tables, config_per_table):
         filename = subset_name + '.csv'
         actual_table = subset_files[subset_name]
         if filename in import_files:
+            # Update dest_tables with correct table
             dest_tables[import_files.index(filename)] = actual_table
 
     if tables is not None and len(tables) != 0:
-        # Look for files based on given tables
+        # Use only selected tables
         import_files = ["%s.csv" % (table,) for table in tables]
         dest_tables = tables
-        unknown_files = set(import_files).difference(set(all_files))
-        if len(unknown_files) > 0:
-            print("No files found for the following tables:")
-            for file in unknown_files:
-                print("\t", file)
-            return
+
+    # Check that all expected files exist
+    expected_table_files = ["%s.csv" % (table,) for table in dest_tables]
+    unknown_files = set(expected_table_files).difference(set(all_files))
+    if len(unknown_files) > 0:
+        print("No files found for the following tables:")
+        for file in unknown_files:
+            print("\t", file)
+        return
 
     # Convert filenames to full paths
     import_files = [os.path.join(directory, f) for f in import_files]
