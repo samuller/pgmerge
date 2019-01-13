@@ -60,10 +60,16 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, config_per_table=None):
+def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, file_config=None,
+              config_per_table=None):
     """
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
+
+    :param file_config: Config for the file being imported
+    :param config_per_table: Config for all tables. Will be used in case of foreign keys to other tables.
+                             Also used if file_config is None.
+    :return:
     """
     if file_format is None:
         file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
@@ -71,9 +77,10 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     if config_per_table is None:
         config_per_table = {}
 
-    table_config = config_per_table.get(dest_table, {})
-    columns = table_config.get('columns', None)
-    alternate_key = table_config.get('alternate_key', None)
+    if file_config is None:
+        file_config = config_per_table.get(dest_table, {})
+    columns = file_config.get('columns', None)
+    alternate_key = file_config.get('alternate_key', None)
 
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
     if columns is None:

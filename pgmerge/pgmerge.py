@@ -7,6 +7,7 @@ Copyright 2018 Simon Muller (samullers@gmail.com)
 import os
 import re
 import sys
+import copy
 import errno
 import click
 import logging
@@ -141,11 +142,15 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
         log.warning("Import cancelled due to detected cycles")
         return
 
+    config_per_subset = convert_to_config_per_subset(config_per_table)
     for file, table in import_pairs:
         print('{}:'.format(get_table_name_with_file(file, table)))
 
+        subset_name = only_file_stem(file)
+        file_config = config_per_subset.get(subset_name, None)
         try:
-            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format, config_per_table)
+            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
+                                        file_config=file_config, config_per_table=config_per_table)
         except db_import.UnsupportedSchemaException as exc:
             print("\tSkipping table with unsupported schema: {}".format(exc))
             error_tables.append(table)
@@ -219,6 +224,29 @@ def get_import_files_and_tables(directory, tables, config_per_table):
     # Convert filenames to full paths
     import_files = [os.path.join(directory, f) for f in import_files]
     return import_files, dest_tables
+
+
+def convert_to_config_per_subset(config_per_table):
+    """
+    Subset configs include parent config and the configs of subset that override those of the parent.
+    """
+    subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
+               for table in config_per_table if 'subsets' in config_per_table[table]}
+    subsets_configs = {config['name']: config
+                       for table in config_per_table if 'subsets' in config_per_table[table]
+                       for config in config_per_table[table]['subsets']}
+    subset_to_table = {name: table for table in subsets for name in subsets[table]}
+    # Give copy parent configs to all subsets as a base
+    config_per_subset = {name: copy.deepcopy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
+    for subset_name in subset_to_table:
+        del config_per_subset[subset_name]['subsets']
+        # Overwrite keys that are defined on subset-level
+        subset_config = subsets_configs[subset_name]
+        for key in subset_config:
+            config_per_subset[subset_name][key] = subset_config[key]
+
+    # config_per_file = {(name + '.csv'): config_per_subset[name] for name in config_per_subset}
+    return config_per_subset
 
 
 def validate_schema(inspector, schema):
