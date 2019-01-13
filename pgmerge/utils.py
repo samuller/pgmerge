@@ -58,5 +58,14 @@ def decorate(decorators):
     return func_with_shared_decorators
 
 
+def only_file_stem(file_path):
+    """
+    Get name of file without directory path and extension.
+    """
+    file_name_only = os.path.basename(file_path)
+    file_name_only = os.path.splitext(file_name_only)[0]
+    return file_name_only
+
+
 def is_windows():
     return os.name == 'nt'

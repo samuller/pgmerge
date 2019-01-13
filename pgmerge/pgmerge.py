@@ -97,11 +97,10 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
 
 
 def get_table_name_with_file(file_name, table_name):
-    file_name_only = os.path.basename(file_name)
-    file_name_only = os.path.splitext(file_name_only)[0]
-    if file_name_only == table_name:
+    file_stem = only_file_stem(file_name)
+    if file_stem == table_name:
         return table_name
-    return '{} [{}]'.format(table_name, file_name_only)
+    return '{} [{}]'.format(table_name, file_stem)
 
 
 def import_all_new(connection, inspector, schema, import_files, dest_tables, config_per_table=None,
