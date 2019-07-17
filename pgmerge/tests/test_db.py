@@ -42,7 +42,9 @@ class TestDB(unittest.TestCase):
         # Create class variables to be re-used between tests
         cls.create_db_engine = None
         cls.engine = None
-
+        cls.url = os.getenv(cls.env_var)
+        if not cls.url:
+            assert False, "No database URL set in '{}'".format(cls.env_var)
         try:
             cls.create_db(cls.db_name)
         except Exception as err:
@@ -55,9 +57,6 @@ class TestDB(unittest.TestCase):
 
     @classmethod
     def create_db(cls, db_name):
-        cls.url = os.getenv(cls.env_var)
-        if not cls.url:
-            assert False, "No database URL set in '{}'".format(cls.env_var)
         # Open connection to template database (could build url with sqlalchemy.engine.url.URL)
         cls.create_db_engine = sqlalchemy.create_engine(cls.url + cls.initial_db)
         with cls.create_db_engine.connect() as conn:
