@@ -141,7 +141,11 @@ def retrieve_password(appname, dbname, host, port, username, password, type="pos
     return password
 
 
-def generate_url(dbname, host, port, username, password, type="postgresql"):
+def generate_url(uri, dbname, host, port, username, password, type="postgresql"):
+    if uri:
+        uri = uri if uri[-1] != '/' else uri[:-1]
+        return "{}/{}".format(uri, dbname)
+
     config_db = {'type': type, 'host': host, 'port': port,
                  'username': username, 'password': password,
                  'dbname': dbname}
