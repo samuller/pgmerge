@@ -23,9 +23,18 @@ To run the tests you'll need to set an environment variable with a database conn
 
     DB_TEST_URL=postgres://postgres:password@localhost:5432/
 
-The user has to have rights to create a new database. Then you can run the tests with:
+The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
-    nosetests
+    nosetests --exe --nocapture --stop
+
+To install `nosetests` so that it uses the virtualenv might require:
+
+    pip install nose -I
+
+and then reactivating the virtualenv with:
+
+    deactivate
+    . .env/bin/activate
 
 Build wheel with:
 
