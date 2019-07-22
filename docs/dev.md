@@ -38,6 +38,8 @@ and then reactivating the virtualenv with:
 
 Build wheel with:
 
+    # Delete any cached build data
+    rm -rf pgmerge.egg-info/ build/
     # https://packaging.python.org/guides/using-testpypi/
     python setup.py bdist_wheel
 
