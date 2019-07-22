@@ -28,8 +28,6 @@ setup(
     py_modules=['pgmerge'],
     packages=find_packages(exclude=['*.tests*']),
     install_requires=requirements,
-    # Used for placing files in an external fixed location
-    # data_files=[('', ['NOTICE', 'pgmerge/tables_config_schema.yml'])],
     # Used for including non-Python files in package
     package_data={'pgmerge': ['tables_config_schema.yml']},
     # include_package_data=True,
