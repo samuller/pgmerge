@@ -39,7 +39,6 @@ and then reactivating the virtualenv with:
 Build wheel with:
 
     # https://packaging.python.org/guides/using-testpypi/
-    pandoc --from=markdown --to=rst --output=README.rst README.md
     python setup.py bdist_wheel
 
 Upload wheel:

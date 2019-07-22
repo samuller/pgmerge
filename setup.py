@@ -10,7 +10,7 @@ with open(path.join(here, 'requirements.txt')) as f:
 # Get the long description from the README file
 # pandoc --from=markdown --to=rst --output=README.rst README.md
 long_description = ""
-readme_path = path.join(here, 'README.rst')
+readme_path = path.join(here, 'README.md')
 if path.isfile(readme_path):
     with open(readme_path, encoding='utf-8') as f:
         long_description = f.read()
@@ -23,7 +23,7 @@ setup(
     url='https://github.com/samuller/pgmerge',
     description='PostgreSQL data import/export utility',
     long_description=long_description,
-    # long_description_content_type = "text/markdown",
+    long_description_content_type = "text/markdown",
     python_requires='>=3',
     py_modules=['pgmerge'],
     packages=find_packages(exclude=['*.tests*']),
