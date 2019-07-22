@@ -2,6 +2,8 @@
 
 Clone the repo and perform all these following steps from the root directory.
 
+## Virtualenv
+
 Setup a virtualenv (optional, but recommended):
 
     virtualenv -p python3 .env
@@ -19,6 +21,8 @@ If it worked correctly, the following will be in your path and be able to run an
 
     pgmerge --help
 
+## Tests
+
 To run the tests you'll need to set an environment variable with a database connection URL, e.g.:
 
     DB_TEST_URL=postgres://postgres:password@localhost:5432/
@@ -35,6 +39,8 @@ and then reactivating the virtualenv with:
 
     deactivate
     . .env/bin/activate
+
+## Packaging
 
 Build wheel with:
 
