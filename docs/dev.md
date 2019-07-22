@@ -62,4 +62,4 @@ Upload wheel:
 
 Test it with:
 
-    sudo pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pgmerge
+    pip3 install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pgmerge
