@@ -96,13 +96,13 @@ def validate_config_columns(table, config_columns, actual_columns, skippable_col
     if len(unallowable_skipped_columns) > 0:
         raise ConfigInvalidException(
             "'columns' can't skip columns that aren't nullable or don't have defaults: {}"
-                .format(list(unallowable_skipped_columns)), table)
+            .format(list(unallowable_skipped_columns)), table)
 
     missing_pk_columns = set(pk_columns) - set(config_columns)
     if len(missing_pk_columns) > 0:
         raise ConfigInvalidException(
             "'columns' has to also contain primary/alternate keys, but doesn't contain {}"
-                .format(list(missing_pk_columns)), table)
+            .format(list(missing_pk_columns)), table)
 
 
 def validate_config_subsets(table, new_subsets, table_names, known_subsets):

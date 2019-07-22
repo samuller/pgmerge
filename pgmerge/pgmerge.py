@@ -28,7 +28,7 @@ def setup_logging(verbose=False):
     log_dir = os.path.dirname(LOG_FILE)
     try:
         if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
+            os.makedirs(log_dir)
 
         max_total_size = 1024 * 1024
         file_count = 2

@@ -86,7 +86,7 @@ def print_table(name, columns=None, color='#aec7e8'):
             <td align='left'><b><i>{column}</i></b></td>
             <td align='left'></td>
             <td align='left'>{details}</td>
-        </tr> 
+        </tr>
         """.format(column=column, details="")
 
     return """

@@ -23,8 +23,8 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
     #                               for col in all_columns])
     where_clause = " AND ".join(
-         ["({ref}.{col} = {dlt}.{col} OR ({ref}.{col} IS NULL AND {dlt}.{col} IS NULL))".format(
-             ref=reference_table_name, col=col, dlt=delete_table_name) for col in all_column_names])
+        ["({ref}.{col} = {dlt}.{col} OR ({ref}.{col} IS NULL AND {dlt}.{col} IS NULL))".format(
+            ref=reference_table_name, col=col, dlt=delete_table_name) for col in all_column_names])
 
     delete_sql = "DELETE FROM {dlt} USING {ref} WHERE {where_clause};".format(
         dlt=delete_table_name, ref=reference_table_name, where_clause=where_clause)
@@ -101,7 +101,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
         raise InputParametersException("Columns provided do not include required id"
-                              " columns for table '{}': {}".format(dest_table, skipped_id_columns))
+                                       " columns for table '{}': {}".format(dest_table, skipped_id_columns))
 
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
@@ -232,7 +232,7 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
     if config_per_table is None:
         config_per_table = {}
 
-     # Check correctness of paths and build up all foreign keys possibly needed
+    # Check correctness of paths and build up all foreign keys possibly needed
     all_fks = inspector.get_foreign_keys(schema_table, schema)
     fks_by_name = {fk['name']: fk for fk in all_fks}
 
