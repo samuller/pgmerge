@@ -21,6 +21,13 @@ If it worked correctly, the following will be in your path and be able to run an
 
     pgmerge --help
 
+## Code style
+
+You can check PEP8 code style by using `pycodestyle`:
+
+    pip install pycodestyle
+    pycodestyle --first **/*.py
+
 ## Tests
 
 To run the tests you'll need to set an environment variable with a database connection URL, e.g.:
