@@ -28,6 +28,9 @@ You can check PEP8 code style by using `pycodestyle`:
     pip install pycodestyle
     pycodestyle --first **/*.py
 
+    pip install pylint
+    pylint --rcfile=setup.cfg pgmerge
+
 ## Tests
 
 To run the tests you'll need to set an environment variable with a database connection URL, e.g.:
