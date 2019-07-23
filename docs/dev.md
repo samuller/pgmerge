@@ -50,6 +50,13 @@ and then reactivating the virtualenv with:
     deactivate
     . .env/bin/activate
 
+## Code coverage
+
+To determine code coverage of the tests ([source](https://www.saltycrane.com/blog/2012/04/test-coverage-nose-and-coveragepy/)):
+
+    pip install coverage
+    nosetests --with-coverage --cover-erase --cover-package=pgmerge --cover-html
+
 ## Packaging
 
 Build wheel with:
