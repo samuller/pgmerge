@@ -10,7 +10,7 @@ values:
         type: //arr
         length: { min: 1 }
         contents: { type: //str }
-    # A list of columns that shoud be used as an alternate key instead of the
+    # A list of columns that should be used as an alternate key instead of the
     # primary key columns.
     alternate_key:
         type: //arr
@@ -36,8 +36,8 @@ values:
                     type: //arr
                     length: { min: 1 }
                     contents: { type: //str }
-                # TODO: Alternate keys have to be per table, but subsets can set defaults?
-                # (replace or add 'default' to 'where'?)
+                # TODO: Alternate keys have to be per table, but subsets can
+                # set defaults? (replace or add 'default' to 'where'?)
                 #alternate_key_defaults:
                 #    type: //arr
                 #    length: { min: 1 }
