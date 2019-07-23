@@ -1,7 +1,7 @@
 """
 pgmerge - a PostgreSQL data import and merge utility
 
-Copyright 2018 Simon Muller (samullers@gmail.com)
+Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import logging
 from .db_export import *
