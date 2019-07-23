@@ -41,7 +41,7 @@ The user has to have rights to create a new database. Then you can run the tests
 
     nosetests --exe --nocapture --stop
 
-To install `nosetests` so that it uses the virtualenv might require:
+To install `nosetests` so that it uses the virtualenv [might require](https://stackoverflow.com/questions/864956/problems-using-nose-in-a-virtualenv):
 
     pip install nose -I
 
