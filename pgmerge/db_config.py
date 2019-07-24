@@ -58,7 +58,7 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
         db_columns = inspector.get_columns(table, schema)
         actual_columns = [col['name'] for col in db_columns]
         skippable_columns = [col['name'] for col in db_columns if col['nullable'] or col['default'] is not None]
-        actual_pk_columns = inspector.get_primary_keys(table, schema)
+        actual_pk_columns = inspector.get_pk_constraint(table, schema)['constrained_columns']
 
         table_config = config_per_table[table]
 

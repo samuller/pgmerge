@@ -44,7 +44,7 @@ class TestCLI(TestDB):
 
     def test_basics(self):
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
-        self.assertEquals(result.output, "Exported 0 tables to 0 files\n")
+        self.assertEqual(result.output, "Exported 0 tables to 0 files\n")
 
     def test_dir_invalid(self):
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, 'dir'])
@@ -60,7 +60,7 @@ class TestCLI(TestDB):
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_export_and_import_with_utf8_values(self):
@@ -77,13 +77,13 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             result_lines = result.output.splitlines()
-            self.assertEquals(result_lines[0], "country:")
-            self.assertEquals(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
-            self.assertEquals(result_lines[-1], "1 tables imported successfully")
+            self.assertEqual(result_lines[0], "country:")
+            self.assertEqual(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
+            self.assertEqual(result_lines[-1], "1 tables imported successfully")
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -102,7 +102,7 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.assertEquals(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
             stmt = table.insert().values([
@@ -114,13 +114,13 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             result_lines = result.output.splitlines()
-            self.assertEquals(result_lines[0], "country:")
-            self.assertEquals(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
-            self.assertEquals(result_lines[-1], "1 tables imported successfully")
+            self.assertEqual(result_lines[0], "country:")
+            self.assertEqual(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
+            self.assertEqual(result_lines[-1], "1 tables imported successfully")
 
             stmt = select([table]).order_by('code')
             result = self.connection.execute(stmt)
-            self.assertEquals(result.fetchall(), [
+            self.assertEqual(result.fetchall(), [
                 ('CI', 'Côte d’Ivoire'), ('EG', 'Egypt'), ('RE', 'Réunion'), ('ST', 'São Tomé and Príncipe')])
             result.close()
             # Select requires us to close the connection before dropping the table
@@ -156,25 +156,25 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.assertEquals(result.output, "Exported 2 tables to 2 files\n")
+            self.assertEqual(result.output, "Exported 2 tables to 2 files\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             result_lines = result.output.splitlines()
-            self.assertEquals(result_lines[0], "other_table:")
-            self.assertEquals(result_lines[1].strip().split(), ["skip:", "2", "insert:", "0", "update:", "0"])
-            self.assertEquals(result_lines[2], "the_table:")
-            self.assertEquals(result_lines[3].strip().split(), ["skip:", "0", "insert:", "0", "update:", "0"])
-            self.assertEquals(result_lines[-1], "2 tables imported successfully")
+            self.assertEqual(result_lines[0], "other_table:")
+            self.assertEqual(result_lines[1].strip().split(), ["skip:", "2", "insert:", "0", "update:", "0"])
+            self.assertEqual(result_lines[2], "the_table:")
+            self.assertEqual(result_lines[3].strip().split(), ["skip:", "0", "insert:", "0", "update:", "0"])
+            self.assertEqual(result_lines[-1], "2 tables imported successfully")
 
             with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEquals(header_columns, ['id', 'code',
+                self.assertEqual(header_columns, ['id', 'code',
                                                    'name', 'ref_other_table'])
 
             with open(os.path.join(self.output_dir, "other_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEquals(header_columns, ['id', 'code', 'name'])
+                self.assertEqual(header_columns, ['id', 'code', 'name'])
 
             os.remove(os.path.join(self.output_dir, "the_table.csv"))
             os.remove(os.path.join(self.output_dir, "other_table.csv"))
