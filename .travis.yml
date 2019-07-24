@@ -8,5 +8,9 @@ addons:
   postgresql: "9.5"
 install:
   - pip install -r requirements.txt
+  - pip install pytest-cov
+  - pip install codecov
 script:
-  - DB_TEST_URL=postgres://postgres:@localhost:5432/ pytest pgmerge
+  - DB_TEST_URL=postgres://postgres:@localhost:5432/ pytest  --cov-report html --cov pgmerge --verbose
+after_success:
+  codecov
