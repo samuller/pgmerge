@@ -44,10 +44,10 @@ The user has to have rights to create a new database. Then you can run the tests
 
 ## Code coverage
 
-To determine code coverage of the tests ([source](https://www.saltycrane.com/blog/2012/04/test-coverage-nose-and-coveragepy/)):
+To determine code coverage of the tests:
 
-    pip install coverage
-    nosetests --with-coverage --cover-erase --cover-package=pgmerge --cover-html
+    pip install pytest-cov
+    pytest --cov-report html --cov pgmerge --verbose
 
 ## Packaging
 
