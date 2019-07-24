@@ -11,6 +11,6 @@ install:
   - pip install pytest-cov
   - pip install codecov
 script:
-  - DB_TEST_URL=postgres://postgres:@localhost:5432/ pytest  --cov-report html --cov pgmerge --verbose
+  - DB_TEST_URL=postgresql://postgres:@localhost:5432/ pytest  --cov-report html --cov pgmerge --verbose
 after_success:
   codecov
