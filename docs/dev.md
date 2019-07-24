@@ -39,16 +39,8 @@ To run the tests you'll need to set an environment variable with a database conn
 
 The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
-    nosetests --exe --nocapture --stop
-
-To install `nosetests` so that it uses the virtualenv [might require](https://stackoverflow.com/questions/864956/problems-using-nose-in-a-virtualenv):
-
-    pip install nose -I
-
-and then reactivating the virtualenv with:
-
-    deactivate
-    . .env/bin/activate
+    pip install pytest
+    pytest
 
 ## Code coverage
 
