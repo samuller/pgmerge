@@ -117,7 +117,7 @@ class TestCLI(TestDB):
 
     def test_export_and_import_with_utf8_values(self):
         """
-        Test exporting some data and immediately importing it.
+        Test exporting some data (containing UTF-8 characters) and immediately importing it.
         """
         table_name = 'country'
         table = Table(table_name, MetaData(),
@@ -145,7 +145,8 @@ class TestCLI(TestDB):
 
     def test_merge(self):
         """
-        Test insert and update (merge) by exporting data, changing and adding to it, and then importing it.
+        Test insert and update (merge) by exporting data, clearing table and then importing into a table with
+        slightly different data.
         """
         table_name = 'country'
         table = Table(table_name, MetaData(),

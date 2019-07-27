@@ -4,7 +4,7 @@ values:
   type: //rec
   optional:
     # A subset or specific order of columns. Can only skip columns that are
-    # nullable or have default values. Primary key or alternate key columns
+    # nullable or have default values. Either primary key or alternate key columns
     # have to be included.
     columns: 
         type: //arr
