@@ -204,7 +204,9 @@ class TestCLI(TestDB):
                             Column('code', String(2), nullable=False),
                             Column('name', String))
 
-        data = {'the_table': {'alternate_key': ['code']}}  # 'other_table': {'columns'}
+        data = {
+            'other_table': {'alternate_key': ['code']}
+        }  # 'other_table': {'columns'}
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
@@ -232,7 +234,7 @@ class TestCLI(TestDB):
 
             the_table_path = os.path.join(self.output_dir, "the_table.csv")
             self.check_header(the_table_path, ['id', 'code',
-                                               'name', 'ref_other_table'])
+                                               'name', 'join_the_table_ref_other_table_fkey_code'])
 
             other_table_path = os.path.join(self.output_dir, "other_table.csv")
             self.check_header(other_table_path, ['id', 'code', 'name'])
