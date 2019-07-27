@@ -40,14 +40,14 @@ To run the tests you'll need to set an environment variable with a database conn
 The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
     pip install pytest
-    pytest
+    pytest --capture=no
 
 ## Code coverage
 
 To determine code coverage of the tests:
 
     pip install pytest-cov
-    pytest --cov-report html --cov pgmerge --verbose
+    pytest --cov-report html --cov pgmerge
 
 ## Packaging
 
