@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/samuller/pgmerge.svg?branch=master)](https://travis-ci.org/samuller/pgmerge)
 [![PyPI version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
+[![codecov](https://codecov.io/gh/samuller/pgmerge/branch/master/graph/badge.svg)](https://codecov.io/gh/samuller/pgmerge)
 
 This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database. Each of these CSV files can then be *merged* into their table, meaning that the following process will occur (also called an *upsert* operation):
 
