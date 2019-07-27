@@ -55,7 +55,7 @@ class TestCLI(TestDB):
         super(TestCLI, cls).tearDownClass()
         os.rmdir(cls.output_dir)
 
-    def compare_output(self, actual_output, table_result_output, total_output):
+    def compare_table_output(self, actual_output, table_result_output, total_output):
         """
         Helper function to test CLI output. We ignore whitespace, empty lines, and only
         check specific lines since the output should be free to change in creative ways
@@ -136,7 +136,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            self.compare_output(result.output, [
+            self.compare_table_output(result.output, [
                 ["country:"],
                 ["skip:", "3", "insert:", "0", "update:", "0"],
             ], "1 tables imported successfully")
@@ -173,7 +173,7 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
-            self.compare_output(result.output, [
+            self.compare_table_output(result.output, [
                 ["country:"],
                 ["skip:", "1", "insert:", "1", "update:", "1"],
             ], "1 tables imported successfully")
@@ -225,7 +225,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.compare_output(result.output, [
+            self.compare_table_output(result.output, [
                 ["other_table:"],
                 ["skip:", "2", "insert:", "0", "update:", "0"],
                 ["the_table:"],
@@ -241,3 +241,38 @@ class TestCLI(TestDB):
 
             os.remove(the_table_path)
             os.remove(other_table_path)
+
+    def test_inspect_tables(self):
+        """
+        Test some inspect commands.
+        """
+        metadata = MetaData()
+        the_table = Table('the_table', metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('code', String(2), nullable=False),
+                          Column('name', String),
+                          Column('ref_other_table', Integer, ForeignKey("other_table.id")))
+        other_table = Table('other_table', metadata,
+                            Column('id', Integer, primary_key=True),
+                            Column('code', String(2), nullable=False),
+                            Column('name', String))
+
+        with create_table(self.engine, other_table), \
+             create_table(self.engine, the_table):
+            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
+                                                          '--list-tables'])
+            self.assertEqual(result.output.splitlines(), ['other_table', 'the_table'])
+            
+            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
+                                                          '--table-details'])
+            result_output = result.output.splitlines()
+            self.assertEqual(result_output[1], "table: other_table")
+            self.assertEqual(result_output[2].strip().split()[0], "columns:")
+            self.assertEqual(result_output[4], "table: the_table")
+            self.assertEqual(result_output[5].strip().split()[0], "columns:")
+            self.assertEqual(result_output[6].strip().split()[0], "fks:")
+
+            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
+                                                          '--insert-order'])
+            self.assertEqual(result.output.splitlines(), ["Found 2 tables in schema 'public'", "",
+                'Insertion order:', str(['other_table', 'the_table'])])
