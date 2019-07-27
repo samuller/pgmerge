@@ -28,6 +28,9 @@ def write_file(path):
 
 
 class TestCLI(TestDB):
+    """
+    Functional tests that test the application by using it's command-line interface (CLI).
+    """
 
     output_dir = '_tmp_test'
 
@@ -43,10 +46,16 @@ class TestCLI(TestDB):
         os.rmdir(cls.output_dir)
 
     def test_basics(self):
+        """
+        Test the basic command-line and database connection by exporting an empty database.
+        """
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
         self.assertEqual(result.output, "Exported 0 tables to 0 files\n")
 
     def test_dir_invalid(self):
+        """
+        Test providing invalid output directory as a command-line parameter.
+        """
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, 'dir'])
         self.assertEqual(result.exit_code, 2)
         # If directory given is actually a file
@@ -54,6 +63,9 @@ class TestCLI(TestDB):
         self.assertEqual(result.exit_code, 2)
 
     def test_export_table(self):
+        """
+        Test exporting a single empty table.
+        """
         table_name = 'country'
         table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
@@ -64,6 +76,9 @@ class TestCLI(TestDB):
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_export_and_import_with_utf8_values(self):
+        """
+        Test exporting some data and immediately importing it.
+        """
         table_name = 'country'
         table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
@@ -80,6 +95,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
+            # Since data hasn't changed, the import should change nothing. All lines should be skipped.
             result_lines = result.output.splitlines()
             self.assertEqual(result_lines[0], "country:")
             self.assertEqual(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
@@ -88,6 +104,9 @@ class TestCLI(TestDB):
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_merge(self):
+        """
+        Test insert and update (merge) by exporting data, changing and adding to it, and then importing it.
+        """
         table_name = 'country'
         table = Table(table_name, MetaData(),
                       Column('code', String(2), primary_key=True),
@@ -129,6 +148,9 @@ class TestCLI(TestDB):
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
     def test_config_references(self):
+        """
+        Test import and export that uses config file to select an alternate key.
+        """
         # Use a new metadata for each test since the database schema should be empty
         metadata = MetaData()
         the_table = Table('the_table', metadata,
