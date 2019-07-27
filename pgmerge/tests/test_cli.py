@@ -246,11 +246,12 @@ class TestCLI(TestDB):
         """
         Test initialisation of logging.
         
-        Currently only to improve test coverage. Consider tests that validate the behaviour
-        tested manually, e.g. printing errors to both stdout and log files, using specific
-        formatting, reusing logging setup across modules, controlling logging level etc.
+        TODO: Consider tests that validate the behaviour tested manually, e.g.
+        printing errors to both stdout and log files, using specific formatting,
+        reusing logging setup across modules, controlling logging level etc.
         """
-        pgmerge.setup_logging(False)
+        # pgmerge.setup_logging(False)
+        pass
 
     def test_inspect_tables(self):
         """

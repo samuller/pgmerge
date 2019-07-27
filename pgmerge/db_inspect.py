@@ -65,7 +65,7 @@ def print_insertion_order(table_graph):
     print(db_graph.get_insertion_order(table_graph))
 
 
-def graph_export_to_dot_file(table_graph, name='dependency_graph'):
+def graph_export_to_dot_file(table_graph, name='dependency_graph'): # pragma: no cover
     print('digraph %s {' % (name,))
     print("node[shape=plaintext];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
@@ -80,7 +80,7 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):
     print('\n}')
 
 
-def print_table(name, columns=None, color='#aec7e8'):
+def print_table(name, columns=None, color='#aec7e8'): # pragma: no cover
     columns_str = ""
     for column in columns:
         columns_str += """
@@ -101,7 +101,7 @@ def print_table(name, columns=None, color='#aec7e8'):
     </table>""".format(name=name, color=color, columns_str=columns_str)
 
 
-def transferability(inspector, schema):
+def transferability(inspector, schema): # pragma: no cover
     surrogate_key_tables = []
     natural_key_tables = []
     transformable = []

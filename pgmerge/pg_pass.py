@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 COLON_REPLACE_STRING = "<|\t COLON \t|>"  # string can't contain a colon or escaped backslash
 
 
-def load_pgpass(hostname, port, database, username, pgpass_path=None):
+def load_pgpass(hostname, port, database, username, pgpass_path=None): # pragma: no cover
     """
     Returns a password if a matching entry is found in PostgreSQL's pgpass file.
 

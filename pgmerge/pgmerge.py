@@ -29,7 +29,7 @@ LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 log = logging.getLogger()
 
 
-def setup_logging(verbose=False):
+def setup_logging(verbose=False): # pragma: no cover
     log_dir = os.path.dirname(LOG_FILE)
     try:
         if not os.path.exists(log_dir):
