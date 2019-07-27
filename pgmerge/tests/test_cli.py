@@ -45,6 +45,24 @@ class TestCLI(TestDB):
         super(TestCLI, cls).tearDownClass()
         os.rmdir(cls.output_dir)
 
+    def compare_output(self, actual_output, table_result_output, total_output):
+        """
+        Helper function to test CLI output. We ignore whitespace, empty lines, and only
+        check specific lines since the output should be free to change in creative ways
+        without breaking all the tests.
+        """
+        actual_output_lines = actual_output.splitlines()
+        # Check per-table output that consists of table name and result summary
+        for idx in range(len(table_result_output) // 2):
+            # Should be table name
+            self.assertEqual(actual_output_lines[idx].strip().split(),
+                            table_result_output[idx])
+            # Check table result
+            self.assertEqual(actual_output_lines[idx+1].strip().split(),
+                            table_result_output[idx+1])
+        # Check total count
+        self.assertEqual(actual_output_lines[-1], total_output)
+
     def test_basics(self):
         """
         Test the basic command-line and database connection by exporting an empty database.
@@ -101,10 +119,10 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            result_lines = result.output.splitlines()
-            self.assertEqual(result_lines[0], "country:")
-            self.assertEqual(result_lines[1].strip().split(), ["skip:", "3", "insert:", "0", "update:", "0"])
-            self.assertEqual(result_lines[-1], "1 tables imported successfully")
+            self.compare_output(result.output, [
+                    ["country:"],
+                    ["skip:", "3", "insert:", "0", "update:", "0"],
+            ], "1 tables imported successfully")
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -137,10 +155,10 @@ class TestCLI(TestDB):
             self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
-            result_lines = result.output.splitlines()
-            self.assertEqual(result_lines[0], "country:")
-            self.assertEqual(result_lines[1].strip().split(), ["skip:", "1", "insert:", "1", "update:", "1"])
-            self.assertEqual(result_lines[-1], "1 tables imported successfully")
+            self.compare_output(result.output, [
+                    ["country:"],
+                    ["skip:", "1", "insert:", "1", "update:", "1"],
+            ], "1 tables imported successfully")
 
             stmt = select([table]).order_by('code')
             result = self.connection.execute(stmt)
@@ -187,12 +205,12 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            result_lines = result.output.splitlines()
-            self.assertEqual(result_lines[0], "other_table:")
-            self.assertEqual(result_lines[1].strip().split(), ["skip:", "2", "insert:", "0", "update:", "0"])
-            self.assertEqual(result_lines[2], "the_table:")
-            self.assertEqual(result_lines[3].strip().split(), ["skip:", "0", "insert:", "0", "update:", "0"])
-            self.assertEqual(result_lines[-1], "2 tables imported successfully")
+            self.compare_output(result.output, [
+                    ["other_table:"],
+                    ["skip:", "2", "insert:", "0", "update:", "0"],
+                    ["the_table:"],
+                    ["skip:", "0", "insert:", "0", "update:", "0"],
+            ], "2 tables imported successfully")
 
             with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
