@@ -73,6 +73,14 @@ class TestCLI(TestDB):
         # Check total count
         self.assertEqual(actual_output_lines[-1], total_output)
 
+    def check_header(self, file_path, expected_header_list):
+        """
+        Check that the first line of the CSV header matches expectation.
+        """
+        with open(file_path) as ifh:
+            header_columns = ifh.readlines()[0].strip().split(',')
+            self.assertEqual(header_columns, expected_header_list)
+
     def test_basics(self):
         """
         Test the basic command-line and database connection by exporting an empty database.
@@ -103,8 +111,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
-            with open(file_path) as ifh:
-                self.assertEqual(ifh.readline(), "code,name\n")
+            self.check_header(file_path, ['code', 'name'])
             # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
             os.remove(file_path)
 
@@ -222,14 +229,12 @@ class TestCLI(TestDB):
                 ["skip:", "0", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
 
-            with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
-                header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEqual(header_columns, ['id', 'code',
-                                                  'name', 'ref_other_table'])
+            the_table_path = os.path.join(self.output_dir, "the_table.csv")
+            self.check_header(the_table_path, ['id', 'code',
+                                               'name', 'ref_other_table'])
 
-            with open(os.path.join(self.output_dir, "other_table.csv")) as cmd_output:
-                header_columns = cmd_output.readlines()[0].strip().split(',')
-                self.assertEqual(header_columns, ['id', 'code', 'name'])
+            other_table_path = os.path.join(self.output_dir, "other_table.csv")
+            self.check_header(other_table_path, ['id', 'code', 'name'])
 
-            os.remove(os.path.join(self.output_dir, "the_table.csv"))
-            os.remove(os.path.join(self.output_dir, "other_table.csv"))
+            os.remove(the_table_path)
+            os.remove(other_table_path)
