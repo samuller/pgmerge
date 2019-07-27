@@ -73,7 +73,12 @@ class TestCLI(TestDB):
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
-            os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
+
+            file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
+            with open(file_path) as fh:
+                self.assertEqual(fh.readline(), "code,name\n")    
+            # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
+            os.remove(file_path)
 
     def test_export_and_import_with_utf8_values(self):
         """
