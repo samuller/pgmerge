@@ -9,13 +9,18 @@ import re
 import sys
 import copy
 import errno
-import click
 import logging
-import sqlalchemy
-from .utils import *
-from .db_config import *
-from appdirs import user_log_dir
 from logging.handlers import RotatingFileHandler
+
+import click
+import sqlalchemy
+from appdirs import user_log_dir
+
+from .utils import decorate, NoExceptionFormatter, only_file_stem
+from .db_config import load_config_for_tables, \
+    validate_table_configs_with_schema, \
+    retrieve_password, generate_url, \
+    ConfigInvalidException
 from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
@@ -34,11 +39,11 @@ def setup_logging(verbose=False):
         file_count = 2
         file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size / file_count,
                                            backupCount=file_count - 1, encoding=None, delay=0)
-    except OSError as e:
-        if (e.errno == errno.EACCES):
+    except OSError as err:
+        if err.errno == errno.EACCES:
             print('WARN: No permissions to create logging directory or file: ' + LOG_FILE)
             return
-        raise e
+        raise err
 
     file_handler.setFormatter(
         logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
@@ -289,14 +294,14 @@ def load_table_config_or_exit(inspector, schema, config_file_name):
         try:
             config_per_table = load_config_for_tables(config_file_name)
             validate_table_configs_with_schema(inspector, schema, config_per_table)
-        except ConfigInvalidException as e:
-            print(e)
+        except ConfigInvalidException as exc:
+            print(exc)
             sys.exit()
     return config_per_table
 
 
 # Shared command line options for connecting to a database
-db_connect_options = [
+DB_CONNECT_OPTIONS = [
     click.option('--dbname', '-d', help='Database name to connect to.', required=True),
     click.option('--host', '-h', help='Database server host or socket directory.',
                  default='localhost', show_default=True),
@@ -312,13 +317,13 @@ db_connect_options = [
 ]
 
 # Shared command line arguments for importing/exporting tables to a directory
-dir_tables_arguments = [
+DIR_TABLES_ARGUMENTS = [
     click.option('--config', '-c', type=click.Path(exists=True, dir_okay=False),
                  help='Config file for customizing how tables are imported/exported.'),
     click.option(
         '--include-dependent-tables', '-i', is_flag=True,
         help='When selecting specific tables, also include ' +
-             'all tables on which they depend due to foreign key constraints.'),
+        'all tables on which they depend due to foreign key constraints.'),
     click.argument('directory', nargs=1, type=click.Path(exists=True, file_okay=False)),
     click.argument('tables', default=None, nargs=-1, callback=check_table_params)
 ]
@@ -335,8 +340,8 @@ def main(verbose):
 
 
 @main.command()
-@decorate(db_connect_options)
-@decorate(dir_tables_arguments)
+@decorate(DB_CONNECT_OPTIONS)
+@decorate(DIR_TABLES_ARGUMENTS)
 def export(dbname, uri, host, port, username, no_password, password, schema,
            config, include_dependent_tables,
            directory, tables):
@@ -370,22 +375,22 @@ def export(dbname, uri, host, port, username, no_password, password, schema,
                                                       config_per_table=config_per_table)
         table_count, file_count = run_in_session(engine, export_tables)
         print("Exported {} tables to {} files".format(table_count, file_count))
-    except Exception as e:
-        logging.exception(e)
+    except Exception as exc:
+        logging.exception(exc)
     finally:
         if engine is not None:
             engine.dispose()
 
 
 @main.command(name="import")
-@decorate(db_connect_options)
+@decorate(DB_CONNECT_OPTIONS)
 @click.option('--ignore-cycles', '-f', is_flag=True,
               help='Don\'t stop import when cycles are detected in schema' +
-                   ' (will still fail if there are cycles in data)')
+              ' (will still fail if there are cycles in data)')
 @click.option('--disable-foreign-keys', '-F', is_flag=True,
               help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
-                   'requires superuser rights).')
-@decorate(dir_tables_arguments)
+              'requires superuser rights).')
+@decorate(DIR_TABLES_ARGUMENTS)
 def upsert(dbname, uri, host, port, username, no_password, password, schema,
            config, include_dependent_tables, ignore_cycles, disable_foreign_keys,
            directory, tables):
@@ -417,8 +422,8 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
                                       config_per_table=config_per_table,
                                       suspend_foreign_keys=disable_foreign_keys,
                                       fail_on_warning=not ignore_cycles))
-    except Exception as e:
-        logging.exception(e)
+    except Exception as exc:
+        logging.exception(exc)
     finally:
         if engine is not None:
             engine.dispose()
@@ -426,7 +431,7 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
 
 @main.command(context_settings=dict(max_content_width=120))
 @click.option('--engine', '-e', help="Type of database engine.", default='postgresql', show_default=True)
-@decorate(db_connect_options)
+@decorate(DB_CONNECT_OPTIONS)
 @click.option('--warnings', '-w', is_flag=True, help="Output any issues detected in database schema.")
 @click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema.")
 @click.option('--table-details', '-td', is_flag=True,
@@ -434,13 +439,13 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
 @click.option('--cycles', '-c', is_flag=True, help="Find and list cycles in foreign-key dependency graph.")
 @click.option('--insert-order', '-i', is_flag=True,
               help="Output the insertion order of tables based on the foreign-key dependency graph. " +
-                   "This can be used by importer scripts if there are no circular dependency issues.")
+              "This can be used by importer scripts if there are no circular dependency issues.")
 @click.option('--partition', '-pt', is_flag=True,
               help="Partition and list sub-graphs of foreign-key dependency graph.")
 @click.option('--export-graph', '-x', is_flag=True,
               help="Output dot format description of foreign-key dependency graph." +
-                   " To use graphviz to generate a PDF from this format, pipe the output to:" +
-                   " dot -Tpdf > graph.pdf")
+              " To use graphviz to generate a PDF from this format, pipe the output to:" +
+              " dot -Tpdf > graph.pdf")
 @click.option('--transferable', '-tf', is_flag=True, help="Output info related to table transfers.")
 def inspect(engine, dbname, uri, host, port, username, no_password, password, schema,
             warnings, list_tables, table_details, partition,
@@ -461,8 +466,8 @@ def inspect(engine, dbname, uri, host, port, username, no_password, password, sc
         db_inspect.main(_engine, schema,
                         warnings, list_tables, table_details, partition,
                         cycles, insert_order, export_graph, transferable)
-    except Exception as e:
-        logging.exception(e)
+    except Exception as exc:
+        logging.exception(exc)
     finally:
         if _engine is not None:
             _engine.dispose()

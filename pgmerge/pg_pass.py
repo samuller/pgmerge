@@ -1,7 +1,7 @@
 """
 pgmerge - a PostgreSQL data import and merge utility
 
-Copyright 2018 Simon Muller (samullers@gmail.com)
+Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import os
 import errno
@@ -55,10 +55,10 @@ def load_pgpass(hostname, port, database, username, pgpass_path=None):
                     continue
                 # Return password after removing any trailing newlines
                 return fields[4].splitlines()[0]
-    except IOError as e:
-        if (e.errno == errno.EACCES):
+    except IOError as err:
+        if err.errno == errno.EACCES:
             return None
-        raise e
+        raise err
 
     return None
 

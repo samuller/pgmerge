@@ -5,9 +5,11 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import logging
+
 import networkx as nx
-from . import db_graph
 from sqlalchemy import create_engine, inspect
+
+from . import db_graph
 
 _log = logging.getLogger(__name__)
 

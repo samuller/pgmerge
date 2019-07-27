@@ -2,7 +2,7 @@
 """
 pgmerge - a PostgreSQL data import and merge utility
 
-Copyright 2018 Simon Muller (samullers@gmail.com)
+Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import logging
 import networkx as nx
@@ -55,11 +55,11 @@ def build_fk_dependency_graph(inspector, schema, tables=None):
     for table in tables:
         fks = inspector.get_foreign_keys(table, schema)
         table_graph.add_node(table)
-        for fk in fks:
-            assert fk['referred_schema'] == schema, 'Remote tables not supported'
-            other_table = fk['referred_table']
+        for fky in fks:
+            assert fky['referred_schema'] == schema, 'Remote tables not supported'
+            other_table = fky['referred_table']
             if other_table in tables:
-                table_graph.add_edge(table, other_table, name=fk['name'])
+                table_graph.add_edge(table, other_table, name=fky['name'])
     return table_graph
 
 

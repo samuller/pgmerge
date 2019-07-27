@@ -5,9 +5,10 @@ Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import os
 import unittest
+from contextlib import contextmanager
+
 import sqlalchemy
 import psycopg2.extensions as psyext
-from contextlib import contextmanager
 
 
 @contextmanager

@@ -4,13 +4,14 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import os
-import yaml
 import logging
 import getpass
-from .utils import *
+
+import yaml
 from rxjson import Rx
-from .pg_pass import *
 from appdirs import user_config_dir
+
+from .pg_pass import load_pgpass
 
 _log = logging.getLogger(__name__)
 
@@ -29,10 +30,10 @@ def load_config_for_tables(config_path):
     if os.path.isfile(schema_path):
         with open(schema_path, 'r') as config_file:
             schema_config = yaml.safe_load(config_file)
-            rx = Rx.Factory({"register_core_types": True})
-            schema = rx.make_schema(schema_config)
+            rxf = Rx.Factory({"register_core_types": True})
+            schema = rxf.make_schema(schema_config)
     else:
-        _log.warning('Config schema description is missing (re-install recommended): {}'.format(schema_path))
+        _log.warning('Config schema description is missing (re-install recommended): {}', schema_path)
 
     # Load config
     with open(config_path, 'r') as config_file:

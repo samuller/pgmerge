@@ -52,12 +52,12 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
     foreign_columns = [(col, []) for col in local_columns]
 
     fks = inspector.get_foreign_keys(table, schema)
-    for fk in fks:
-        fk_columns = fk['constrained_columns']
+    for fky in fks:
+        fk_columns = fky['constrained_columns']
         if not set(fk_columns).issubset(set(local_columns)):
             continue
 
-        foreign_table = fk['referred_table']
+        foreign_table = fky['referred_table']
         if foreign_table not in config_per_table:
             continue
 
@@ -68,7 +68,7 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
 
         foreign_column_names = [col[0] for col in foreign_columns]
         idxs_to_replace = [foreign_column_names.index(col) for col in fk_columns]
-        new_values = [(col, [fk['name']]) for col in new_columns]
+        new_values = [(col, [fky['name']]) for col in new_columns]
         replace_indexes(foreign_columns, idxs_to_replace, new_values)
 
     return foreign_columns

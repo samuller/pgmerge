@@ -4,7 +4,11 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import logging
-from .db_export import *
+
+from .db_export import get_unique_columns, \
+    replace_local_columns_with_alternate_keys, \
+    sql_select_table_with_foreign_columns, \
+    sql_join_alias_for_foreign_key, sql_join_from_foreign_key
 
 _log = logging.getLogger(__name__)
 
@@ -205,7 +209,7 @@ def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src
             join_alias=join_alias,
             ref_col=fk['referred_columns'][idx],
             con_col=fk['constrained_columns'][idx])
-            for idx in range(len(fk['referred_columns']))]
+                      for idx in range(len(fk['referred_columns']))]
         new_values = [(val, [fk['name']]) for val in new_values]
 
         replace_indexes(foreign_columns, idxs_to_replace, new_values)
