@@ -4,17 +4,18 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018-2019 Simon Muller (samullers@gmail.com)
 """
 import os
-import sys
-import yaml
 import logging
-from .test_db import *
-from io import StringIO
-from sqlalchemy import *
-from pgmerge import pgmerge
+from contextlib import contextmanager
+
+import yaml
+from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 from click.testing import CliRunner
 
-logger = logging.getLogger()
-logger.level = logging.WARN
+from pgmerge import pgmerge
+from .test_db import TestDB, create_table
+
+LOG = logging.getLogger()
+LOG.level = logging.WARN
 
 
 @contextmanager
@@ -102,8 +103,8 @@ class TestCLI(TestDB):
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
-            with open(file_path) as fh:
-                self.assertEqual(fh.readline(), "code,name\n")
+            with open(file_path) as ifh:
+                self.assertEqual(ifh.readline(), "code,name\n")
             # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
             os.remove(file_path)
 
@@ -116,7 +117,7 @@ class TestCLI(TestDB):
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
-            stmt = table.insert().values([
+            stmt = table.insert(None).values([
                 ('CI', 'Côte d’Ivoire'),
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
@@ -145,7 +146,7 @@ class TestCLI(TestDB):
                       Column('name', String, nullable=False))
         # Create table with data to export
         with create_table(self.engine, table):
-            stmt = table.insert().values([
+            stmt = table.insert(None).values([
                 ('CI', 'Côte d’Ivoire'),
                 ('EG', 'Egypt'),
                 ('RE', 'Réunion'),
@@ -156,7 +157,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
-            stmt = table.insert().values([
+            stmt = table.insert(None).values([
                 ('EG', 'Egypt'),
                 ('RE', 'Re-union'),
                 ('ST', 'São Tomé and Príncipe'),
@@ -200,10 +201,10 @@ class TestCLI(TestDB):
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
                 create_table(self.engine, the_table):
-            self.connection.execute(other_table.insert(), [
+            self.connection.execute(other_table.insert(None), [
                 {'code': 'IS', 'name': 'Iceland'},
             ])
-            self.connection.execute(other_table.insert(), [
+            self.connection.execute(other_table.insert(None), [
                 {'code': 'IN'},
             ])
             yaml.dump(data, config_file, default_flow_style=False)
