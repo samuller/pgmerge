@@ -65,10 +65,10 @@ class TestCLI(TestDB):
         for idx in range(len(table_result_output) // 2):
             # Should be table name
             self.assertEqual(actual_output_lines[idx].strip().split(),
-                            table_result_output[idx])
+                             table_result_output[idx])
             # Check table result
             self.assertEqual(actual_output_lines[idx+1].strip().split(),
-                            table_result_output[idx+1])
+                             table_result_output[idx+1])
         # Check total count
         self.assertEqual(actual_output_lines[-1], total_output)
 
@@ -103,7 +103,7 @@ class TestCLI(TestDB):
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
             with open(file_path) as fh:
-                self.assertEqual(fh.readline(), "code,name\n")    
+                self.assertEqual(fh.readline(), "code,name\n")
             # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
             os.remove(file_path)
 
@@ -129,8 +129,8 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
             self.compare_output(result.output, [
-                    ["country:"],
-                    ["skip:", "3", "insert:", "0", "update:", "0"],
+                ["country:"],
+                ["skip:", "3", "insert:", "0", "update:", "0"],
             ], "1 tables imported successfully")
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
@@ -165,8 +165,8 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             self.compare_output(result.output, [
-                    ["country:"],
-                    ["skip:", "1", "insert:", "1", "update:", "1"],
+                ["country:"],
+                ["skip:", "1", "insert:", "1", "update:", "1"],
             ], "1 tables imported successfully")
 
             stmt = select([table]).order_by('code')
@@ -186,14 +186,14 @@ class TestCLI(TestDB):
         # Use a new metadata for each test since the database schema should be empty
         metadata = MetaData()
         the_table = Table('the_table', metadata,
-                      Column('id', Integer, primary_key=True),
-                      Column('code', String(2), nullable=False),
-                      Column('name', String),
-                      Column('ref_other_table', Integer, ForeignKey("other_table.id")))
+                          Column('id', Integer, primary_key=True),
+                          Column('code', String(2), nullable=False),
+                          Column('name', String),
+                          Column('ref_other_table', Integer, ForeignKey("other_table.id")))
         other_table = Table('other_table', metadata,
-                      Column('id', Integer, primary_key=True),
-                      Column('code', String(2), nullable=False),
-                      Column('name', String))
+                            Column('id', Integer, primary_key=True),
+                            Column('code', String(2), nullable=False),
+                            Column('name', String))
 
         data = {'the_table': {'alternate_key': ['code']}}  # 'other_table': {'columns'}
         config_file_path = os.path.join(self.output_dir, 'test.yml')
@@ -215,16 +215,16 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.compare_output(result.output, [
-                    ["other_table:"],
-                    ["skip:", "2", "insert:", "0", "update:", "0"],
-                    ["the_table:"],
-                    ["skip:", "0", "insert:", "0", "update:", "0"],
+                ["other_table:"],
+                ["skip:", "2", "insert:", "0", "update:", "0"],
+                ["the_table:"],
+                ["skip:", "0", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
 
             with open(os.path.join(self.output_dir, "the_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
                 self.assertEqual(header_columns, ['id', 'code',
-                                                   'name', 'ref_other_table'])
+                                                  'name', 'ref_other_table'])
 
             with open(os.path.join(self.output_dir, "other_table.csv")) as cmd_output:
                 header_columns = cmd_output.readlines()[0].strip().split(',')
