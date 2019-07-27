@@ -242,6 +242,16 @@ class TestCLI(TestDB):
             os.remove(the_table_path)
             os.remove(other_table_path)
 
+    def test_logging_init(self):
+        """
+        Test initialisation of logging.
+        
+        Currently only to improve test coverage. Consider tests that validate the behaviour
+        tested manually, e.g. printing errors to both stdout and log files, using specific
+        formatting, reusing logging setup across modules, controlling logging level etc.
+        """
+        pgmerge.setup_logging(False)
+
     def test_inspect_tables(self):
         """
         Test some inspect commands.
