@@ -204,7 +204,7 @@ class TestCLI(TestDB):
                             Column('code', String(2), nullable=False),
                             Column('name', String))
 
-        data = {
+        config_data = {
             'other_table': {'alternate_key': ['code']}
         }  # 'other_table': {'columns'}
         config_file_path = os.path.join(self.output_dir, 'test.yml')
@@ -217,7 +217,7 @@ class TestCLI(TestDB):
             self.connection.execute(other_table.insert(None), [
                 {'code': 'IN'},
             ])
-            yaml.dump(data, config_file, default_flow_style=False)
+            yaml.dump(config_data, config_file, default_flow_style=False)
 
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
