@@ -33,7 +33,7 @@ def convert_to_dag(directed_graph):
 
 def get_dependents(directed_acyclic_graph, node):
     assert nx.is_directed_acyclic_graph(directed_acyclic_graph), "Graph contains cycles."
-    return nx.descendants(directed_acyclic_graph, node)
+    return list(nx.descendants(directed_acyclic_graph, node))
 
 
 def get_fks_for_direct_cycles(table_graph, direct_cycles):
@@ -45,7 +45,7 @@ def get_fks_for_direct_cycles(table_graph, direct_cycles):
 def get_insertion_order(table_graph):
     copy_of_graph = table_graph.copy()
     convert_to_dag(copy_of_graph)
-    return nx.topological_sort(copy_of_graph, reverse=True)
+    return list(reversed(list(nx.topological_sort(copy_of_graph))))
 
 
 def build_fk_dependency_graph(inspector, schema, tables=None):
