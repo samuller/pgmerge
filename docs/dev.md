@@ -40,7 +40,7 @@ To run the tests you'll need to set an environment variable with a database conn
 The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
     pip install pytest
-    pytest --capture=no
+    pytest --capture=no --exitfirst
 
 ## Code coverage
 
