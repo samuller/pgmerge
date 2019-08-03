@@ -59,7 +59,7 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
                             for col in all_column_names])
     where_clause = " AND ".join(["{}.{} = {}.{}".format(update_table_name, col, reference_table_name, col)
                                  for col in id_column_names])
-    update_sql = "UPDATE {upd} SET {set_columns} FROM {ref} WHERE {where_clause}".format(
+    update_sql = "UPDATE {upd} SET {set_columns} FROM {ref} WHERE {where_clause};".format(
         upd=update_table_name, set_columns=set_columns, ref=reference_table_name, where_clause=where_clause)
     return update_sql
 
@@ -142,10 +142,10 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
     stats.update(upsert_stats)
 
-    drop_sql = "DROP TABLE {}".format(table_name_tmp_copy)
+    drop_sql = "DROP TABLE {};".format(table_name_tmp_copy)
     exec_sql(cursor, drop_sql)
 
-    drop_sql = "DROP TABLE {}".format(table_name_tmp_final)
+    drop_sql = "DROP TABLE {};".format(table_name_tmp_final)
     exec_sql(cursor, drop_sql)
 
     return stats
