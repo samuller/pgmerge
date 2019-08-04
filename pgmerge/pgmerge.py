@@ -125,7 +125,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
     # This should be the default (see: http://initd.org/psycopg/docs/connection.html#connection.autocommit)
     # but it helps make it clear that we're follow the PostgreSQL recommendation:
     # https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT
-    conn.autocommit = False
+    connection.autocommit = False
 
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
