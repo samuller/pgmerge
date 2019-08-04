@@ -126,6 +126,12 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
         cursor.copy_expert(copy_sql, input_file)
     stats['total'] = cursor.rowcount
 
+    # Run analyze to improve performance after populating temporary table.
+    # See: https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-TEMPORARY
+    # and: https://www.postgresql.org/docs/current/populate.html#POPULATE-ANALYZE
+    analyze_sql = "ANALYZE {tmp_copy}".format(tmp_copy=table_name_tmp_copy)
+    exec_sql(cursor, analyze_sql)
+
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
     table_name_tmp_final = "_tmp_final_{}".format(dest_table)
     select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
@@ -147,6 +153,10 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
     drop_sql = "DROP TABLE {};".format(table_name_tmp_final)
     exec_sql(cursor, drop_sql)
+
+    # Run analyze to improve performance after populating table.
+    analyze_sql = "ANALYZE {}".format(dest_table)
+    exec_sql(cursor, analyze_sql)
 
     return stats
 
