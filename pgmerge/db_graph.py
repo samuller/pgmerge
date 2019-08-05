@@ -16,7 +16,12 @@ def get_cycles(graph):
 
 def break_cycles(graph):
     edges_removed = []
-    for cycle in nx.simple_cycles(graph):
+    simple_cycles = list(nx.simple_cycles(graph))
+    # Ensure the cycles are sorted
+    for cycle in simple_cycles:
+        cycle.sort()
+    simple_cycles.sort()
+    for cycle in simple_cycles:
         # Only remove one direction of dependency and also remove self-references
         graph.remove_edge(cycle[0], cycle[-1])
         edges_removed.append([cycle[0], cycle[-1]])
@@ -49,7 +54,7 @@ def get_insertion_order(table_graph):
 
 
 def build_fk_dependency_graph(inspector, schema, tables=None):
-    table_graph = nx.DiGraph()
+    table_graph = nx.OrderedDiGraph()
     if tables is None:
         tables = sorted(inspector.get_table_names(schema))
     for table in tables:

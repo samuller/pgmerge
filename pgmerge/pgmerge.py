@@ -202,7 +202,7 @@ def get_import_files_and_tables(directory, tables, config_per_table):
         config_per_table = {}
 
     # Determine tables based on files in directory
-    all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    all_files = sorted([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])
     import_files = [f for f in all_files if re.match(r".*\.csv", f)]
     dest_tables = [f[:-len('.csv')] for f in import_files]
 
