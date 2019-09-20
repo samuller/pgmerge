@@ -298,6 +298,9 @@ class TestCLI(TestDB):
                 (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
 
+            the_table_path = os.path.join(self.output_dir, "the_table.csv")
+            os.remove(the_table_path)
+
     def test_logging_init(self):
         """
         Test initialisation of logging.
