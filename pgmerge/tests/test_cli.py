@@ -8,7 +8,7 @@ import logging
 from contextlib import contextmanager
 
 import yaml
-from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
+from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select, column, and_
 from click.testing import CliRunner
 
 from pgmerge import pgmerge
@@ -54,6 +54,16 @@ class TestCLI(TestDB):
     def tearDownClass(cls):
         super(TestCLI, cls).tearDownClass()
         os.rmdir(cls.output_dir)
+
+    def run_query(self, sql_stmt):
+        result = self.connection.execute(sql_stmt)
+        all = result.fetchall()
+        result.close()
+        return all
+
+    def get_first(self, sql_stmt):
+        result = self.run_query(sql_stmt)
+        return [value for value, in result][0]
 
     def compare_table_output(self, actual_output, table_result_output, total_output):
         """
@@ -241,6 +251,52 @@ class TestCLI(TestDB):
 
             os.remove(the_table_path)
             os.remove(other_table_path)
+
+    def test_config_self_reference(self):
+        """
+        Test import when table has self-reference that is part of alternate key.
+        """
+        metadata = MetaData()
+        the_table = Table('the_table', metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('code', String(10), nullable=False),
+                          Column('name', String),
+                          Column('parent_id', Integer, ForeignKey("the_table.id")))
+
+        config_data = {
+            'the_table': {'columns': ['code', 'name', 'parent_id'],
+                          'alternate_key': ['code', 'parent_id']}
+        }
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file, \
+                create_table(self.engine, the_table), \
+                self.connection: #  'Select' requires us to close the connection before dropping the table
+            self.connection.execute(the_table.insert(None), [
+                {'code': 'LCY', 'name': 'London', 'parent_id': None},
+                {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
+                {'code': 'MAIN', 'name': 'Main street', 'parent_id': 1},
+                {'code': 'MAIN', 'name': 'Main street', 'parent_id': 2},
+            ])
+            yaml.dump(config_data, config_file, default_flow_style=False)
+
+            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            result_lines = result.output.splitlines()
+            self.assertEqual(result_lines[0].strip(),
+                             "Self-referencing tables found that could prevent import: the_table")
+            self.assertEqual(result_lines[3].strip(), "Exported 1 tables to 1 files")
+            # Clear table to see if import worked
+            self.connection.execute(the_table.delete())
+            # We reset sequence so that id numbers match the initial import
+            self.connection.execute("ALTER SEQUENCE the_table_id_seq RESTART WITH 1")
+
+            self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
+                                                '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+
+            result = self.run_query(select([the_table]).order_by('id'))
+            self.assertEqual(result, [
+                (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
+                (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
 
     def test_logging_init(self):
         """
