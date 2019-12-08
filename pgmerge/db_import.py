@@ -70,6 +70,12 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
 
+    The import steps are as follows:
+    - Create temporary table that matches columns of CSV and use COPY to import data
+    - Create another temporary table that matches columns of the destination table
+    - Transform data and copy it to the second temporary table
+    - Compare data in second temporary table and destination table and only import/update the necessary rows/fields
+
     :param file_config: Config for the file being imported
     :param config_per_table: Config for all tables. Will be used in case of foreign keys to other tables.
                              Also used if file_config is None.
