@@ -75,27 +75,20 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
                              Also used if file_config is None.
     :return:
     """
-    if file_format is None:
-        file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
+    # Determine default values if needed
+    file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'" if file_format is None else file_format
 
-    if config_per_table is None:
-        config_per_table = {}
-
-    if file_config is None:
-        file_config = config_per_table.get(dest_table, {})
+    config_per_table = {} if config_per_table is None else config_per_table
+    file_config = config_per_table.get(dest_table, {}) if file_config is None else file_config
     columns = file_config.get('columns', None)
     alternate_key = file_config.get('alternate_key', None)
 
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
-    if columns is None:
-        columns = all_columns
-
-    if alternate_key is None:
-        id_columns = get_unique_columns(inspector, dest_table, schema)
-        if len(id_columns) == 0:
-            raise UnsupportedSchemaException("Table has no primary key or unique columns!")
-    else:
-        id_columns = alternate_key
+    columns = all_columns if columns is None else columns
+    id_columns = get_unique_columns(inspector, dest_table, schema) if alternate_key is None else alternate_key
+    # Table should either be setup correctly, or alternate key should be specified
+    if len(id_columns) == 0:
+        raise UnsupportedSchemaException("Table has no primary key or unique columns!")
 
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
