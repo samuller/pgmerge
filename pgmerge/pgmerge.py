@@ -305,6 +305,29 @@ def load_table_config_or_exit(inspector, schema, config_file_name):
     return config_per_table
 
 
+def generate_single_table_config(directory, tables, config_per_table):
+    """
+    Create a fake config such that all files found in the directory are subsets for the given table.
+    """
+    assert len(tables) == 1
+    table_name = tables[0]
+
+    all_files = sorted([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])
+    import_files = [f for f in all_files if re.match(r".*\.csv", f)]
+
+    # Add subsets to config if they don't already exist
+    if 'subsets' not in config_per_table[table_name]:
+        config_per_table[table_name]['subsets'] = []
+    current_subsets = [subset['name'] for subset in config_per_table[table_name]['subsets']]
+    for name in import_files:
+        if name not in current_subsets:
+            config_per_table[table_name]['subsets'].append({'name': name})
+
+    dest_tables = [table_name] * len(import_files)
+    import_files = [os.path.join(directory, f) for f in import_files]
+    return import_files, dest_tables, config_per_table
+
+
 # Shared command line options for connecting to a database
 DB_CONNECT_OPTIONS = [
     click.option('--dbname', '-d', help='Database name to connect to.', required=True),
@@ -396,9 +419,12 @@ def export(dbname, uri, host, port, username, no_password, password, schema,
               help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
               'requires superuser rights).')
 @decorate(DIR_TABLES_ARGUMENTS)
+@click.option('--single-table', is_flag=True,
+              help='An import-only option that assumes all files in the directory are the same type and imports ' +
+                   'them all into a single table.')
 def upsert(dbname, uri, host, port, username, no_password, password, schema,
            config, include_dependent_tables, ignore_cycles, disable_foreign_keys,
-           directory, tables):
+           single_table, directory, tables):
     """
     Import/merge each CSV file into a table.
 
@@ -420,8 +446,19 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
         if include_dependent_tables:
             tables = db_graph.get_all_dependent_tables(table_graph, tables)
 
+        if single_table and (tables is None or len(tables) == 0):
+            print("One table has to be specified when using the --single-table option")
+            sys.exit()
+        if single_table and len(tables) > 1:
+            print("Only one table can be specified when using the --single-table option")
+            sys.exit()
+
         config_per_table = load_table_config_or_exit(inspector, schema, config)
-        import_files, dest_tables = get_import_files_and_tables(directory, tables, config_per_table)
+        if single_table:
+            import_files, dest_tables, config_per_table = generate_single_table_config(directory, tables,
+                                                                                       config_per_table)
+        else:
+            import_files, dest_tables = get_import_files_and_tables(directory, tables, config_per_table)
         run_in_session(engine, lambda conn:
                        import_all_new(conn, inspector, schema, import_files, dest_tables,
                                       config_per_table=config_per_table,
