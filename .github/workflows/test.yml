@@ -43,6 +43,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
+      # Cache entire Python environment
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          # pythonLocation includes exact Python version
+          key: build-${{ env.pythonLocation }}-${{ hashFiles('requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
