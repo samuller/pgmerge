@@ -12,15 +12,15 @@ jobs:
           # Test with specific supported versions
           - os: ubuntu-16.04
             python: 3.6
-            postgres-tag: ':9.5'
+            postgres: 9.5
           # Test everything with latest versions
           - os: ubuntu-latest
             python: 3.x
-            postgres-tag: ''
+            postgres: latest
 
     services:
       postgres:
-        image: postgres${{ matrix.postgres-tag }}
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_PASSWORD: postgres
         # Set health checks to wait until postgres has started
