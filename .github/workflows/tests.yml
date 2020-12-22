@@ -13,11 +13,13 @@ jobs:
       matrix:
         include:
           # Test with specific supported versions
-          - os: ubuntu-16.04
+          - name: supported
+            os: ubuntu-16.04
             python: 3.6
             postgres: 9.5
           # Test everything with latest versions
-          - os: ubuntu-latest
+          - name: latest
+            os: ubuntu-latest
             python: 3.x
             postgres: latest
 
@@ -58,6 +60,8 @@ jobs:
       - name: Test with pytest
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ pytest --cov-report html --cov pgmerge --verbose
       - name: Upload coverage to Codecov
+        # Ensure we only upload once per build
+        if: matrix.name == 'supported'
         uses: codecov/codecov-action@v1
         with:
           fail_ci_if_error: true
