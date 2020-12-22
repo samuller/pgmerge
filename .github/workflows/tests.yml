@@ -1,4 +1,4 @@
-name: test
+name: tests
 # Run this workflow every time a new commit is pushed to repo
 on:
   push:
