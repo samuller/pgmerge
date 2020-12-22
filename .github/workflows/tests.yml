@@ -57,3 +57,7 @@ jobs:
           pip install codecov
       - name: Test with pytest
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ pytest --cov-report html --cov pgmerge --verbose
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
