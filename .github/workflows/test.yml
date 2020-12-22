@@ -4,11 +4,23 @@ on: push
 
 jobs:
   run-tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          # Test with specific supported versions
+          - os: ubuntu-16.04
+            python: 3.6
+            postgres-tag: ':9.5'
+          # Test everything with latest versions
+          - os: ubuntu-latest
+            python: 3.x
+            postgres-tag: ''
 
     services:
       postgres:
-        image: postgres
+        image: postgres${{ matrix.postgres-tag }}
         env:
           POSTGRES_PASSWORD: postgres
         # Set health checks to wait until postgres has started
@@ -24,10 +36,10 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
-      - name: Install Python
+      - name: Install Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: ${{ matrix.python }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
