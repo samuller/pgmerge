@@ -1,6 +1,6 @@
 # pgmerge - a PostgreSQL data import and merge utility
 
-[![Build Status](https://travis-ci.org/samuller/pgmerge.svg?branch=master)](https://travis-ci.org/samuller/pgmerge)
+[![Build Status](https://github.com/samuller/pgmerge/workflows/tests/badge.svg)](https://github.com/samuller/pgmerge/actions)
 [![PyPI version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
 [![codecov](https://codecov.io/gh/samuller/pgmerge/branch/master/graph/badge.svg)](https://codecov.io/gh/samuller/pgmerge)
 
@@ -10,7 +10,7 @@ This utility's main purpose is to manage a set of CSV files that correspond with
 * When the primary key already exists, row values will be updated.
 * Rows that are missing or unchanged will be ignored.
 
-pgmerge can then also export data in the same format expected for import.
+pgmerge can then also export data in the *same format* expected for import.
 
 These features allow you to move data between databases with the same schema to keep them up to date and in sync, although it does not cover handling deleted data.
 
