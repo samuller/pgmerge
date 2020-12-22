@@ -1,6 +1,9 @@
 name: test
 # Run this workflow every time a new commit is pushed to repo
-on: push
+on:
+  push:
+  schedule:
+  - cron: '7 14 * * fri'
 
 jobs:
   run-tests:
