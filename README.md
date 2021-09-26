@@ -1,8 +1,8 @@
 # pgmerge - a PostgreSQL data import and merge utility
 
 [![Build Status](https://github.com/samuller/pgmerge/workflows/tests/badge.svg)](https://github.com/samuller/pgmerge/actions)
-[![PyPI version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
-[![codecov](https://codecov.io/gh/samuller/pgmerge/branch/master/graph/badge.svg)](https://codecov.io/gh/samuller/pgmerge)
+[![PyPI Version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
+[![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/samuller/3c84321138784d39b31a02d7fe93b31d/raw/badge-coverage.json)](https://github.com/samuller/pgmerge/actions)
 
 This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database. Each of these CSV files can then be *merged* into their table, meaning that the following process will occur (also called an *upsert* operation):
 
