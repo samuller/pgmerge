@@ -1,7 +1,10 @@
 name: tests
-# Run this workflow every time a new commit is pushed to repo
+
 on:
+  # Run this workflow every time a new commit is pushed to repo
   push:
+  # Also run it once weekly to check for impact due to changes in the OS,
+  # python, postgres, or any external packages/dependencies
   schedule:
   - cron: '7 14 * * fri'
 
@@ -14,7 +17,7 @@ jobs:
         include:
           # Test with specific supported versions
           - name: supported
-            os: ubuntu-16.04
+            os: ubuntu-18.04
             python: 3.6
             postgres: 9.5
           # Test everything with latest versions
