@@ -69,6 +69,8 @@ jobs:
           echo "COV_TOTAL=$COV_TOTAL" >> $GITHUB_ENV
           echo "COV_COLOR=$COV_COLOR" >> $GITHUB_ENV
       - name: Create code coverage badge
+        # Ensure we only update once per build
+        if: matrix.name == 'supported'
         uses: schneegans/dynamic-badges-action@v1.1.0
         with:
           auth: ${{ secrets.GIST_TOKEN }}
