@@ -64,8 +64,20 @@ jobs:
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ pytest --cov-report html --cov pgmerge --verbose
       - name: Get final code coverage percentage & color
         run: |
-          COV_TOTAL=$(coverage report | grep 'TOTAL' | tr -s ' ' | cut -d ' ' -f 4)
-          COV_COLOR="yellow"
+          COV_TOTAL=$(coverage report | grep 'TOTAL' | tr -s ' ' | cut -d ' ' -f 4 | tr -d '%')
+          if ((COV_TOTAL<=60)); then
+            COV_COLOR="red"
+          elif ((COV_TOTAL<=70)); then
+            COV_COLOR="orange"
+          elif ((COV_TOTAL<=80)); then
+            COV_COLOR="yellow"
+          elif ((COV_TOTAL<=90)); then
+            COV_COLOR="green"
+          elif ((COV_TOTAL<=100)); then
+            COV_COLOR="brightgreen"
+          else
+            COV_COLOR="lightgrey"
+          fi
           echo "COV_TOTAL=$COV_TOTAL" >> $GITHUB_ENV
           echo "COV_COLOR=$COV_COLOR" >> $GITHUB_ENV
       - name: Create code coverage badge
@@ -77,7 +89,7 @@ jobs:
           gistID: 3c84321138784d39b31a02d7fe93b31d
           filename: badge-coverage.json
           label: coverage
-          message: ${{ env.COV_TOTAL }}
+          message: "${{ env.COV_TOTAL }}%"
           color: ${{ env.COV_COLOR }}
       - name: Upload coverage to Codecov
         # Ensure we only upload once per build
