@@ -217,8 +217,7 @@ def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src
         new_values = ["{join_alias}.{ref_col} AS {con_col}".format(
             join_alias=join_alias,
             ref_col=fk['referred_columns'][idx],
-            con_col=fk['constrained_columns'][idx])
-                      for idx in range(len(fk['referred_columns']))]
+            con_col=fk['constrained_columns'][idx]) for idx in range(len(fk['referred_columns']))]
         new_values = [(val, [fk['name']]) for val in new_values]
 
         replace_indexes(foreign_columns, idxs_to_replace, new_values)

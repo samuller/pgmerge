@@ -78,8 +78,8 @@ class TestCLI(TestDB):
             self.assertEqual(actual_output_lines[idx].strip().split(),
                              table_result_output[idx])
             # Check table result
-            self.assertEqual(actual_output_lines[idx+1].strip().split(),
-                             table_result_output[idx+1])
+            self.assertEqual(actual_output_lines[idx + 1].strip().split(),
+                             table_result_output[idx + 1])
         # Check total count
         self.assertEqual(actual_output_lines[-1], total_output)
 
@@ -270,7 +270,7 @@ class TestCLI(TestDB):
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, the_table), \
-                self.connection: #  'Select' requires us to close the connection before dropping the table
+                self.connection:  # 'Select' requires us to close the connection before dropping the table
             self.connection.execute(the_table.insert(None), [
                 {'code': 'LCY', 'name': 'London', 'parent_id': None},
                 {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
@@ -304,7 +304,7 @@ class TestCLI(TestDB):
     def test_logging_init(self):
         """
         Test initialisation of logging.
-        
+
         TODO: Consider tests that validate the behaviour tested manually, e.g.
         printing errors to both stdout and log files, using specific formatting,
         reusing logging setup across modules, controlling logging level etc.
@@ -332,7 +332,7 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--list-tables'])
             self.assertEqual(result.output.splitlines(), ['other_table', 'the_table'])
-            
+
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--table-details'])
             result_output = result.output.splitlines()
@@ -344,5 +344,6 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--insert-order'])
-            self.assertEqual(result.output.splitlines(), ["Found 2 tables in schema 'public'", "",
+            self.assertEqual(result.output.splitlines(), [
+                "Found 2 tables in schema 'public'", "",
                 'Insertion order:', str(['other_table', 'the_table'])])

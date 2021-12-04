@@ -68,7 +68,7 @@ def build_fk_dependency_graph(inspector, schema, tables=None):
     return table_graph
 
 
-def get_direct_cycle_fks_per_table(table_graph): # pragma: no cover
+def get_direct_cycle_fks_per_table(table_graph):  # pragma: no cover
     cycles = get_cycles(table_graph)
     cycles = [cycle for cycle in cycles if len(cycle) > 1]
 

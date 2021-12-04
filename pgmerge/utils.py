@@ -19,7 +19,7 @@ class NoExceptionFormatter(logging.Formatter):
         return ''
 
 
-def recursive_update_ignore_none(any_dict, update_dict): # pragma: no cover
+def recursive_update_ignore_none(any_dict, update_dict):  # pragma: no cover
     """
     Similar to dict.update(), but updates recursively nested dictionaries and never
     updates a key's value to None.
@@ -34,7 +34,7 @@ def recursive_update_ignore_none(any_dict, update_dict): # pragma: no cover
     return any_dict
 
 
-def ensure_file_exists(file_path): # pragma: no cover
+def ensure_file_exists(file_path):  # pragma: no cover
     # Recursively create all directories if they don't exist
     file_dirs = os.path.dirname(file_path)
     if not os.path.exists(file_dirs):
