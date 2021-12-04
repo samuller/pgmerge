@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "pgmerge"
+version = "1.8.2"
+description = "PostgreSQL data import/export utility"
+authors = ["Simon Muller <samullers@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/samuller/pgmerge"
+repository = "https://github.com/samuller/pgmerge"
+keywords = ["postgresql", "csv", "import", "export"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Database",
+    "Topic :: Utilities",
+]
+
+[tool.poetry.scripts]
+pgmerge = "pgmerge.pgmerge:main"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+psycopg2-binary = "*"
+networkx = "2.5"
+click = "7.1.2"
+sqlalchemy = "1.3.5"
+appdirs = "1.4.3"
+PyYAML = "5.4.1"
+rxjson = "0.3"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+flake8 = "^4.0.1"
+pycodestyle = "^2.8.0"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "pgmerge/tests"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -2,20 +2,19 @@
 
 Clone the repo and perform all these following steps from the root directory.
 
-## Virtualenv
+## Setup virtualenv
 
-Setup a virtualenv (optional, but recommended):
+[Install poetry](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions):
 
-    virtualenv -p python3 .env
-    . .env/bin/activate
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 
-Then install required modules:
+Install packages:
 
-    pip install -r requirements.txt
+    poetry install
 
-Install in editable mode:
+Activate virtual environment (and app command - in editable mode):
 
-    pip install -e .
+    poetry shell
 
 If it worked correctly, the following will be in your path and be able to run anywhere:
 
@@ -39,14 +38,12 @@ To run the tests you'll need to set an environment variable with a database conn
 
 The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
-    pip install pytest
     pytest --capture=no --exitfirst
 
 ## Code coverage
 
 To determine code coverage of the tests:
 
-    pip install pytest-cov
     pytest --cov-report html --cov pgmerge
 
 ## Packaging
