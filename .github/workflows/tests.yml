@@ -63,6 +63,8 @@ jobs:
         run: poetry install
       - name: Check for flake8 issues
         run: poetry run flake8 --exclude "tests" pgmerge/
+      - name: Check for mypy typing issues
+        run: poetry run mypy --install-types --non-interactive --ignore-missing-imports pgmerge/
       - name: Test with pytest
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ poetry run pytest --cov-report html --cov pgmerge --verbose
       - name: Get final code coverage percentage & color
