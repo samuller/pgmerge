@@ -19,7 +19,7 @@ jobs:
           - name: supported
             os: ubuntu-18.04
             python: 3.6
-            postgres: 9.5
+            postgres: 10
           # Test everything with latest versions
           - name: latest
             os: ubuntu-latest
