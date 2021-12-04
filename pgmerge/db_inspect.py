@@ -144,8 +144,10 @@ def transferability(inspector, schema):  # pragma: no cover
     print("\nNatural keys:\n", natural_key_tables)
     print("\nAuto-transformable to natural keys:\n", transformable)
     print("\nPK contains FK:\n", pk_contains_fk)
-    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, surrogate_key_tables), name='surrogate_key_tables')
-    # graph_export_to_dot_file(build_fk_dependency_graph(inspector, schema, natural_key_tables), name='natural_key_tables')
+    # graph_export_to_dot_file(build_fk_dependency_graph(
+    #    inspector, schema, surrogate_key_tables), name='surrogate_key_tables')
+    # graph_export_to_dot_file(build_fk_dependency_graph(
+    #    inspector, schema, natural_key_tables), name='natural_key_tables')
 
 
 def main(engine, schema,

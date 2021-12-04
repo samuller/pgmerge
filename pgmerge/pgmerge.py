@@ -67,7 +67,7 @@ def setup_logging(verbose=False):  # pragma: no cover
 
 
 def find_and_warn_about_cycles(table_graph, dest_tables):
-    """Check if the parts of database schema being used have foreign keys containing cycles, and warn about possible issues."""
+    """Check and warn if the parts of database schema being used have foreign keys containing cycles."""
     def print_message(msg):
         print(msg)
         print("Import might require the --disable-foreign-keys option.")
@@ -344,7 +344,9 @@ DB_CONNECT_OPTIONS = [
                  help='Never prompt for password (e.g. peer authentication).'),
     click.option('--password', '-W', hide_input=True, prompt=False, default=None,
                  help='Database password (default is to prompt for password or read config).'),
-    click.option('--uri', '-L', help='Connection URI can be used instead of specifying parameters separately (also sets --no-password).', required=False)
+    click.option('--uri', '-L',
+                 help='Connection URI can be used instead of specifying parameters separately' +
+                      ' (also sets --no-password).', required=False)
 ]
 
 # Shared command line arguments for importing/exporting tables to a directory
