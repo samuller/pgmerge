@@ -156,7 +156,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     # Sort by dependency requirements
     insertion_order = db_graph.get_insertion_order(table_graph)
     import_pairs = list(zip(import_files, dest_tables))
-    import_pairs.sort(key=lambda pair: cast(int, insertion_order.index(pair[1])))
+    import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
     # Stats
     total_stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
     error_tables = list(unknown_tables)
@@ -423,8 +423,8 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         schema = validate_schema(inspector, schema)
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = validate_tables(inspector, schema, tables)
-        if include_dependent_tables:
-            tables = db_graph.get_all_dependent_tables(table_graph, tables)
+        if include_dependent_tables and tables:
+            tables = list(db_graph.get_all_dependent_tables(table_graph, tables))
         if tables is None:
             tables = sorted(inspector.get_table_names(schema))
 
@@ -432,7 +432,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         find_and_warn_about_cycles(table_graph, tables)
 
         def export_tables(conn: Any) -> Tuple[int, int]:
-            return db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
+            return db_export.export_tables_per_config(conn, inspector, schema, directory, cast(List[str], tables),
                                                       config_per_table=config_per_table)
         table_count, file_count = run_in_session(engine, export_tables)
         print("Exported {} tables to {} files".format(table_count, file_count))
@@ -478,8 +478,8 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         schema = validate_schema(inspector, schema)
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
         tables = validate_tables(inspector, schema, tables)
-        if include_dependent_tables:
-            tables = db_graph.get_all_dependent_tables(table_graph, tables)
+        if include_dependent_tables and tables:
+            tables = list(db_graph.get_all_dependent_tables(table_graph, tables))
 
         if single_table and (tables is None or len(tables) == 0):
             print("One table has to be specified when using the --single-table option")

@@ -6,6 +6,7 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 import os
 import logging
 import getpass
+from typing import Any, Dict, List, Set, Optional, cast
 
 import yaml
 from rxjson import Rx
@@ -20,7 +21,7 @@ DB_CONFIG_FILE = "db_config.yml"
 PGPASS_FILE = ".pgpass"
 
 
-def load_config_for_tables(config_path):
+def load_config_for_tables(config_path: str) -> Dict[str, Any]:
     """Load a config defining how tables should be imported and exported."""
     # Load YAML defining schema for validation of default config
     schema_path = SCHEMA_FILE
@@ -43,17 +44,18 @@ def load_config_for_tables(config_path):
         raise ConfigInvalidException("incorrect format for '{}', should match description in '{}'"
                                      .format(config_path, schema_path))
         # return None
-    return yaml_config
+    return cast(Dict[str, Any], yaml_config)
 
 
-def validate_table_configs_with_schema(inspector, schema, config_per_table):
+def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_table: Dict[str, Any]
+                                       ) -> None:
     """Check that config matches the current schema and tables without any inconsistencies."""
     table_names = inspector.get_table_names(schema)
     unknown_tables = set(config_per_table.keys()) - set(table_names)
     if len(unknown_tables) > 0:
         raise ConfigInvalidException("table not found in database: {}".format(list(unknown_tables)))
 
-    subset_names = set()
+    subset_names: Set[str] = set()
     for table in config_per_table:
         db_columns = inspector.get_columns(table, schema)
         actual_columns = [col['name'] for col in db_columns]
@@ -84,7 +86,8 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
             subset_names.update([subset['name'] for subset in subsets])
 
 
-def validate_config_columns(table, config_columns, actual_columns, skippable_columns, pk_columns):
+def validate_config_columns(table:str, config_columns: List[str], actual_columns: List[str],
+                            skippable_columns: List[str], pk_columns: List[str]) -> None:
     """Check that columns specified in config match those in table."""
     unknown_columns = set(config_columns) - set(actual_columns)
     if len(unknown_columns) > 0:
@@ -106,7 +109,8 @@ def validate_config_columns(table, config_columns, actual_columns, skippable_col
             .format(list(missing_pk_columns)), table)
 
 
-def validate_config_subsets(table, new_subsets, table_names, known_subsets):
+def validate_config_subsets(table: str, new_subsets: List[Dict[str, Any]], table_names: List[str],
+                            known_subsets: Set[str]) -> None:
     """Check that subsets specified are valid tables and don't have duplicates."""
     for subset in new_subsets:
         name = subset['name']
@@ -123,7 +127,8 @@ def validate_config_subsets(table, new_subsets, table_names, known_subsets):
             "duplicate subset names: {}".format(sorted(list(duplicate_names))), table)
 
 
-def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
+def retrieve_password(appname: str, dbname: str, host: str, port: str, username: str, password: Optional[str],
+                      type: str = "postgresql", never_prompt: bool = False) -> str:
     """
     If password isn't yet available, make sure to get it.
 
@@ -133,18 +138,19 @@ def retrieve_password(appname, dbname, host, port, username, password, type="pos
         return password
     # With Postgresql we look for a pgpass file
     if type == "postgresql":
-        pgpass_path = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
-        if not os.path.isfile(pgpass_path):
+        pgpass_path: Optional[str] = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
+        if pgpass_path and not os.path.isfile(pgpass_path):
             pgpass_path = None
         password = load_pgpass(host, port, dbname, username, pgpass_path=pgpass_path)
 
     if password is None and not never_prompt:
         password = getpass.getpass("Password for {}: ".format(username))
 
-    return password
+    return cast(str, password)
 
 
-def generate_url(uri, dbname, host, port, username, password, type="postgresql"):
+def generate_url(uri: Optional[str], dbname: str, host: str, port: str, username: str, password: str,
+                 type: str = "postgresql") -> str:
     """Generate connection string URL from various connection details."""
     if uri:
         uri = uri if uri[-1] != '/' else uri[:-1]
@@ -160,7 +166,7 @@ def generate_url(uri, dbname, host, port, username, password, type="postgresql")
 class ConfigInvalidException(Exception):
     """Exception raised for invalid config file."""
 
-    def __init__(self, message, table=None):
+    def __init__(self, message: str, table: Optional[str] = None) -> None:
         if table is not None:
             message = "Configuration for table '{}' is invalid:\n {}".format(table, message)
         else:

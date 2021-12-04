@@ -4,8 +4,9 @@ pgmerge - a PostgreSQL data import and merge utility.
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import logging
+from typing import Any, List, Dict, Tuple, Optional, cast
 
-from .db_export import get_unique_columns, replace_indexes, \
+from .db_export import ForeignColumnPath, get_unique_columns, replace_indexes, \
     replace_local_columns_with_alternate_keys, \
     sql_select_table_with_foreign_columns, \
     sql_join_alias_for_foreign_key, sql_join_from_foreign_key
@@ -13,17 +14,18 @@ from .db_export import get_unique_columns, replace_indexes, \
 _log = logging.getLogger(__name__)
 
 
-def _log_sql(sql):
+def _log_sql(sql: str) -> None:
     _log.debug('SQL: {}'.format(sql))
 
 
-def exec_sql(cursor, sql):
+def exec_sql(cursor: Any, sql: str) -> None:
     """Execute the given SQL."""
     _log_sql(sql)
     cursor.execute(sql)
 
 
-def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_name, all_column_names):
+def sql_delete_identical_rows_between_tables(delete_table_name: str, reference_table_name: str,
+                                             all_column_names: List[str]) -> str:
     """Create SQL to delete rows from a table that are identical to rows in a reference table."""
     # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
@@ -37,7 +39,8 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
     return delete_sql
 
 
-def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names, column_names):
+def sql_insert_rows_not_in_table(insert_table_name: str, reference_table_name: str, id_column_names: List[str],
+                                 column_names: List[str]) -> str:
     """Create SQL to insert rows into a table, but only if those rows don't already exist in a reference table."""
     insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col)
                                   for col in id_column_names])
@@ -55,7 +58,8 @@ def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_col
     return insert_sql
 
 
-def sql_update_rows_between_tables(update_table_name, reference_table_name, id_column_names, all_column_names):
+def sql_update_rows_between_tables(update_table_name: str, reference_table_name: str, id_column_names: List[str],
+                                   all_column_names: List[str]) -> str:
     """Create SQL to update rows in a table with values from a reference table."""
     # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
     # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
@@ -68,8 +72,9 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
     return update_sql
 
 
-def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, file_config=None,
-              config_per_table=None):
+def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_file: str,
+              file_format: Optional[str] = None, file_config: Optional[Dict[str, Any]] = None,
+              config_per_table: Optional[Dict[str, Any]] = None) -> Dict[str, int]:
     """
     Do a full import (actually a merge or upsert) of a single file into a single table.
 
@@ -91,7 +96,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'" if file_format is None else file_format
 
     config_per_table = {} if config_per_table is None else config_per_table
-    file_config = config_per_table.get(dest_table, {}) if file_config is None else file_config
+    file_config = cast(Dict[str, Any], config_per_table.get(dest_table, {}) if file_config is None else file_config)
     columns = file_config.get('columns', None)
     alternate_key = file_config.get('alternate_key', None)
 
@@ -127,8 +132,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
     _log_sql(copy_sql)
 
-    with open(input_file, 'r', encoding="utf-8") as input_file:
-        cursor.copy_expert(copy_sql, input_file)
+    with open(input_file, 'r', encoding="utf-8") as file:
+        cursor.copy_expert(copy_sql, file)
     stats['total'] = cursor.rowcount
 
     # Run analyze to improve performance after populating temporary table.
@@ -166,7 +171,8 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     return stats
 
 
-def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
+def upsert_table_to_table(cursor: Any, src_table: str, dest_table: str, id_columns: List[str], columns: List[str]
+                          ) -> Dict[str, int]:
     """Do a full upsert import from a source table to a destination table."""
     stats = {'skip': 0, 'insert': 0, 'update': 0}
 
@@ -187,7 +193,8 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
     return stats
 
 
-def sql_joins_for_each_path(paths, src_table, fks_with_join_columns_by_name):
+def sql_joins_for_each_path(paths: List[Tuple[str, ...]], src_table: str, fks_with_join_columns_by_name: Dict[str, Any]
+                            ) -> List[str]:
     """Create SQL joins for each step in the list of given path lists."""
     per_join_sql = []
     for path in paths:
@@ -206,7 +213,9 @@ def sql_joins_for_each_path(paths, src_table, fks_with_join_columns_by_name):
     return per_join_sql
 
 
-def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src_table):
+def replace_foreign_columns_with_local_columns(foreign_columns: List[ForeignColumnPath],
+                                               fks_by_name: Dict[str, Any], src_table: str
+                                               ) -> List[ForeignColumnPath]:
     """
     Replace "foreign columns" from file data with the corresponding columns of the import table.
 
@@ -223,11 +232,11 @@ def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src
         join_alias = sql_join_alias_for_foreign_key(fk)
 
         idxs_to_replace = [idx for idx, fc in enumerate(foreign_columns) if fk_name in fc[1]]
-        new_values = ["{join_alias}.{ref_col} AS {con_col}".format(
+        fk_sql_names = ["{join_alias}.{ref_col} AS {con_col}".format(
             join_alias=join_alias,
             ref_col=fk['referred_columns'][idx],
             con_col=fk['constrained_columns'][idx]) for idx in range(len(fk['referred_columns']))]
-        new_values = [(val, [fk['name']]) for val in new_values]
+        new_values = [(name, [fk['name']]) for name in fk_sql_names]
 
         replace_indexes(foreign_columns, idxs_to_replace, new_values)
 
@@ -239,9 +248,10 @@ def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src
     return foreign_columns
 
 
-def sql_select_table_with_local_columns(inspector, schema, schema_table, src_table,
-                                        foreign_columns, local_columns_subset=None,
-                                        config_per_table=None):
+def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_table: Any, src_table: str,
+                                        foreign_columns: List[ForeignColumnPath],
+                                        local_columns_subset: Any = None,
+                                        config_per_table: Optional[Dict[str, Any]] = None) -> str:
     """
     Create SQL to convert src_table's foreign columns to local columns matching those of the schema_table.
 
@@ -261,7 +271,7 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
     grouped_foreign_columns = {tuple(path): path for _, path in foreign_columns}
     paths = list(grouped_foreign_columns.keys())
     paths.sort(key=lambda path: len(path))
-    idxs_by_fk = {}
+    idxs_by_fk: Dict[str, List[int]] = {}
     for idx, path in enumerate(paths):
         if len(path) == 0:
             continue
@@ -276,10 +286,10 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
         fks_by_name.update({fk['name']: fk for fk in new_fks})
 
     # Go through all foreign columns and collect all 'replaced columns'
-    for column, path in foreign_columns:
-        if len(path) == 0:
+    for column, fpath in foreign_columns:
+        if len(fpath) == 0:
             continue
-        final_fk = fks_by_name[path[-1]]
+        final_fk = fks_by_name[fpath[-1]]
         join_alias = sql_join_alias_for_foreign_key(final_fk)
         final_fk.setdefault('join_columns_local', []).append(
             "{join_alias}_{column}".format(join_alias=join_alias, column=column))
@@ -299,7 +309,7 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
         columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql)
 
 
-def disable_foreign_key_constraints(cursor):
+def disable_foreign_key_constraints(cursor: Any) -> None:
     """
     Disable database checking of foreign key constraints.
 
@@ -336,7 +346,7 @@ def disable_foreign_key_constraints(cursor):
     exec_sql(cursor, sql)
 
 
-def enable_foreign_key_constraints(cursor):
+def enable_foreign_key_constraints(cursor: Any) -> None:
     """Enable database checking of foreign key constraints."""
     sql = "SET session_replication_role = DEFAULT;"
     exec_sql(cursor, sql)
@@ -345,19 +355,19 @@ def enable_foreign_key_constraints(cursor):
 class PreImportException(Exception):
     """Exception raised for errors detected before starting import."""
 
-    def __init__(self, message):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
 class UnsupportedSchemaException(PreImportException):
     """Exception raised due to database schema being unsupported by import."""
 
-    def __init__(self, message):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
 class InputParametersException(PreImportException):
     """Exception raised due to incorrect parameters provided to import."""
 
-    def __init__(self, message):
+    def __init__(self, message: str) -> None:
         super().__init__(message)

@@ -8,13 +8,14 @@ import logging
 
 import networkx as nx
 from sqlalchemy import inspect
+from typing import Any, List, Optional
 
 from . import db_graph
 
 _log = logging.getLogger(__name__)
 
 
-def print_missing_primary_keys(inspector, schema):
+def print_missing_primary_keys(inspector: Any, schema: str) -> None:
     """Find and print tables in database that don't have primary keys."""
     no_pks = []
     for table in inspector.get_table_names(schema):
@@ -26,7 +27,7 @@ def print_missing_primary_keys(inspector, schema):
         print(no_pks)
 
 
-def print_cycle_info_and_break_cycles(table_graph):
+def print_cycle_info_and_break_cycles(table_graph: Any) -> None:
     """Change given graph by breaking cycles."""
     simple_cycles = list(nx.simple_cycles(table_graph))
     if len(simple_cycles) > 0:
@@ -45,7 +46,7 @@ def print_cycle_info_and_break_cycles(table_graph):
         pass
 
 
-def print_partition_info(table_graph):
+def print_partition_info(table_graph: Any) -> None:
     """Traverse table/foreign-key dependency graph and look for disconnected sub-graphs."""
     sub_graphs = [graph for graph in nx.weakly_connected_component_subgraphs(table_graph)]
     if len(sub_graphs) > 1:
@@ -54,13 +55,13 @@ def print_partition_info(table_graph):
             print(graph.nodes())
 
 
-def print_insertion_order(table_graph):
+def print_insertion_order(table_graph: Any) -> None:
     """Print tables in insertion order."""
     print("\nInsertion order:")
     print(db_graph.get_insertion_order(table_graph))
 
 
-def graph_export_to_dot_file(table_graph, name='dependency_graph'):  # pragma: no cover
+def graph_export_to_dot_file(table_graph: Any, name: str = 'dependency_graph') -> None:  # pragma: no cover
     """Print table/foreign-key dependency graph in graphviz's dot file format."""
     print('digraph %s {' % (name,))
     print("node[shape=plaintext];")
@@ -76,8 +77,10 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):  # pragma: n
     print('\n}')
 
 
-def print_table(name, columns=None, color='#aec7e8'):  # pragma: no cover
+def print_table(name: str, columns: Optional[List[str]] = None, color: str = '#aec7e8') -> str:  # pragma: no cover
     """Print table details in HTML format supported by graphviz's dot file format."""
+    if columns is None:
+        columns = []
     columns_str = ""
     for column in columns:
         columns_str += """
@@ -98,7 +101,7 @@ def print_table(name, columns=None, color='#aec7e8'):  # pragma: no cover
     </table>""".format(name=name, color=color, columns_str=columns_str)
 
 
-def transferability(inspector, schema):  # pragma: no cover
+def transferability(inspector: Any, schema: str) -> None:  # pragma: no cover
     """
     Check that tables in the database schema have enough constraints to support consistent export/import by pgmerge.
 
@@ -150,9 +153,9 @@ def transferability(inspector, schema):  # pragma: no cover
     #    inspector, schema, natural_key_tables), name='natural_key_tables')
 
 
-def main(engine, schema,
-         warnings, list_tables, table_details, partition,
-         cycles, insert_order, export_graph, transferable):
+def main(engine: Any, schema: Optional[str],
+         warnings: bool, list_tables: bool, table_details: bool, partition: bool,
+         cycles: bool, insert_order: bool, export_graph: bool, transferable: bool) -> None:
     """Main-method to process various CLI commands to inspect details of database schema."""
     inspector = inspect(engine)
     if schema is None:

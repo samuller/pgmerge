@@ -5,17 +5,20 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
 import logging
-from typing import Tuple
+from typing import Any, List, Dict, Tuple, Optional, cast
 
 DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 _log = logging.getLogger(__name__)
 
 
-def _log_sql(sql):
+ForeignColumnPath = Tuple[str, List[str]]
+
+
+def _log_sql(sql: str) -> None:
     _log.debug('SQL: {}'.format(sql))
 
 
-def get_unique_columns(inspector, table, schema):
+def get_unique_columns(inspector: Any, table: str, schema: str) -> List[str]:
     """
     Get all columns in table that have constraints forcing uniqueness.
 
@@ -23,13 +26,13 @@ def get_unique_columns(inspector, table, schema):
     values in separate unique constraints have been swapped. This means that extra INSERTS or missed UPDATES could
     happen if these columns are collectively used as an identifier.
     """
-    pks = inspector.get_pk_constraint(table, schema)['constrained_columns']
+    pks = cast(List[str], inspector.get_pk_constraint(table, schema)['constrained_columns'])
     unique_constraints = inspector.get_unique_constraints(table, schema)
     unique = [col for constraint in unique_constraints for col in constraint['column_names']]
     return pks + unique
 
 
-def replace_indexes(listy, idxs_to_replace, new_values):
+def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]) -> None:
     """Remove given indexes and insert a new set of values into the given list."""
     # Delete values to be replaced (remove highest indices first so that indices don't change)
     for idx in reversed(sorted(idxs_to_replace)):
@@ -43,7 +46,9 @@ def replace_indexes(listy, idxs_to_replace, new_values):
         listy.insert(idx_to_add, value)
 
 
-def replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns):
+def replace_local_columns_with_alternate_keys(inspector: Any, config_per_table: Dict[str, Any], schema: str,
+                                              table: str, local_columns: List[str]
+                                              ) -> List[ForeignColumnPath]:
     """
     Replace foreign-key columns in table with alternate key columns of foreign table.
 
@@ -52,7 +57,7 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
 
     TODO: support multiple levels of indirection
     """
-    foreign_columns = [(col, []) for col in local_columns]
+    foreign_columns: List[ForeignColumnPath] = [(col, []) for col in local_columns]
 
     fks = inspector.get_foreign_keys(table, schema)
     for fky in fks:
@@ -77,8 +82,9 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
     return foreign_columns
 
 
-def export_tables_per_config(connection, inspector, schema, output_dir, tables,
-                             config_per_table=None, file_format=None) -> Tuple[int, int]:
+def export_tables_per_config(connection: Any, inspector: Any, schema: str, output_dir: str, tables: List[str],
+                             config_per_table: Optional[Dict[str, Any]] = None,
+                             file_format: Optional[str] = None) -> Tuple[int, int]:
     """Export all given tables according to the options specified in the config_per_table dictionary."""
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
@@ -132,8 +138,9 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
     return len(tables), file_count
 
 
-def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
-                              local_columns_key='constrained_columns', foreign_columns_key='referred_columns'):
+def sql_join_from_foreign_key(foreign_key: Any, table_or_alias: str, join_alias: Optional[str] = None,
+                              local_columns_key: str = 'constrained_columns',
+                              foreign_columns_key: str = 'referred_columns') -> str:
     """Create SQL to join with table using foreign key."""
     assert local_columns_key in foreign_key
     assert foreign_columns_key in foreign_key
@@ -149,13 +156,16 @@ def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
         .format(join_alias=join_alias, cmps=" AND ".join(comparisons), **foreign_key)
 
 
-def sql_join_alias_for_foreign_key(foreign_key):
+def sql_join_alias_for_foreign_key(foreign_key: Any) -> str:
     """Create SQL to create a unique alias for table being joined."""
     return 'join_{}'.format(foreign_key['name'])
 
 
-def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_columns=None, order_columns=None,
-                                          alias_columns=True, where_clause=None):
+def sql_select_table_with_foreign_columns(inspector: Any, schema: str, table: str,
+                                          foreign_columns: Optional[List[ForeignColumnPath]] = None,
+                                          order_columns: Optional[List[str]] = None,
+                                          alias_columns: bool = True, where_clause: Optional[str] = None
+                                          ) -> str:
     """
     Create SQL to select a table, but with it's own columns replaced with those from foreign tables.
 
@@ -215,8 +225,11 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
     return select_sql
 
 
-def export_table_with_any_columns(cursor, inspector, output_path, schema, main_table,
-                                  any_columns=None, order_columns=None, file_format=None, where_clause=None):
+def export_table_with_any_columns(cursor: Any, inspector: Any, output_path: str, schema: str, main_table: str,
+                                  any_columns: Optional[List[ForeignColumnPath]] = None,
+                                  order_columns: Optional[List[str]] = None,
+                                  file_format: Optional[str] = None, where_clause: Optional[str]=None
+                                  ) -> None:
     """
     Export a single table with any of the specified columns.
 
@@ -238,5 +251,5 @@ def export_table_with_any_columns(cursor, inspector, output_path, schema, main_t
 class ExportException(Exception):
     """Exception raised for errors detected before or during export."""
 
-    def __init__(self, message):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
