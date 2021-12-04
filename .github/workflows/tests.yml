@@ -61,6 +61,8 @@ jobs:
             | python -
       - name: Install dependencies
         run: poetry install
+      - name: Check for pycodestyle issues
+        run: poetry run pycodestyle
       - name: Test with pytest
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ poetry run pytest --cov-report html --cov pgmerge --verbose
       - name: Get final code coverage percentage & color
