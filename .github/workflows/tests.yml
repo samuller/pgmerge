@@ -62,10 +62,10 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Test with pytest
-        run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ pytest --cov-report html --cov pgmerge --verbose
+        run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ poetry run pytest --cov-report html --cov pgmerge --verbose
       - name: Get final code coverage percentage & color
         run: |
-          COV_TOTAL=$(coverage report | grep 'TOTAL' | tr -s ' ' | cut -d ' ' -f 4 | tr -d '%')
+          COV_TOTAL=$(poetry run coverage report | grep 'TOTAL' | tr -s ' ' | cut -d ' ' -f 4 | tr -d '%')
           if ((COV_TOTAL<=60)); then
             COV_COLOR="red"
           elif ((COV_TOTAL<=70)); then
