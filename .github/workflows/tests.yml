@@ -54,12 +54,13 @@ jobs:
       #     path: ${{ env.pythonLocation }}
       #     # pythonLocation includes exact Python version
       #     key: build-${{ env.pythonLocation }}-${{ hashFiles('requirements.txt') }}
-      - name: Install dependencies
+      - name: Install poetry
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-cov
-          pip install codecov
+          curl -sL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py \
+            | python -
+      - name: Install dependencies
+        run: poetry install
       - name: Test with pytest
         run: DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ pytest --cov-report html --cov pgmerge --verbose
       - name: Get final code coverage percentage & color
@@ -91,14 +92,14 @@ jobs:
           label: coverage
           message: "${{ env.COV_TOTAL }}%"
           color: ${{ env.COV_COLOR }}
-      - name: Upload coverage to Codecov
-        # Ensure we only upload once per build
-        if: matrix.name == 'supported'
-        uses: codecov/codecov-action@v1
-        with:
-          fail_ci_if_error: true
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
-        with:
-          name: code-coverage-report
-          path: htmlcov/
+      # - name: Upload coverage to Codecov
+      #   # Ensure we only upload once per build
+      #   if: matrix.name == 'supported'
+      #   uses: codecov/codecov-action@v1
+      #   with:
+      #     fail_ci_if_error: true
+      # - name: Archive code coverage results
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: code-coverage-report
+      #     path: htmlcov/
