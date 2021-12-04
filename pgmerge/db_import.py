@@ -1,5 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -13,16 +13,18 @@ from .db_export import get_unique_columns, replace_indexes, \
 _log = logging.getLogger(__name__)
 
 
-def log_sql(sql):
+def _log_sql(sql):
     _log.debug('SQL: {}'.format(sql))
 
 
 def exec_sql(cursor, sql):
-    log_sql(sql)
+    """Execute the given SQL."""
+    _log_sql(sql)
     cursor.execute(sql)
 
 
 def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_name, all_column_names):
+    """Create SQL to delete rows from a table that are identical to rows in a reference table."""
     # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
     #                               for col in all_columns])
@@ -36,6 +38,7 @@ def sql_delete_identical_rows_between_tables(delete_table_name, reference_table_
 
 
 def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_column_names, column_names):
+    """Create SQL to insert rows into a table, but only if those rows don't already exist in a reference table."""
     insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col)
                                   for col in id_column_names])
     reference_table_cols = ",".join(["{tbl}.{col}".format(tbl=reference_table_name, col=col)
@@ -53,6 +56,7 @@ def sql_insert_rows_not_in_table(insert_table_name, reference_table_name, id_col
 
 
 def sql_update_rows_between_tables(update_table_name, reference_table_name, id_column_names, all_column_names):
+    """Create SQL to update rows in a table with values from a reference table."""
     # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
     # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
     set_columns = ",".join(["{} = {}.{}".format(col, reference_table_name, col)
@@ -67,6 +71,8 @@ def sql_update_rows_between_tables(update_table_name, reference_table_name, id_c
 def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=None, file_config=None,
               config_per_table=None):
     """
+    Do a full import (actually a merge or upsert) of a single file into a single table.
+
     Postgresql 9.5+ includes merge/upsert with INSERT ... ON CONFLICT, but it requires columns to have unique
     constraints (or even a partial unique index). We might use it once we're sure that it covers all our use cases.
 
@@ -119,7 +125,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
     exec_sql(cursor, create_sql)
     # Import data into temporary table
     copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
-    log_sql(copy_sql)
+    _log_sql(copy_sql)
 
     with open(input_file, 'r', encoding="utf-8") as input_file:
         cursor.copy_expert(copy_sql, input_file)
@@ -161,6 +167,7 @@ def pg_upsert(inspector, cursor, schema, dest_table, input_file, file_format=Non
 
 
 def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
+    """Do a full upsert import from a source table to a destination table."""
     stats = {'skip': 0, 'insert': 0, 'update': 0}
 
     # Delete rows in temp table that are already identical to those in destination table
@@ -181,9 +188,7 @@ def upsert_table_to_table(cursor, src_table, dest_table, id_columns, columns):
 
 
 def sql_joins_for_each_path(paths, src_table, fks_with_join_columns_by_name):
-    """
-    Create SQL joins for each step in the list of given path lists.
-    """
+    """Create SQL joins for each step in the list of given path lists."""
     per_join_sql = []
     for path in paths:
         if len(path) == 0:
@@ -203,6 +208,10 @@ def sql_joins_for_each_path(paths, src_table, fks_with_join_columns_by_name):
 
 def replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src_table):
     """
+    Replace "foreign columns" from file data with the corresponding columns of the import table.
+
+    Foreign columns are columns from other tables that are referenced by columns with foreign keys in
+    the current table being imported to.
     """
     fks = set()
     for _, path in foreign_columns:
@@ -234,8 +243,9 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
                                         foreign_columns, local_columns_subset=None,
                                         config_per_table=None):
     """
-    Generate query to convert src_table's foreign columns to local columns matching those
-    of the schema_table. The foreign columns should be based on the foreign keys from the schema
+    Create SQL to convert src_table's foreign columns to local columns matching those of the schema_table.
+
+    The foreign columns should be based on the foreign keys from the schema
     table (in the case of further indirection, some other tables will also be included).
 
     :param schema_table: Has foreign keys
@@ -291,6 +301,8 @@ def sql_select_table_with_local_columns(inspector, schema, schema_table, src_tab
 
 def disable_foreign_key_constraints(cursor):
     """
+    Disable database checking of foreign key constraints.
+
     There are different possible approaches for disabling foreign keys. The following are some options that
     disable and re-enable foreign keys globally [1]:
         SET session_replication_role = REPLICA; -- [2]
@@ -325,32 +337,27 @@ def disable_foreign_key_constraints(cursor):
 
 
 def enable_foreign_key_constraints(cursor):
+    """Enable database checking of foreign key constraints."""
     sql = "SET session_replication_role = DEFAULT;"
     exec_sql(cursor, sql)
 
 
 class PreImportException(Exception):
-    """
-    Exception raised for errors detected before starting import.
-    """
+    """Exception raised for errors detected before starting import."""
 
     def __init__(self, message):
         super().__init__(message)
 
 
 class UnsupportedSchemaException(PreImportException):
-    """
-    Exception raised due to database schema being unsupported by import.
-    """
+    """Exception raised due to database schema being unsupported by import."""
 
     def __init__(self, message):
         super().__init__(message)
 
 
 class InputParametersException(PreImportException):
-    """
-    Exception raised due to incorrect parameters provided to import.
-    """
+    """Exception raised due to incorrect parameters provided to import."""
 
     def __init__(self, message):
         super().__init__(message)

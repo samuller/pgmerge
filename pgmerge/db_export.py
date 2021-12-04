@@ -1,5 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -10,12 +10,14 @@ DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 _log = logging.getLogger(__name__)
 
 
-def log_sql(sql):
+def _log_sql(sql):
     _log.debug('SQL: {}'.format(sql))
 
 
 def get_unique_columns(inspector, table, schema):
     """
+    Get all columns in table that have constraints forcing uniqueness.
+
     If the combination of primary key and unique constraints is used to identify a row, then you'll miss rows where
     values in separate unique constraints have been swapped. This means that extra INSERTS or missed UPDATES could
     happen if these columns are collectively used as an identifier.
@@ -27,9 +29,7 @@ def get_unique_columns(inspector, table, schema):
 
 
 def replace_indexes(listy, idxs_to_replace, new_values):
-    """
-    Remove given indexes and insert a new set of values into the given list.
-    """
+    """Remove given indexes and insert a new set of values into the given list."""
     # Delete values to be replaced (remove highest indices first so that indices don't change)
     for idx in reversed(sorted(idxs_to_replace)):
         del listy[idx]
@@ -44,6 +44,8 @@ def replace_indexes(listy, idxs_to_replace, new_values):
 
 def replace_local_columns_with_alternate_keys(inspector, config_per_table, schema, table, local_columns):
     """
+    Replace foreign-key columns in table with alternate key columns of foreign table.
+
     Create a list of foreign columns from a list of selected local columns of a table.
     Each foreign key column to a table with an alternate key will be replaced with columns for the alternate key.
 
@@ -76,9 +78,7 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
 
 def export_tables_per_config(connection, inspector, schema, output_dir, tables,
                              config_per_table=None, file_format=None):
-    """
-    Exports all given tables according to the options specified in the config_per_table dictionary.
-    """
+    """Export all given tables according to the options specified in the config_per_table dictionary."""
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
         print('WARNING: Setting database connection encoding to UTF8 instead of {}'.format(connection.encoding))
@@ -133,6 +133,7 @@ def export_tables_per_config(connection, inspector, schema, output_dir, tables,
 
 def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
                               local_columns_key='constrained_columns', foreign_columns_key='referred_columns'):
+    """Create SQL to join with table using foreign key."""
     assert local_columns_key in foreign_key
     assert foreign_columns_key in foreign_key
     assert len(foreign_key[local_columns_key]) == len(foreign_key[foreign_columns_key])
@@ -148,12 +149,15 @@ def sql_join_from_foreign_key(foreign_key, table_or_alias, join_alias=None,
 
 
 def sql_join_alias_for_foreign_key(foreign_key):
+    """Create SQL to create a unique alias for table being joined."""
     return 'join_{}'.format(foreign_key['name'])
 
 
 def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_columns=None, order_columns=None,
                                           alias_columns=True, where_clause=None):
     """
+    Create SQL to select a table, but with it's own columns replaced with those from foreign tables.
+
     :param foreign_columns: A list of tuples describing which columns to export. Columns can be from any other tables
         that are dependencies of this one. Each tuple should be of the format:
             (column_name, list_of_foreign_key_names_to_reach_table_with_column)
@@ -213,7 +217,9 @@ def sql_select_table_with_foreign_columns(inspector, schema, table, foreign_colu
 def export_table_with_any_columns(cursor, inspector, output_path, schema, main_table,
                                   any_columns=None, order_columns=None, file_format=None, where_clause=None):
     """
-    Exports a single table with any of the specified columns. Columns could be in the table or any of its dependencies.
+    Export a single table with any of the specified columns.
+
+    Columns could be in the table or any of its dependencies.
     """
     if file_format is None:
         file_format = DEFAULT_FILE_FORMAT
@@ -222,16 +228,14 @@ def export_table_with_any_columns(cursor, inspector, output_path, schema, main_t
                                                        where_clause=where_clause)
     copy_sql = 'COPY ({select_sql}) TO STDOUT WITH ({file_format})'\
         .format(select_sql=select_sql, file_format=file_format)
-    log_sql(copy_sql)
+    _log_sql(copy_sql)
 
     with open(output_path, 'wb') as output_file:
         cursor.copy_expert(copy_sql, output_file)
 
 
 class ExportException(Exception):
-    """
-    Exception raised for errors detected before or during export.
-    """
+    """Exception raised for errors detected before or during export."""
 
     def __init__(self, message):
         super().__init__(message)

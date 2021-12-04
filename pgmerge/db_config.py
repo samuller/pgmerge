@@ -1,5 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -21,9 +21,7 @@ PGPASS_FILE = ".pgpass"
 
 
 def load_config_for_tables(config_path):
-    """
-    Loads a config defining how tables should be imported and exported.
-    """
+    """Load a config defining how tables should be imported and exported."""
     # Load YAML defining schema for validation of default config
     schema_path = SCHEMA_FILE
     schema = None
@@ -49,6 +47,7 @@ def load_config_for_tables(config_path):
 
 
 def validate_table_configs_with_schema(inspector, schema, config_per_table):
+    """Check that config matches the current schema and tables without any inconsistencies."""
     table_names = inspector.get_table_names(schema)
     unknown_tables = set(config_per_table.keys()) - set(table_names)
     if len(unknown_tables) > 0:
@@ -86,6 +85,7 @@ def validate_table_configs_with_schema(inspector, schema, config_per_table):
 
 
 def validate_config_columns(table, config_columns, actual_columns, skippable_columns, pk_columns):
+    """Check that columns specified in config match those in table."""
     unknown_columns = set(config_columns) - set(actual_columns)
     if len(unknown_columns) > 0:
         raise ConfigInvalidException(
@@ -107,6 +107,7 @@ def validate_config_columns(table, config_columns, actual_columns, skippable_col
 
 
 def validate_config_subsets(table, new_subsets, table_names, known_subsets):
+    """Check that subsets specified are valid tables and don't have duplicates."""
     for subset in new_subsets:
         name = subset['name']
         if name in table_names:
@@ -124,8 +125,9 @@ def validate_config_subsets(table, new_subsets, table_names, known_subsets):
 
 def retrieve_password(appname, dbname, host, port, username, password, type="postgresql", never_prompt=False):
     """
-    If password isn't yet available, make sure to get it. Either by loading it from the appropriate config files
-    or else by asking the user.
+    If password isn't yet available, make sure to get it.
+
+    Either by loading it from the appropriate config files or else by asking the user.
     """
     if password is not None:
         return password
@@ -143,6 +145,7 @@ def retrieve_password(appname, dbname, host, port, username, password, type="pos
 
 
 def generate_url(uri, dbname, host, port, username, password, type="postgresql"):
+    """Generate connection string URL from various connection details."""
     if uri:
         uri = uri if uri[-1] != '/' else uri[:-1]
         return "{}/{}".format(uri, dbname)
@@ -155,9 +158,7 @@ def generate_url(uri, dbname, host, port, username, password, type="postgresql")
 
 
 class ConfigInvalidException(Exception):
-    """
-    Exception raised for invalid config file.
-    """
+    """Exception raised for invalid config file."""
 
     def __init__(self, message, table=None):
         if table is not None:

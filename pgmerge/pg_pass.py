@@ -1,5 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -16,7 +16,7 @@ COLON_REPLACE_STRING = "<|\t COLON \t|>"  # string can't contain a colon or esca
 
 def load_pgpass(hostname, port, database, username, pgpass_path=None):  # pragma: no cover
     """
-    Returns a password if a matching entry is found in PostgreSQL's pgpass file.
+    Return a password if a matching entry is found in PostgreSQL's pgpass file.
 
     See: https://www.postgresql.org/docs/9.3/static/libpq-pgpass.html
     """
@@ -65,8 +65,9 @@ def load_pgpass(hostname, port, database, username, pgpass_path=None):  # pragma
 
 def get_default_pgpass_path():
     """
-    Return path where pgpass file is expected to be according to documentation at:
-    https://www.postgresql.org/docs/10/static/libpq-pgpass.html
+    Return path where pgpass file is expected to be.
+
+    See documentation at: https://www.postgresql.org/docs/10/static/libpq-pgpass.html
     """
     pgpass_path = os.getenv('PGPASSFILE')
     if pgpass_path is not None:

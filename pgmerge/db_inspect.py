@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -15,6 +15,7 @@ _log = logging.getLogger(__name__)
 
 
 def print_missing_primary_keys(inspector, schema):
+    """Find and print tables in database that don't have primary keys."""
     no_pks = []
     for table in inspector.get_table_names(schema):
         pks = inspector.get_primary_keys(table, schema)
@@ -26,9 +27,7 @@ def print_missing_primary_keys(inspector, schema):
 
 
 def print_cycle_info_and_break_cycles(table_graph):
-    """
-    Changes given graph by breaking cycles
-    """
+    """Change given graph by breaking cycles."""
     simple_cycles = list(nx.simple_cycles(table_graph))
     if len(simple_cycles) > 0:
         print("\n%s self-references and simple cycles found:" % (len(simple_cycles),))
@@ -47,6 +46,7 @@ def print_cycle_info_and_break_cycles(table_graph):
 
 
 def print_partition_info(table_graph):
+    """Traverse table/foreign-key dependency graph and look for disconnected sub-graphs."""
     sub_graphs = [graph for graph in nx.weakly_connected_component_subgraphs(table_graph)]
     if len(sub_graphs) > 1:
         print("\nDependency graph can be partitioned into %s sub-graphs:" % (len(sub_graphs),))
@@ -55,11 +55,13 @@ def print_partition_info(table_graph):
 
 
 def print_insertion_order(table_graph):
+    """Print tables in insertion order."""
     print("\nInsertion order:")
     print(db_graph.get_insertion_order(table_graph))
 
 
 def graph_export_to_dot_file(table_graph, name='dependency_graph'):  # pragma: no cover
+    """Print table/foreign-key dependency graph in graphviz's dot file format."""
     print('digraph %s {' % (name,))
     print("node[shape=plaintext];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
@@ -75,6 +77,7 @@ def graph_export_to_dot_file(table_graph, name='dependency_graph'):  # pragma: n
 
 
 def print_table(name, columns=None, color='#aec7e8'):  # pragma: no cover
+    """Print table details in HTML format supported by graphviz's dot file format."""
     columns_str = ""
     for column in columns:
         columns_str += """
@@ -96,6 +99,11 @@ def print_table(name, columns=None, color='#aec7e8'):  # pragma: no cover
 
 
 def transferability(inspector, schema):  # pragma: no cover
+    """
+    Check that tables in the database schema have enough constraints to support consistent export/import by pgmerge.
+
+    Specifically checking that "alternate_key" feature can work.
+    """
     surrogate_key_tables = []
     natural_key_tables = []
     transformable = []
@@ -143,7 +151,7 @@ def transferability(inspector, schema):  # pragma: no cover
 def main(engine, schema,
          warnings, list_tables, table_details, partition,
          cycles, insert_order, export_graph, transferable):
-
+    """Main-method to process various CLI commands to inspect details of database schema."""
     inspector = inspect(engine)
     if schema is None:
         schema = inspector.default_schema_name

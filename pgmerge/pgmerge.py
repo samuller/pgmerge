@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pgmerge - a PostgreSQL data import and merge utility
+pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
@@ -30,6 +30,7 @@ log = logging.getLogger()
 
 
 def setup_logging(verbose=False):  # pragma: no cover
+    """Set up logging for the whole app."""
     log_dir = os.path.dirname(LOG_FILE)
     try:
         if not os.path.exists(log_dir):
@@ -66,6 +67,7 @@ def setup_logging(verbose=False):  # pragma: no cover
 
 
 def find_and_warn_about_cycles(table_graph, dest_tables):
+    """Check if the parts of database schema being used have foreign keys containing cycles, and warn about possible issues."""
     def print_message(msg):
         print(msg)
         print("Import might require the --disable-foreign-keys option.")
@@ -90,6 +92,7 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
 
 
 def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tables):
+    """Compare tables expected for import with actual in schema and warn about inconsistencies."""
     unknown_tables = set(dest_tables).difference(set(schema_tables))
     if len(unknown_tables) > 0:
         print("Skipping files for unknown tables:")
@@ -102,7 +105,7 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
-def get_table_name_with_file(file_name, table_name):
+def _get_table_name_with_file(file_name, table_name):
     file_stem = only_file_stem(file_name)
     if file_stem == table_name:
         return table_name
@@ -112,8 +115,9 @@ def get_table_name_with_file(file_name, table_name):
 def import_all_new(connection, inspector, schema, import_files, dest_tables, config_per_table=None,
                    file_format=None, suspend_foreign_keys=False, fail_on_warning=True):
     """
-    Imports files that introduce new or updated rows. These files have the exact structure
-    of the final desired table except that they might be missing rows.
+    Import files that introduce new or updated rows.
+
+    These files have the exact structure of the final desired table except that they might be missing rows.
     """
     assert len(import_files) == len(dest_tables), "Files without matching tables"
     if config_per_table is None:
@@ -154,7 +158,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
 
     config_per_subset = convert_to_config_per_subset(config_per_table)
     for file, table in import_pairs:
-        print('{}:'.format(get_table_name_with_file(file, table)))
+        print('{}:'.format(_get_table_name_with_file(file, table)))
 
         subset_name = only_file_stem(file)
         file_config = config_per_subset.get(subset_name, None)
@@ -190,6 +194,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
 
 
 def run_in_session(engine, func):
+    """Run the given function within the scope of a single database connection session."""
     conn = engine.raw_connection()
     try:
         return func(conn)
@@ -198,6 +203,7 @@ def run_in_session(engine, func):
 
 
 def get_import_files_and_tables(directory, tables, config_per_table):
+    """Based on the configuration, determine the set of files to be imported as well as their destination tables."""
     if config_per_table is None:
         config_per_table = {}
 
@@ -237,9 +243,7 @@ def get_import_files_and_tables(directory, tables, config_per_table):
 
 
 def convert_to_config_per_subset(config_per_table):
-    """
-    Subset configs include parent config and the configs of subset that override those of the parent.
-    """
+    """Subset configs include parent config and the configs of subset that override those of the parent."""
     subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
                for table in config_per_table if 'subsets' in config_per_table[table]}
     subsets_configs = {config['name']: config
@@ -260,6 +264,7 @@ def convert_to_config_per_subset(config_per_table):
 
 
 def validate_schema(inspector, schema):
+    """Check that the database schema specified exists and is valid."""
     if schema is None:
         schema = inspector.default_schema_name
     if schema not in inspector.get_schema_names():
@@ -269,6 +274,7 @@ def validate_schema(inspector, schema):
 
 
 def validate_tables(inspector, schema, tables):
+    """Check that the tables specified exists in the database."""
     if len(tables) == 0:
         return None
     all_tables = set(inspector.get_table_names(schema))
@@ -281,9 +287,7 @@ def validate_tables(inspector, schema, tables):
 
 
 def check_table_params(ctx, param, value):
-    """
-    Callback function to check table command-line arguments.
-    """
+    """Check that 'tables' have been specified if 'include-dependent-tables' CLI is provided."""
     assert param.name == 'tables'
     other_flag = 'include_dependent_tables'
     if len(value) == 0 and other_flag in ctx.params and ctx.params[other_flag] is True:
@@ -294,6 +298,7 @@ def check_table_params(ctx, param, value):
 
 
 def load_table_config_or_exit(inspector, schema, config_file_name):
+    """Load and validate table configuration and exit app if there are issues."""
     config_per_table = None
     if config_file_name is not None:
         try:
@@ -306,9 +311,7 @@ def load_table_config_or_exit(inspector, schema, config_file_name):
 
 
 def generate_single_table_config(directory, tables, config_per_table):
-    """
-    Create a fake config such that all files found in the directory are subsets for the given table.
-    """
+    """Create a fake config such that all files found in the directory are subsets for the given table."""
     assert len(tables) == 1
     table_name = tables[0]
 
@@ -361,9 +364,7 @@ DIR_TABLES_ARGUMENTS = [
 @click.option('--verbose', '-v', is_flag=True, help='Give more verbose output.')
 @click.version_option(version=__version__, message="%(prog)s, version %(version)s\nSimon Muller <samullers@gmail.com>")
 def main(verbose):
-    """
-    Merges data in CSV files into a Postgresql database.
-    """
+    """Merge data in CSV files into a Postgresql database."""
     setup_logging(verbose)
 
 
