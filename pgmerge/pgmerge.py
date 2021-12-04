@@ -10,8 +10,8 @@ import sys
 import copy
 import errno
 import logging
-from typing import Optional, cast
 from logging.handlers import RotatingFileHandler
+from typing import Any, Optional, List, Dict, Set, Tuple, Union, Callable, cast
 
 import typer
 import click
@@ -38,7 +38,7 @@ app = typer.Typer(
 )
 
 
-def setup_logging(verbose=False):  # pragma: no cover
+def setup_logging(verbose: bool = False) -> None:  # pragma: no cover
     """Set up logging for the whole app."""
     log_dir = os.path.dirname(LOG_FILE)
     try:
@@ -47,8 +47,8 @@ def setup_logging(verbose=False):  # pragma: no cover
 
         max_total_size = 1024 * 1024
         file_count = 2
-        file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size / file_count,
-                                           backupCount=file_count - 1, encoding=None, delay=0)
+        file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size // file_count,
+                                           backupCount=file_count - 1, encoding=None, delay=False)
     except OSError as err:
         if err.errno == errno.EACCES:
             print('WARN: No permissions to create logging directory or file: ' + LOG_FILE)
@@ -75,9 +75,9 @@ def setup_logging(verbose=False):  # pragma: no cover
         stream_handler.setLevel(logging.DEBUG)
 
 
-def find_and_warn_about_cycles(table_graph, dest_tables):
+def find_and_warn_about_cycles(table_graph: Any, dest_tables: List[str]) -> bool:
     """Check and warn if the parts of database schema being used have foreign keys containing cycles."""
-    def print_message(msg):
+    def print_message(msg: str) -> None:
         print(msg)
         print("Import might require the --disable-foreign-keys option.")
         print()
@@ -100,7 +100,8 @@ def find_and_warn_about_cycles(table_graph, dest_tables):
     return False
 
 
-def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tables):
+def get_and_warn_about_any_unknown_tables(import_files: List[str], dest_tables: List[str], schema_tables: List[str]
+                                          ) -> Set[str]:
     """Compare tables expected for import with actual in schema and warn about inconsistencies."""
     unknown_tables = set(dest_tables).difference(set(schema_tables))
     if len(unknown_tables) > 0:
@@ -114,15 +115,16 @@ def get_and_warn_about_any_unknown_tables(import_files, dest_tables, schema_tabl
     return unknown_tables
 
 
-def _get_table_name_with_file(file_name, table_name):
+def _get_table_name_with_file(file_name: str, table_name: str) -> str:
     file_stem = only_file_stem(file_name)
     if file_stem == table_name:
         return table_name
     return '{} [{}]'.format(table_name, file_stem)
 
 
-def import_all_new(connection, inspector, schema, import_files, dest_tables, config_per_table=None,
-                   file_format=None, suspend_foreign_keys=False, fail_on_warning=True):
+def import_all_new(connection: Any, inspector: Any, schema: str, import_files: List[str], dest_tables: List[str],
+                   config_per_table: Optional[Dict[str, Any]] = None, file_format: Optional[str] = None,
+                   suspend_foreign_keys: bool = False, fail_on_warning: bool = True) -> None:
     """
     Import files that introduce new or updated rows.
 
@@ -154,7 +156,7 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
     # Sort by dependency requirements
     insertion_order = db_graph.get_insertion_order(table_graph)
     import_pairs = list(zip(import_files, dest_tables))
-    import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
+    import_pairs.sort(key=lambda pair: cast(int, insertion_order.index(pair[1])))
     # Stats
     total_stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
     error_tables = list(unknown_tables)
@@ -202,7 +204,8 @@ def import_all_new(connection, inspector, schema, import_files, dest_tables, con
     connection.commit()
 
 
-def run_in_session(engine, func):
+# sqlalchemy.base.Engine
+def run_in_session(engine: Any, func: Callable[[Any], Any]) -> Any:
     """Run the given function within the scope of a single database connection session."""
     conn = engine.raw_connection()
     try:
@@ -211,7 +214,9 @@ def run_in_session(engine, func):
         conn.close()
 
 
-def get_import_files_and_tables(directory, tables, config_per_table):
+def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
+                                config_per_table: Optional[Dict[str, Any]]
+                                ) -> Tuple[List[str], List[str]]:
     """Based on the configuration, determine the set of files to be imported as well as their destination tables."""
     if config_per_table is None:
         config_per_table = {}
@@ -244,14 +249,14 @@ def get_import_files_and_tables(directory, tables, config_per_table):
         print("No files found for the following tables:")
         for file in unknown_files:
             print("\t", file)
-        return
+        sys.exit()
 
     # Convert filenames to full paths
     import_files = [os.path.join(directory, f) for f in import_files]
     return import_files, dest_tables
 
 
-def convert_to_config_per_subset(config_per_table):
+def convert_to_config_per_subset(config_per_table: Dict[str, Any]) -> Dict[str, Any]:
     """Subset configs include parent config and the configs of subset that override those of the parent."""
     subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
                for table in config_per_table if 'subsets' in config_per_table[table]}
@@ -272,7 +277,7 @@ def convert_to_config_per_subset(config_per_table):
     return config_per_subset
 
 
-def validate_schema(inspector, schema):
+def validate_schema(inspector: Any, schema: str) -> str:
     """Check that the database schema specified exists and is valid."""
     if schema is None:
         schema = inspector.default_schema_name
@@ -282,9 +287,9 @@ def validate_schema(inspector, schema):
     return schema
 
 
-def validate_tables(inspector, schema, tables):
+def validate_tables(inspector: Any, schema: str, tables: Optional[List[str]]) -> Optional[List[str]]:
     """Check that the tables specified exists in the database."""
-    if len(tables) == 0:
+    if tables is None or len(tables) == 0:
         return None
     all_tables = set(inspector.get_table_names(schema))
     unknown_tables = set(tables) - all_tables
@@ -295,7 +300,7 @@ def validate_tables(inspector, schema, tables):
     return tables
 
 
-def check_table_params(ctx, param, value):
+def check_table_params(ctx: click.Context, param: Union[click.Option, click.Parameter], value: List[str]) -> List[str]:
     """Check that 'tables' have been specified if 'include-dependent-tables' CLI is provided."""
     assert param.name == 'tables'
     other_flag = 'include_dependent_tables'
@@ -306,7 +311,8 @@ def check_table_params(ctx, param, value):
     return value
 
 
-def load_table_config_or_exit(inspector, schema, config_file_name):
+def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Optional[str]
+                              ) -> Optional[Dict[str, Any]]:
     """Load and validate table configuration and exit app if there are issues."""
     config_per_table = None
     if config_file_name is not None:
@@ -319,8 +325,12 @@ def load_table_config_or_exit(inspector, schema, config_file_name):
     return config_per_table
 
 
-def generate_single_table_config(directory, tables, config_per_table):
+def generate_single_table_config(directory: str, tables: List[str],
+                                 config_per_table: Optional[Dict[str, Any]]
+                                 ) -> Tuple[List[str], List[str], Dict[str, Any]]:
     """Create a fake config such that all files found in the directory are subsets for the given table."""
+    if config_per_table is None:
+        config_per_table = {}
     assert len(tables) == 1
     table_name = tables[0]
 
@@ -380,7 +390,7 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-        verbose: Optional[bool] = typer.Option(
+        verbose: bool = typer.Option(
             False, '--verbose', '-v',
             help='Give more verbose output.'),
         version: Optional[bool] = typer.Option(None, '--version', callback=version_callback, is_eager=True)
@@ -392,9 +402,10 @@ def main(
 @click.command()
 @decorate(DB_CONNECT_OPTIONS)
 @decorate(DIR_TABLES_ARGUMENTS)
-def export(dbname, uri, host, port, username, no_password, password, schema,
-           config, include_dependent_tables,
-           directory, tables):
+def export(dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
+           password: Optional[str], schema: str,
+           config: Optional[str], include_dependent_tables: bool,
+           directory: str, tables: Optional[List[str]]) -> None:
     """
     Export each table to a CSV file.
 
@@ -420,7 +431,7 @@ def export(dbname, uri, host, port, username, no_password, password, schema,
         config_per_table = load_table_config_or_exit(inspector, schema, config)
         find_and_warn_about_cycles(table_graph, tables)
 
-        def export_tables(conn):
+        def export_tables(conn: Any) -> Tuple[int, int]:
             return db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
                                                       config_per_table=config_per_table)
         table_count, file_count = run_in_session(engine, export_tables)
@@ -444,9 +455,11 @@ def export(dbname, uri, host, port, username, no_password, password, schema,
 @click.option('--single-table', is_flag=True,
               help='An import-only option that assumes all files in the directory are the same type and imports ' +
                    'them all into a single table.')
-def upsert(dbname, uri, host, port, username, no_password, password, schema,
-           config, include_dependent_tables, ignore_cycles, disable_foreign_keys,
-           single_table, directory, tables):
+def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
+           password: Optional[str], schema: str,
+           config: Optional[str], include_dependent_tables: bool, ignore_cycles: bool,
+           disable_foreign_keys: bool, single_table: bool, directory: str, tables: Optional[List[str]]
+           ) -> None:
     """
     Import/merge each CSV file into a table.
 
@@ -471,6 +484,7 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
         if single_table and (tables is None or len(tables) == 0):
             print("One table has to be specified when using the --single-table option")
             sys.exit()
+        tables = cast(List[str], tables)
         if single_table and len(tables) > 1:
             print("Only one table can be specified when using the --single-table option")
             sys.exit()
@@ -511,9 +525,10 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
               " To use graphviz to generate a PDF from this format, pipe the output to:" +
               " dot -Tpdf > graph.pdf")
 @click.option('--transferable', '-tf', is_flag=True, help="Output info related to table transfers.")
-def inspect(engine, dbname, uri, host, port, username, no_password, password, schema,
-            warnings, list_tables, table_details, partition,
-            cycles, insert_order, export_graph, transferable):
+def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
+            password: Optional[str], schema: str,
+            warnings: bool, list_tables: bool, table_details: bool,
+            partition: bool, cycles: bool, insert_order: bool, export_graph: bool, transferable: bool) -> None:
     """
     Inspect database schema in various ways.
 

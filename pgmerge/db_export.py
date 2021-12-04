@@ -5,6 +5,7 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
 import logging
+from typing import Tuple
 
 DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 _log = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def replace_local_columns_with_alternate_keys(inspector, config_per_table, schem
 
 
 def export_tables_per_config(connection, inspector, schema, output_dir, tables,
-                             config_per_table=None, file_format=None):
+                             config_per_table=None, file_format=None) -> Tuple[int, int]:
     """Export all given tables according to the options specified in the config_per_table dictionary."""
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
