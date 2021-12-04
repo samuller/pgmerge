@@ -86,7 +86,7 @@ def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_t
             subset_names.update([subset['name'] for subset in subsets])
 
 
-def validate_config_columns(table:str, config_columns: List[str], actual_columns: List[str],
+def validate_config_columns(table: str, config_columns: List[str], actual_columns: List[str],
                             skippable_columns: List[str], pk_columns: List[str]) -> None:
     """Check that columns specified in config match those in table."""
     unknown_columns = set(config_columns) - set(actual_columns)

@@ -228,7 +228,7 @@ def sql_select_table_with_foreign_columns(inspector: Any, schema: str, table: st
 def export_table_with_any_columns(cursor: Any, inspector: Any, output_path: str, schema: str, main_table: str,
                                   any_columns: Optional[List[ForeignColumnPath]] = None,
                                   order_columns: Optional[List[str]] = None,
-                                  file_format: Optional[str] = None, where_clause: Optional[str]=None
+                                  file_format: Optional[str] = None, where_clause: Optional[str] = None
                                   ) -> None:
     """
     Export a single table with any of the specified columns.
