@@ -19,17 +19,17 @@ classifiers = [
 ]
 
 [tool.poetry.scripts]
-pgmerge = "pgmerge.pgmerge:main"
+pgmerge = "pgmerge.pgmerge:cli_app"
 
 [tool.poetry.dependencies]
 python = "^3.6"
 psycopg2-binary = "*"
 networkx = "2.5"
-click = "7.1.2"
 sqlalchemy = "1.3.5"
 appdirs = "1.4.3"
 PyYAML = "5.4.1"
 rxjson = "0.3"
+typer = "~0.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

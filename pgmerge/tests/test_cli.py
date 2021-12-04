@@ -11,6 +11,7 @@ import yaml
 from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 from sqlalchemy.dialects.postgresql import JSON
 from click.testing import CliRunner
+# from typer.testing import CliRunner
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table

@@ -10,8 +10,10 @@ import sys
 import copy
 import errno
 import logging
+from typing import Optional, cast
 from logging.handlers import RotatingFileHandler
 
+import typer
 import click
 import sqlalchemy
 from appdirs import user_log_dir
@@ -27,6 +29,13 @@ APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
 
 log = logging.getLogger()
+
+
+app = typer.Typer(
+    help="Merge data in CSV files into a Postgresql database.",
+    context_settings=dict(max_content_width=120),
+    add_completion=False,
+)
 
 
 def setup_logging(verbose=False):  # pragma: no cover
@@ -362,15 +371,25 @@ DIR_TABLES_ARGUMENTS = [
 ]
 
 
-@click.group(context_settings=dict(max_content_width=120))
-@click.option('--verbose', '-v', is_flag=True, help='Give more verbose output.')
-@click.version_option(version=__version__, message="%(prog)s, version %(version)s\nSimon Muller <samullers@gmail.com>")
-def main(verbose):
-    """Merge data in CSV files into a Postgresql database."""
+def version_callback(value: bool) -> None:
+    """Print out application's version info."""
+    if value:
+        typer.echo(f"pgmerge, version {__version__}\nSimon Muller <samullers@gmail.com>")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+        verbose: Optional[bool] = typer.Option(
+            False, '--verbose', '-v',
+            help='Give more verbose output.'),
+        version: Optional[bool] = typer.Option(None, '--version', callback=version_callback, is_eager=True)
+        ) -> None:
+    """Use to add arguments related to whole app and not only specific sub-commands."""
     setup_logging(verbose)
 
 
-@main.command()
+@click.command()
 @decorate(DB_CONNECT_OPTIONS)
 @decorate(DIR_TABLES_ARGUMENTS)
 def export(dbname, uri, host, port, username, no_password, password, schema,
@@ -413,7 +432,7 @@ def export(dbname, uri, host, port, username, no_password, password, schema,
             engine.dispose()
 
 
-@main.command(name="import")
+@click.command(name="import")
 @decorate(DB_CONNECT_OPTIONS)
 @click.option('--ignore-cycles', '-f', is_flag=True,
               help='Don\'t stop import when cycles are detected in schema' +
@@ -474,7 +493,7 @@ def upsert(dbname, uri, host, port, username, no_password, password, schema,
             engine.dispose()
 
 
-@main.command(context_settings=dict(max_content_width=120))
+@click.command(context_settings=dict(max_content_width=120))
 @click.option('--engine', '-e', help="Type of database engine.", default='postgresql', show_default=True)
 @decorate(DB_CONNECT_OPTIONS)
 @click.option('--warnings', '-w', is_flag=True, help="Output any issues detected in database schema.")
@@ -518,5 +537,13 @@ def inspect(engine, dbname, uri, host, port, username, no_password, password, sc
             _engine.dispose()
 
 
+# Typer/Click combination object
+# cast() needed because Type is incorrectly defined in library?
+cli_app = cast(click.Group, typer.main.get_command(app))
+cli_app.add_command(upsert)
+cli_app.add_command(export)
+cli_app.add_command(inspect)
+
+
 if __name__ == "__main__":
-    main()
+    cli_app()
