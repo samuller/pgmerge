@@ -22,10 +22,9 @@ If it worked correctly, the following will be in your path and be able to run an
 
 ## Code style
 
-You can check PEP8 code style by using `pycodestyle`:
+You can check PEP8 code style by using `flake8`:
 
-    pip install pycodestyle
-    pycodestyle --first **/*.py
+    poetry run flake8 pgmerge/
 
     pip install pylint
     pylint --rcfile=setup.cfg pgmerge
