@@ -7,17 +7,11 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 import logging
 
 import networkx as nx
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import inspect
 
 from . import db_graph
 
 _log = logging.getLogger(__name__)
-
-found_config = True
-try:
-    import config
-except ImportError:
-    found_config = False
 
 
 def print_missing_primary_keys(inspector, schema):

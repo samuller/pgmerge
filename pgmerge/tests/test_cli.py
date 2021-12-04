@@ -8,7 +8,8 @@ import logging
 from contextlib import contextmanager
 
 import yaml
-from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select, column, and_
+from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
+from sqlalchemy.dialects.postgresql import JSON
 from click.testing import CliRunner
 
 from pgmerge import pgmerge
