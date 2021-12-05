@@ -27,7 +27,7 @@ psycopg2-binary = "*"
 networkx = "2.5"
 sqlalchemy = "1.3.5"
 appdirs = "~1.4.4"
-PyYAML = "5.4.1"
+PyYAML = "~6.0"
 rxjson = "0.3"
 typer = "~0.4.0"
 
