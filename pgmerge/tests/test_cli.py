@@ -194,7 +194,7 @@ class TestCLI(TestDB):
                 ["skip:", "1", "insert:", "1", "update:", "1"],
             ], "1 tables imported successfully")
 
-            stmt = select([table]).order_by('code')
+            stmt = select(table).order_by('code')
             with self.connection.begin():
                 result = self.connection.execute(stmt)
             self.assertEqual(result.fetchall(), [
@@ -306,7 +306,7 @@ class TestCLI(TestDB):
             self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                 '--dbname', self.db_name, '--uri', self.url, self.output_dir])
 
-            result = self.run_query(select([the_table]).order_by('id'))
+            result = self.run_query(select(the_table).order_by('id'))
             self.assertEqual(result, [
                 (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
