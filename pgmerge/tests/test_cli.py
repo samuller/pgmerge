@@ -8,10 +8,11 @@ import logging
 from contextlib import contextmanager
 
 import yaml
-from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
-from sqlalchemy.dialects.postgresql import JSON
 from click.testing import CliRunner
 # from typer.testing import CliRunner
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select, text
+
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
@@ -141,7 +142,8 @@ class TestCLI(TestDB):
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
             ])
-            self.connection.execute(stmt)
+            with self.connection.begin():
+                self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
@@ -171,7 +173,8 @@ class TestCLI(TestDB):
                 ('EG', 'Egypt'),
                 ('RE', 'Réunion'),
             ])
-            self.connection.execute(stmt)
+            with self.connection.begin():
+                self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
@@ -182,7 +185,8 @@ class TestCLI(TestDB):
                 ('RE', 'Re-union'),
                 ('ST', 'São Tomé and Príncipe'),
             ])
-            self.connection.execute(stmt)
+            with self.connection.begin():
+                self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             self.compare_table_output(result.output, [
@@ -191,7 +195,8 @@ class TestCLI(TestDB):
             ], "1 tables imported successfully")
 
             stmt = select([table]).order_by('code')
-            result = self.connection.execute(stmt)
+            with self.connection.begin():
+                result = self.connection.execute(stmt)
             self.assertEqual(result.fetchall(), [
                 ('CI', 'Côte d’Ivoire'), ('EG', 'Egypt'), ('RE', 'Réunion'), ('ST', 'São Tomé and Príncipe')])
             result.close()
@@ -223,12 +228,13 @@ class TestCLI(TestDB):
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
                 create_table(self.engine, the_table):
-            self.connection.execute(other_table.insert(None), [
-                {'code': 'IS', 'name': 'Iceland'},
-            ])
-            self.connection.execute(other_table.insert(None), [
-                {'code': 'IN'},
-            ])
+            with self.connection.begin():
+                self.connection.execute(other_table.insert(None), [
+                    {'code': 'IS', 'name': 'Iceland'},
+                ])
+                self.connection.execute(other_table.insert(None), [
+                    {'code': 'IN'},
+                ])
             yaml.dump(config_data, config_file, default_flow_style=False)
 
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
@@ -273,12 +279,13 @@ class TestCLI(TestDB):
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, the_table), \
                 self.connection:  # 'Select' requires us to close the connection before dropping the table
-            self.connection.execute(the_table.insert(None), [
-                {'code': 'LCY', 'name': 'London', 'parent_id': None},
-                {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
-                {'code': 'MAIN', 'name': 'Main street', 'parent_id': 1},
-                {'code': 'MAIN', 'name': 'Main street', 'parent_id': 2},
-            ])
+            with self.connection.begin():
+                self.connection.execute(the_table.insert(None), [
+                    {'code': 'LCY', 'name': 'London', 'parent_id': None},
+                    {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
+                    {'code': 'MAIN', 'name': 'Main street', 'parent_id': 1},
+                    {'code': 'MAIN', 'name': 'Main street', 'parent_id': 2},
+                ])
             yaml.dump(config_data, config_file, default_flow_style=False)
 
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
@@ -287,10 +294,14 @@ class TestCLI(TestDB):
             self.assertEqual(result_lines[0].strip(),
                              "Self-referencing tables found that could prevent import: the_table")
             self.assertEqual(result_lines[3].strip(), "Exported 1 tables to 1 files")
-            # Clear table to see if import worked
-            self.connection.execute(the_table.delete())
-            # We reset sequence so that id numbers match the initial import
-            self.connection.execute("ALTER SEQUENCE the_table_id_seq RESTART WITH 1")
+            with self.connection.begin():
+                # Clear table to see if import worked
+                self.connection.execute(the_table.delete())
+                # We reset sequence so that id numbers match the initial import
+                self.connection.execute(text("ALTER SEQUENCE the_table_id_seq RESTART WITH 1"))
+
+            # self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
+            #                                     '--dbname', self.db_name, '--uri', self.url, self.output_dir])
 
             self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                 '--dbname', self.db_name, '--uri', self.url, self.output_dir])

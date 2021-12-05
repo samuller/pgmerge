@@ -7,7 +7,7 @@ import os
 import unittest
 from contextlib import contextmanager
 
-import sqlalchemy
+from sqlalchemy import create_engine, text
 import psycopg2.extensions as psyext
 
 
@@ -21,7 +21,7 @@ def create_table(engine, table):
 
 
 def find_open_connections(connection):
-    return connection.execute("SELECT * FROM pg_stat_activity").fetchall()
+    return connection.execute(text("SELECT * FROM pg_stat_activity")).fetchall()
 
 
 class TestDB(unittest.TestCase):
@@ -59,17 +59,17 @@ class TestDB(unittest.TestCase):
     @classmethod
     def create_db(cls, db_name):
         # Open connection to template database (could build url with sqlalchemy.engine.url.URL)
-        cls.create_db_engine = sqlalchemy.create_engine(cls.url + cls.initial_db)
-        with cls.create_db_engine.connect() as conn:
+        cls.create_db_engine = create_engine(cls.url + cls.initial_db)
+        with cls.create_db_engine.begin() as conn:
             conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_AUTOCOMMIT)
-            conn.execute("DROP DATABASE IF EXISTS " + db_name)
-            conn.execute("CREATE DATABASE " + db_name)
+            conn.execute(text("DROP DATABASE IF EXISTS " + db_name))
+            conn.execute(text("CREATE DATABASE " + db_name))
             # conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_DEFAULT)
         # self.connection.close()
         cls.create_db_engine.dispose()
         cls.create_db_engine = None
 
-        cls.engine = sqlalchemy.create_engine(cls.url + db_name)
+        cls.engine = create_engine(cls.url + db_name)
 
     @classmethod
     def drop_db(cls, db_name):
@@ -77,11 +77,12 @@ class TestDB(unittest.TestCase):
             cls.engine.dispose()
             cls.engine = None
 
-        cls.create_db_engine = sqlalchemy.create_engine(cls.url + cls.initial_db)
+        cls.create_db_engine = create_engine(cls.url + cls.initial_db)
         with cls.create_db_engine.connect() as conn:
             conn.connection.set_isolation_level(psyext.ISOLATION_LEVEL_AUTOCOMMIT)
             # print(find_open_connections(conn))
-            conn.execute("DROP DATABASE IF EXISTS " + db_name)
+            with conn.begin():
+                conn.execute(text("DROP DATABASE IF EXISTS " + db_name))
             # self.connection.connection.set_isolation_level(psyext.ISOLATION_LEVEL_DEFAULT)
         # self.connection.close()
         cls.create_db_engine.dispose()
