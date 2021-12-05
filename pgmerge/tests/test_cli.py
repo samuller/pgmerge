@@ -49,13 +49,13 @@ class TestCLI(TestDB):
 
     @classmethod
     def setUpClass(cls):
-        super(TestCLI, cls).setUpClass()
+        super().setUpClass()
         os.makedirs(cls.output_dir, exist_ok=True)
         cls.runner = CliRunner()
 
     @classmethod
     def tearDownClass(cls):
-        super(TestCLI, cls).tearDownClass()
+        super().tearDownClass()
         os.rmdir(cls.output_dir)
 
     def run_query(self, sql_stmt):
