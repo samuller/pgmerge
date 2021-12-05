@@ -17,6 +17,7 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Utilities",
 ]
+include = ["NOTICE"]
 
 [tool.poetry.scripts]
 pgmerge = "pgmerge.pgmerge:cli_app"
