@@ -5,7 +5,6 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
 import logging
-from contextlib import contextmanager
 
 import yaml
 from click.testing import CliRunner
@@ -13,31 +12,12 @@ from click.testing import CliRunner
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select, text
 
-
 from pgmerge import pgmerge
+from .helpers import write_file
 from .test_db import TestDB, create_table
 
 LOG = logging.getLogger()
 LOG.level = logging.WARN
-
-
-@contextmanager
-def write_file(path):
-    """
-    Context manager for creating a file during a test. Will clean-up and delete the file afterwards.
-
-    Example:
-        with write_file(file_path) as file_handle:
-            # write to file_handle
-            # read from file
-        # file is now deleted
-    """
-    file = open(path, 'w')
-    try:
-        yield file
-    finally:
-        file.close()
-        os.remove(path)
 
 
 class TestCLI(TestDB):
