@@ -4,6 +4,7 @@ pgmerge - a PostgreSQL data import and merge utility.
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
+import urllib
 import logging
 import getpass
 from typing import Any, Dict, List, Set, Optional, cast
@@ -156,9 +157,11 @@ def generate_url(uri: Optional[str], dbname: str, host: str, port: str, username
         uri = uri if uri[-1] != '/' else uri[:-1]
         return "{}/{}".format(uri, dbname)
 
-    config_db = {'type': type, 'host': host, 'port': port,
-                 'username': username, 'password': password,
-                 'dbname': dbname}
+    config_db = {'type': type, 'port': port,
+                 'host': urllib.parse.quote(host),
+                 'username': urllib.parse.quote(username),
+                 'password': urllib.parse.quote(password),
+                 'dbname': urllib.parse.quote(dbname)}
     url = "{type}://{username}:{password}@{host}:{port}/{dbname}".format(**config_db)
     return url
 
