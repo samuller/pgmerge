@@ -6,15 +6,14 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 import os
 import logging
 
-import yaml
 from click.testing import CliRunner
 # from typer.testing import CliRunner
 from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select, text
+from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 
 from pgmerge import pgmerge
-from .helpers import write_file
 from .test_db import TestDB, create_table
+from .helpers import compare_table_output, check_header
 
 LOG = logging.getLogger()
 LOG.level = logging.WARN
@@ -38,41 +37,9 @@ class TestCLI(TestDB):
         super().tearDownClass()
         os.rmdir(cls.output_dir)
 
-    def run_query(self, sql_stmt):
-        result = self.connection.execute(sql_stmt)
-        all = result.fetchall()
-        result.close()
-        return all
-
     def get_first(self, sql_stmt):
         result = self.run_query(sql_stmt)
         return [value for value, in result][0]
-
-    def compare_table_output(self, actual_output, table_result_output, total_output):
-        """
-        Helper function to test CLI output. We ignore whitespace, empty lines, and only
-        check specific lines since the output should be free to change in creative ways
-        without breaking all the tests.
-        """
-        actual_output_lines = actual_output.splitlines()
-        # Check per-table output that consists of table name and result summary
-        for idx in range(len(table_result_output) // 2):
-            # Should be table name
-            self.assertEqual(actual_output_lines[idx].strip().split(),
-                             table_result_output[idx])
-            # Check table result
-            self.assertEqual(actual_output_lines[idx + 1].strip().split(),
-                             table_result_output[idx + 1])
-        # Check total count
-        self.assertEqual(actual_output_lines[-1], total_output)
-
-    def check_header(self, file_path, expected_header_list):
-        """
-        Check that the first line of the CSV header matches expectation.
-        """
-        with open(file_path) as ifh:
-            header_columns = ifh.readlines()[0].strip().split(',')
-            self.assertEqual(header_columns, expected_header_list)
 
     def test_basics(self):
         """
@@ -104,7 +71,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
-            self.check_header(file_path, ['code', 'name'])
+            check_header(self, file_path, ['code', 'name'])
             # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
             os.remove(file_path)
 
@@ -130,7 +97,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            self.compare_table_output(result.output, [
+            compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "3", "insert:", "0", "update:", "0"],
             ], "1 tables imported successfully")
@@ -169,7 +136,7 @@ class TestCLI(TestDB):
                 self.connection.execute(stmt)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
-            self.compare_table_output(result.output, [
+            compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "1", "insert:", "1", "update:", "1"],
             ], "1 tables imported successfully")
@@ -184,115 +151,6 @@ class TestCLI(TestDB):
             self.connection.close()
 
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
-
-    def test_config_references(self):
-        """
-        Test import and export that uses config file to select an alternate key.
-        """
-        # Use a new metadata for each test since the database schema should be empty
-        metadata = MetaData()
-        the_table = Table('the_table', metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('code', String(2), nullable=False),
-                          Column('name', String),
-                          Column('ref_other_table', Integer, ForeignKey("other_table.id")))
-        other_table = Table('other_table', metadata,
-                            Column('id', Integer, primary_key=True),
-                            Column('code', String(2), nullable=False),
-                            Column('name', String))
-
-        config_data = {
-            'other_table': {'alternate_key': ['code']}
-        }  # 'other_table': {'columns'}
-        config_file_path = os.path.join(self.output_dir, 'test.yml')
-        with write_file(config_file_path) as config_file, \
-                create_table(self.engine, other_table), \
-                create_table(self.engine, the_table):
-            with self.connection.begin():
-                self.connection.execute(other_table.insert(None), [
-                    {'code': 'IS', 'name': 'Iceland'},
-                ])
-                self.connection.execute(other_table.insert(None), [
-                    {'code': 'IN'},
-                ])
-            yaml.dump(config_data, config_file, default_flow_style=False)
-
-            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
-                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.assertEqual(result.output, "Exported 2 tables to 2 files\n")
-
-            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
-                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            self.compare_table_output(result.output, [
-                ["other_table:"],
-                ["skip:", "2", "insert:", "0", "update:", "0"],
-                ["the_table:"],
-                ["skip:", "0", "insert:", "0", "update:", "0"],
-            ], "2 tables imported successfully")
-
-            the_table_path = os.path.join(self.output_dir, "the_table.csv")
-            self.check_header(the_table_path, ['id', 'code',
-                                               'name', 'join_the_table_ref_other_table_fkey_code'])
-
-            other_table_path = os.path.join(self.output_dir, "other_table.csv")
-            self.check_header(other_table_path, ['id', 'code', 'name'])
-
-            os.remove(the_table_path)
-            os.remove(other_table_path)
-
-    def test_config_self_reference(self):
-        """
-        Test import when table has self-reference that is part of alternate key.
-        """
-        metadata = MetaData()
-        the_table = Table('the_table', metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('code', String(10), nullable=False),
-                          Column('name', String),
-                          Column('parent_id', Integer, ForeignKey("the_table.id")))
-
-        config_data = {
-            'the_table': {'columns': ['code', 'name', 'parent_id'],
-                          'alternate_key': ['code', 'parent_id']}
-        }
-        config_file_path = os.path.join(self.output_dir, 'test.yml')
-        with write_file(config_file_path) as config_file, \
-                create_table(self.engine, the_table), \
-                self.connection:  # 'Select' requires us to close the connection before dropping the table
-            with self.connection.begin():
-                self.connection.execute(the_table.insert(None), [
-                    {'code': 'LCY', 'name': 'London', 'parent_id': None},
-                    {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
-                    {'code': 'MAIN', 'name': 'Main street', 'parent_id': 1},
-                    {'code': 'MAIN', 'name': 'Main street', 'parent_id': 2},
-                ])
-            yaml.dump(config_data, config_file, default_flow_style=False)
-
-            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
-                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-            result_lines = result.output.splitlines()
-            self.assertEqual(result_lines[0].strip(),
-                             "Self-referencing tables found that could prevent import: the_table")
-            self.assertEqual(result_lines[3].strip(), "Exported 1 tables to 1 files")
-            with self.connection.begin():
-                # Clear table to see if import worked
-                self.connection.execute(the_table.delete())
-                # We reset sequence so that id numbers match the initial import
-                self.connection.execute(text("ALTER SEQUENCE the_table_id_seq RESTART WITH 1"))
-
-            # self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
-            #                                     '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-
-            self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
-                                                '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-
-            result = self.run_query(select(the_table).order_by('id'))
-            self.assertEqual(result, [
-                (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
-                (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
-
-            the_table_path = os.path.join(self.output_dir, "the_table.csv")
-            os.remove(the_table_path)
 
     def test_logging_init(self):
         """

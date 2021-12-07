@@ -101,3 +101,10 @@ class TestDB(unittest.TestCase):
     def close_db_conn(self):
         self.connection.close()
         self.connection = None
+
+    def run_query(self, sql_stmt):
+        """Helper function to execute raw SQL statements"""
+        result = self.connection.execute(sql_stmt)
+        all = result.fetchall()
+        result.close()
+        return all
