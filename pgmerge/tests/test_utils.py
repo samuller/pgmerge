@@ -27,4 +27,3 @@ class TestUtils(unittest.TestCase):
         url = generate_url(None, dbname="test_db", host="localhost", port="5432",
                            username="user", password="pass@word")
         self.assertEqual(url, "postgresql://user:pass%40word@localhost:5432/test_db")
-
