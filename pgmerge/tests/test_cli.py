@@ -249,7 +249,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.output.splitlines(), [
                 "Found 2 tables in schema 'public'", "",
                 'Insertion order:', str(['other_table', 'the_table'])])
-            
+
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--warnings', '--cycles', '--partition'])
             self.assertEqual(result.exit_code, 0)
