@@ -63,8 +63,14 @@ jobs:
         run: poetry install
       - name: Check for flake8 issues
         run: poetry run flake8 --exclude "tests" pgmerge/
+      # We do a separate pass with less stringent documentation requirements
+      - name: Check for flake8 issues in tests
+        run: poetry run flake8 --extend-ignore=D pgmerge/
       - name: Check for mypy typing issues
         run: poetry run mypy --install-types --non-interactive --ignore-missing-imports --strict pgmerge/*.py
+      # No strict type requirements for tests
+      - name: Check for mypy typing issues in tests
+        run: poetry run mypy --ignore-missing-imports pgmerge/tests
       - name: Test with pytest
         run: |
           DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ SQLALCHEMY_WARN_20=1 poetry run pytest \
