@@ -48,7 +48,7 @@ def print_cycle_info_and_break_cycles(table_graph: Any) -> None:
 
 def print_partition_info(table_graph: Any) -> None:
     """Traverse table/foreign-key dependency graph and look for disconnected sub-graphs."""
-    sub_graphs = [graph for graph in nx.weakly_connected_component_subgraphs(table_graph)]
+    sub_graphs = [table_graph.subgraph(c) for c in nx.connected_components(table_graph.to_undirected())]
     if len(sub_graphs) > 1:
         print("\nDependency graph can be partitioned into %s sub-graphs:" % (len(sub_graphs),))
         for graph in sub_graphs:
