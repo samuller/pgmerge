@@ -27,6 +27,9 @@ from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
+# Use exit code 3 for exceptions since click already returns 1 and 2
+# (1 for aborts and 2 invalid arguments)
+EXIT_CODE_EXC = 3
 
 log = logging.getLogger()
 
@@ -438,6 +441,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         print("Exported {} tables to {} files".format(table_count, file_count))
     except Exception as exc:
         logging.exception(exc)
+        sys.exit(EXIT_CODE_EXC)
     finally:
         if engine is not None:
             engine.dispose()
@@ -502,6 +506,7 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
                                       fail_on_warning=not ignore_cycles))
     except Exception as exc:
         logging.exception(exc)
+        sys.exit(EXIT_CODE_EXC)
     finally:
         if engine is not None:
             engine.dispose()
@@ -547,6 +552,7 @@ def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, 
                         cycles, insert_order, export_graph, transferable)
     except Exception as exc:
         logging.exception(exc)
+        sys.exit(EXIT_CODE_EXC)
     finally:
         if _engine is not None:
             _engine.dispose()
