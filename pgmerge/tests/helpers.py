@@ -1,4 +1,5 @@
 import os
+from itertools import islice
 from contextlib import contextmanager
 
 
@@ -19,6 +20,10 @@ def write_file(path):
     finally:
         file.close()
         os.remove(path)
+
+
+def slice_lines(multi_line_string: str, start=None, stop=None, step=None):
+    return '\n'.join(islice(multi_line_string.splitlines(), start, stop, step))
 
 
 def compare_table_output(self, actual_output, table_result_output, total_output):

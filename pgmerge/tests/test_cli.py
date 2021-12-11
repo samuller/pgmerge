@@ -12,7 +12,7 @@ from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, sel
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import compare_table_output, check_header
+from .helpers import compare_table_output, check_header, slice_lines
 
 LOG = logging.getLogger()
 LOG.level = logging.WARN
@@ -153,6 +153,56 @@ class TestCLI(TestDB):
 
         os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
+    def test_export_and_import_with_dependent_tables(self):
+        """
+        Test exporting and importing data from tables with dependencies among them.
+        """
+        metadata = MetaData()
+        table_name = 'country'
+        table = Table(table_name, metadata,
+                      Column('code', String(3), primary_key=True),
+                      Column('name', String, nullable=False))
+        dep_table_name = 'places_to_go'
+        dep_table = Table(dep_table_name, metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('place_code', String(3), ForeignKey('country.code'))
+                          )
+        with create_table(self.engine, table), \
+             create_table(self.engine, dep_table):
+            stmt = table.insert(None).values([
+                ('BWA', 'Botswana'),
+                ('ZAF', 'South Africa'),
+                ('ZWE', 'Zimbabwe')
+            ])
+            with self.connection.begin():
+                self.connection.execute(stmt)
+            stmt = dep_table.insert(None).values([
+                {'place_code': 'ZAF'},
+            ])
+            with self.connection.begin():
+                self.connection.execute(stmt)
+
+            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url,
+                                                         '--include-dependent-tables', self.output_dir,
+                                                         dep_table_name])
+            self.assertEqual(result.output.splitlines()[-1], "Exported 2 tables to 2 files")
+
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         '--include-dependent-tables', self.output_dir, dep_table_name])
+
+            self.assertEqual(result.output.splitlines()[4], 'Final tables exported: country places_to_go')
+            # Since data hasn't changed, the import should change nothing. All lines should be skipped.
+            compare_table_output(self, slice_lines(result.output, 6), [
+                ["country:"],
+                ["skip:", "3", "insert:", "0", "update:", "0"],
+                ["places_to_go:"],
+                ["skip:", "1", "insert:", "0", "update:", "0"],
+            ], "2 tables imported successfully")
+
+            for export_file in ['country.csv', 'places_to_go.csv']:
+                export_path = os.path.join(self.output_dir, export_file)
+                os.remove(export_path)
+
     def test_logging_init(self):
         """
         Test initialisation of logging.
@@ -173,7 +223,7 @@ class TestCLI(TestDB):
                           Column('id', Integer, primary_key=True),
                           Column('code', String(2), nullable=False),
                           Column('name', String),
-                          Column('ref_other_table', Integer, ForeignKey("other_table.id")))
+                          Column('ref_other_table', Integer, ForeignKey('other_table.id')))
         other_table = Table('other_table', metadata,
                             Column('id', Integer, primary_key=True),
                             Column('code', String(2), nullable=False),
