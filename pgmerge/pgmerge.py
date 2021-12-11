@@ -27,9 +27,12 @@ from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
 LOG_FILE = os.path.join(user_log_dir(APP_NAME, appauthor=False), "out.log")
+
+EXIT_CODE_ARGS = 2
 # Use exit code 3 for exceptions since click already returns 1 and 2
 # (1 for aborts and 2 invalid arguments)
 EXIT_CODE_EXC = 3
+EXIT_CODE_INVALID_DATA = 4
 
 log = logging.getLogger()
 
@@ -252,7 +255,7 @@ def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
         print("No files found for the following tables:")
         for file in unknown_files:
             print("\t", file)
-        sys.exit()
+        sys.exit(EXIT_CODE_INVALID_DATA)
 
     # Convert filenames to full paths
     import_files = [os.path.join(directory, f) for f in import_files]
@@ -286,7 +289,7 @@ def validate_schema(inspector: Any, schema: str) -> str:
         schema = inspector.default_schema_name
     if schema not in inspector.get_schema_names():
         print("Schema not found: '{}'".format(schema))
-        sys.exit()
+        sys.exit(EXIT_CODE_ARGS)
     return schema
 
 
@@ -299,7 +302,7 @@ def validate_tables(inspector: Any, schema: str, tables: Optional[List[str]]) ->
     if len(unknown_tables) > 0:
         print("Tables not found in database:")
         print("\t" + "\n\t".join(unknown_tables))
-        sys.exit()
+        sys.exit(EXIT_CODE_ARGS)
     return tables
 
 
@@ -324,7 +327,7 @@ def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Opt
             validate_table_configs_with_schema(inspector, schema, config_per_table)
         except ConfigInvalidException as exc:
             print(exc)
-            sys.exit()
+            sys.exit(EXIT_CODE_EXC)
     return config_per_table
 
 
@@ -487,11 +490,11 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
 
         if single_table and (tables is None or len(tables) == 0):
             print("One table has to be specified when using the --single-table option")
-            sys.exit()
+            sys.exit(EXIT_CODE_ARGS)
         tables = cast(List[str], tables)
         if single_table and len(tables) > 1:
             print("Only one table can be specified when using the --single-table option")
-            sys.exit()
+            sys.exit(EXIT_CODE_ARGS)
 
         config_per_table = load_table_config_or_exit(inspector, schema, config)
         if single_table:
