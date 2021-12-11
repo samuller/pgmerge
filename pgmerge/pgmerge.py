@@ -106,8 +106,9 @@ def find_and_warn_about_cycles(table_graph: Any, dest_tables: List[str]) -> bool
     return False
 
 
+# Excluded from code coverage because all the CLI pre-checks prevent this check from ever picking anything up
 def get_and_warn_about_any_unknown_tables(import_files: List[str], dest_tables: List[str], schema_tables: List[str]
-                                          ) -> Set[str]:
+                                          ) -> Set[str]:  # pragma: no cover
     """Compare tables expected for import with actual in schema and warn about inconsistencies."""
     unknown_tables = set(dest_tables).difference(set(schema_tables))
     if len(unknown_tables) > 0:
