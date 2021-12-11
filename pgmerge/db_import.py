@@ -4,7 +4,7 @@ pgmerge - a PostgreSQL data import and merge utility.
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import logging
-from typing import Any, List, Dict, Tuple, Optional, Literal, cast
+from typing import Any, List, Dict, Tuple, Optional, cast
 
 from .db_config import TablesConfig, FileConfig
 from .db_export import ForeignColumnPath, get_unique_columns, replace_indexes, \
@@ -12,7 +12,8 @@ from .db_export import ForeignColumnPath, get_unique_columns, replace_indexes, \
     sql_select_table_with_foreign_columns, \
     sql_join_alias_for_foreign_key, sql_join_from_foreign_key
 
-ImportStats = Dict[Literal['skip', 'insert', 'update', 'total'], int]
+# 3.8+: Literal['skip', 'insert', 'update', 'total']
+ImportStats = Dict[str, int]
 
 _log = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import os
 import urllib
 import logging
 import getpass
-from typing import Any, Dict, List, Set, Optional, Literal, cast
+from typing import Any, Dict, List, Set, Optional, cast
 
 import yaml
 from rxjson import Rx

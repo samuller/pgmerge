@@ -194,7 +194,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
             click.secho(stat_output, fg='green')
         else:
             print(stat_output)
-        new_stats = cast(Dict[str, int], stats)
+        new_stats = cast(Dict[str, int], stats)  # type: ignore
         total_stats = {k: total_stats.get(k, 0) + new_stats.get(k, 0) for k in set(total_stats) | set(new_stats)}
 
     if suspend_foreign_keys:
