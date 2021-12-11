@@ -19,7 +19,7 @@ def print_missing_primary_keys(inspector: Any, schema: str) -> None:
     """Find and print tables in database that don't have primary keys."""
     no_pks = []
     for table in inspector.get_table_names(schema):
-        pks = inspector.get_primary_keys(table, schema)
+        pks = inspector.get_pk_constraint(table, schema)
         if len(pks) == 0:
             no_pks.append(table)
     if len(no_pks) > 0:
@@ -115,7 +115,7 @@ def transferability(inspector: Any, schema: str) -> None:  # pragma: no cover
     for table in tables:
         columns = inspector.get_columns(table, schema)
         fks = inspector.get_foreign_keys(table, schema)
-        pks = inspector.get_primary_keys(table, schema)
+        pks = [col for pk in inspector.get_pk_constraint(table, schema) for col in pk['constrained_columns']]
         uniques = inspector.get_unique_constraints(table, schema)
 
         for fk in fks:
