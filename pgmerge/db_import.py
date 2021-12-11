@@ -98,35 +98,41 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     -------
     A dictionary of import/update/skip stats.
     """
-    # Determine default values if needed
+    ########
+    # Set default values
+    ########
+    # Set default values for parameters
     file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'" if file_format is None else file_format
-
     config_per_table = {} if config_per_table is None else config_per_table
     file_config = cast(Dict[str, Any], config_per_table.get(dest_table, {}) if file_config is None else file_config)
+    # Load values from config or set defaults
     columns = file_config.get('columns', None)
-    alternate_key = file_config.get('alternate_key', None)
-
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
     columns = all_columns if columns is None else columns
+    alternate_key = file_config.get('alternate_key', None)
     id_columns = get_unique_columns(inspector, dest_table, schema) if alternate_key is None else alternate_key
+
+    ########
+    # Check validity of parameters
+    ########
     # Table should either be setup correctly, or alternate key should be specified
     if len(id_columns) == 0:
         raise UnsupportedSchemaException("Table has no primary key or unique columns!")
-
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
         raise InputParametersException("Columns provided do not exist in table '{}': {}"
                                        .format(dest_table, unknown_columns))
-
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
         raise InputParametersException("Columns provided do not include required id"
                                        " columns for table '{}': {}".format(dest_table, skipped_id_columns))
 
+    ########
+    # Create and import data into first (input) temporary table
+    ########
     stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     table_name_tmp_copy = "_tmp_copy_{}".format(dest_table)
-
     foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table,
                                                                 schema, dest_table, columns)
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns)
@@ -134,10 +140,10 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     create_sql = "CREATE TEMP TABLE {tmp_copy} AS {select_sql} LIMIT 0;".format(
         tmp_copy=table_name_tmp_copy, select_sql=select_sql)
     exec_sql(cursor, create_sql)
+
     # Import data into temporary table
     copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
     _log_sql(copy_sql)
-
     with open(input_file, 'r', encoding="utf-8") as file:
         cursor.copy_expert(copy_sql, file)
     stats['total'] = cursor.rowcount
@@ -148,6 +154,9 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     analyze_sql = "ANALYZE {tmp_copy}".format(tmp_copy=table_name_tmp_copy)
     exec_sql(cursor, analyze_sql)
 
+    ########
+    # Create second (output) temporary table and transform and insert data
+    ########
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
     table_name_tmp_final = "_tmp_final_{}".format(dest_table)
     select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
@@ -164,6 +173,9 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
     stats.update(upsert_stats)
 
+    ########
+    # Clean-up
+    ########
     drop_sql = "DROP TABLE {};".format(table_name_tmp_copy)
     exec_sql(cursor, drop_sql)
 
