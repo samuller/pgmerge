@@ -79,7 +79,7 @@ class TestConfig(TestDB):
 
             the_table_path = os.path.join(self.output_dir, "the_table.csv")
             check_header(self, the_table_path, ['id', 'code',
-                                               'name', 'join_the_table_ref_other_table_fkey_code'])
+                                                'name', 'join_the_table_ref_other_table_fkey_code'])
 
             other_table_path = os.path.join(self.output_dir, "other_table.csv")
             check_header(self, other_table_path, ['id', 'code', 'name'])
@@ -164,7 +164,8 @@ class TestConfig(TestDB):
         config_data = {
             'area': {'columns': ['code', 'name'], 'alternate_key': ['code']},
             'organisation': {'columns': ['code', 'name'], 'alternate_key': ['code']},
-            'party_area': {'columns': ['party_id', 'area_id', 'type'], 'alternate_key': ['party_id', 'area_id', 'type']},
+            'party_area': {'columns': ['party_id', 'area_id', 'type'],
+                           'alternate_key': ['party_id', 'area_id', 'type']},
         }
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         with write_file(config_file_path) as config_file, \

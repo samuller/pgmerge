@@ -32,10 +32,10 @@ def compare_table_output(self, actual_output, table_result_output, total_output)
     for idx in range(len(table_result_output) // 2):
         # Should be table name
         self.assertEqual(actual_output_lines[idx].strip().split(),
-                            table_result_output[idx])
+                         table_result_output[idx])
         # Check table result
         self.assertEqual(actual_output_lines[idx + 1].strip().split(),
-                            table_result_output[idx + 1])
+                         table_result_output[idx + 1])
     # Check total count
     self.assertEqual(actual_output_lines[-1], total_output)
 

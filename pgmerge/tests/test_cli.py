@@ -8,7 +8,6 @@ import logging
 
 from click.testing import CliRunner
 # from typer.testing import CliRunner
-from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 
 from pgmerge import pgmerge
@@ -95,7 +94,8 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir, table_name])
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
             compare_table_output(self, result.output, [
                 ["country:"],
@@ -135,7 +135,8 @@ class TestCLI(TestDB):
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, self.output_dir, table_name])
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir, table_name])
             compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "1", "insert:", "1", "update:", "1"],

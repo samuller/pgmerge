@@ -3,7 +3,6 @@ pgmerge - a PostgreSQL data import and merge utility.
 
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
-import os
 import unittest
 
 from pgmerge.db_config import generate_url
