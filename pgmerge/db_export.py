@@ -5,7 +5,9 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
 import logging
-from typing import Any, List, Dict, Tuple, Optional, cast
+from typing import Any, List, Tuple, Optional, cast
+
+from .db_config import TablesConfig, SubsetConfig
 
 DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
 _log = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: Li
         listy.insert(idx_to_add, value)
 
 
-def replace_local_columns_with_alternate_keys(inspector: Any, config_per_table: Dict[str, Any], schema: str,
+def replace_local_columns_with_alternate_keys(inspector: Any, config_per_table: TablesConfig, schema: str,
                                               table: str, local_columns: List[str]
                                               ) -> List[ForeignColumnPath]:
     """
@@ -83,7 +85,7 @@ def replace_local_columns_with_alternate_keys(inspector: Any, config_per_table: 
 
 
 def export_tables_per_config(connection: Any, inspector: Any, schema: str, output_dir: str, tables: List[str],
-                             config_per_table: Optional[Dict[str, Any]] = None,
+                             config_per_table: Optional[TablesConfig] = None,
                              file_format: Optional[str] = None) -> Tuple[int, int]:
     """Export all given tables according to the options specified in the config_per_table dictionary."""
     if connection.encoding != 'UTF8':
@@ -103,7 +105,7 @@ def export_tables_per_config(connection: Any, inspector: Any, schema: str, outpu
             config_per_table[table] = {}
 
         # Determine files to be generated: one per table plus one for each of its subsets
-        file_configs = [config_per_table[table]]
+        file_configs = [cast(SubsetConfig, config_per_table[table])]
         file_configs[0]['name'] = table
 
         if 'subsets' in config_per_table[table]:

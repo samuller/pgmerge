@@ -19,10 +19,10 @@ import sqlalchemy
 from appdirs import user_log_dir
 
 from .utils import decorate, NoExceptionFormatter, only_file_stem
-from .db_config import load_config_for_tables, \
+from .db_config import PerTableConfig, load_config_for_tables, \
     validate_table_configs_with_schema, \
     retrieve_password, generate_url, \
-    ConfigInvalidException
+    ConfigInvalidException, TablesConfig, SubsetConfig, FileConfig
 from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
@@ -130,7 +130,7 @@ def _get_table_name_with_file(file_name: str, table_name: str) -> str:
 
 
 def import_all_new(connection: Any, inspector: Any, schema: str, import_files: List[str], dest_tables: List[str],
-                   config_per_table: Optional[Dict[str, Any]] = None, file_format: Optional[str] = None,
+                   config_per_table: Optional[TablesConfig] = None, file_format: Optional[str] = None,
                    suspend_foreign_keys: bool = False, fail_on_warning: bool = True) -> None:
     """
     Import files that introduce new or updated rows.
@@ -194,7 +194,8 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
             click.secho(stat_output, fg='green')
         else:
             print(stat_output)
-        total_stats = {k: total_stats.get(k, 0) + stats.get(k, 0) for k in set(total_stats) | set(stats)}
+        new_stats = cast(Dict[str, int], stats)
+        total_stats = {k: total_stats.get(k, 0) + new_stats.get(k, 0) for k in set(total_stats) | set(new_stats)}
 
     if suspend_foreign_keys:
         db_import.enable_foreign_key_constraints(cursor)
@@ -222,7 +223,7 @@ def run_in_session(engine: Any, func: Callable[[Any], Any]) -> Any:
 
 
 def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
-                                config_per_table: Optional[Dict[str, Any]]
+                                config_per_table: Optional[TablesConfig]
                                 ) -> Tuple[List[str], List[str]]:
     """Based on the configuration, determine the set of files to be imported as well as their destination tables."""
     if config_per_table is None:
@@ -263,18 +264,22 @@ def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
     return import_files, dest_tables
 
 
-def convert_to_config_per_subset(config_per_table: Dict[str, Any]) -> Dict[str, Any]:
+def convert_to_config_per_subset(config_per_table: TablesConfig) -> Dict[str, FileConfig]:
     """Subset configs include parent config and the configs of subset that override those of the parent."""
-    subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
-               for table in config_per_table if 'subsets' in config_per_table[table]}
+    subsets: Dict[str, List[str]] = {
+        table: [subset['name'] for subset in config_per_table[table]['subsets']]
+        for table in config_per_table if 'subsets' in config_per_table[table]
+    }
     subsets_configs = {config['name']: config
                        for table in config_per_table if 'subsets' in config_per_table[table]
-                       for config in config_per_table[table]['subsets']}
+                       for config in cast(List[SubsetConfig], config_per_table[table]['subsets'])}
     subset_to_table = {name: table for table in subsets for name in subsets[table]}
     # Give copy parent configs to all subsets as a base
-    config_per_subset = {name: copy.deepcopy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
+    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(FileConfig, copy.deepcopy(x))
+    config_per_subset = {name: cast_copy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
     for subset_name in subset_to_table:
-        del config_per_subset[subset_name]['subsets']
+        # Remove extra key to fully correct typing
+        del cast(PerTableConfig, config_per_subset[subset_name])['subsets']
         # Overwrite keys that are defined on subset-level
         subset_config = subsets_configs[subset_name]
         for key in subset_config:
@@ -319,7 +324,7 @@ def check_table_params(ctx: click.Context, param: Union[click.Option, click.Para
 
 
 def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Optional[str]
-                              ) -> Optional[Dict[str, Any]]:
+                              ) -> Optional[TablesConfig]:
     """Load and validate table configuration and exit app if there are issues."""
     config_per_table = None
     if config_file_name is not None:
@@ -333,8 +338,8 @@ def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Opt
 
 
 def generate_single_table_config(directory: str, tables: List[str],
-                                 config_per_table: Optional[Dict[str, Any]]
-                                 ) -> Tuple[List[str], List[str], Dict[str, Any]]:
+                                 config_per_table: Optional[TablesConfig]
+                                 ) -> Tuple[List[str], List[str], TablesConfig]:
     """Create a fake config such that all files found in the directory are subsets for the given table."""
     if config_per_table is None:
         config_per_table = {}

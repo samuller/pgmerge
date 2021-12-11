@@ -4,12 +4,15 @@ pgmerge - a PostgreSQL data import and merge utility.
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import logging
-from typing import Any, List, Dict, Tuple, Optional, cast
+from typing import Any, List, Dict, Tuple, Optional, Literal, cast
 
+from .db_config import TablesConfig, FileConfig
 from .db_export import ForeignColumnPath, get_unique_columns, replace_indexes, \
     replace_local_columns_with_alternate_keys, \
     sql_select_table_with_foreign_columns, \
     sql_join_alias_for_foreign_key, sql_join_from_foreign_key
+
+ImportStats = Dict[Literal['skip', 'insert', 'update', 'total'], int]
 
 _log = logging.getLogger(__name__)
 
@@ -73,8 +76,8 @@ def sql_update_rows_between_tables(update_table_name: str, reference_table_name:
 
 
 def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_file: str,
-              file_format: Optional[str] = None, file_config: Optional[Dict[str, Any]] = None,
-              config_per_table: Optional[Dict[str, Any]] = None) -> Dict[str, int]:
+              file_format: Optional[str] = None, file_config: Optional[FileConfig] = None,
+              config_per_table: Optional[TablesConfig] = None) -> ImportStats:
     """
     Do a full import (actually a merge or upsert) of a single file into a single table.
 
@@ -104,7 +107,7 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     # Set default values for parameters
     file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'" if file_format is None else file_format
     config_per_table = {} if config_per_table is None else config_per_table
-    file_config = cast(Dict[str, Any], config_per_table.get(dest_table, {}) if file_config is None else file_config)
+    file_config = cast(FileConfig, config_per_table.get(dest_table, {}) if file_config is None else file_config)
     # Load values from config or set defaults
     columns = file_config.get('columns', None)
     all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
@@ -130,7 +133,7 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     ########
     # Create and import data into first (input) temporary table
     ########
-    stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
+    stats: ImportStats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
 
     table_name_tmp_copy = "_tmp_copy_{}".format(dest_table)
     foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table,
@@ -190,9 +193,9 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
 
 
 def upsert_table_to_table(cursor: Any, src_table: str, dest_table: str, id_columns: List[str], columns: List[str]
-                          ) -> Dict[str, int]:
+                          ) -> ImportStats:
     """Do a full upsert import from a source table to a destination table."""
-    stats = {'skip': 0, 'insert': 0, 'update': 0}
+    stats: ImportStats = {'skip': 0, 'insert': 0, 'update': 0}
 
     # Delete rows in temp table that are already identical to those in destination table
     exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
@@ -269,7 +272,7 @@ def replace_foreign_columns_with_local_columns(foreign_columns: List[ForeignColu
 def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_table: Any, src_table: str,
                                         foreign_columns: List[ForeignColumnPath],
                                         local_columns_subset: Any = None,
-                                        config_per_table: Optional[Dict[str, Any]] = None) -> str:
+                                        config_per_table: Optional[TablesConfig] = None) -> str:
     """
     Create SQL to convert src_table's foreign columns to local columns matching those of the schema_table.
 

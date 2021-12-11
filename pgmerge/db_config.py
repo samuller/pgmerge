@@ -7,7 +7,7 @@ import os
 import urllib
 import logging
 import getpass
-from typing import Any, Dict, List, Set, Optional, cast
+from typing import Any, Dict, List, Set, Optional, Literal, cast
 
 import yaml
 from rxjson import Rx
@@ -21,8 +21,16 @@ SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tables_c
 DB_CONFIG_FILE = "db_config.yml"
 PGPASS_FILE = ".pgpass"
 
+# In Python 3.8+ we can use TypedDict
+# See: https://stackoverflow.com/questions/44225788/python-3-dictionary-with-known-keys-typing
+PerTableConfig = Dict[Literal['columns', 'alternate_key', 'where', 'subsets'], Any]
+TablesConfig = Dict[str, PerTableConfig]
+SubsetConfig = Dict[Literal['name', 'where', 'columns'], Any]
+# Combination of Subset and PerTable
+FileConfig = Dict[Literal['name', 'alternate_key', 'where', 'columns'], Any]
 
-def load_config_for_tables(config_path: str) -> Dict[str, Any]:
+
+def load_config_for_tables(config_path: str) -> TablesConfig:
     """Load a config defining how tables should be imported and exported."""
     # Load YAML defining schema for validation of default config
     schema_path = SCHEMA_FILE
@@ -45,10 +53,10 @@ def load_config_for_tables(config_path: str) -> Dict[str, Any]:
         raise ConfigInvalidException("incorrect format for '{}', should match description in '{}'"
                                      .format(config_path, schema_path))
         # return None
-    return cast(Dict[str, Any], yaml_config)
+    return cast(TablesConfig, yaml_config)
 
 
-def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_table: Dict[str, Any]
+def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_table: TablesConfig
                                        ) -> None:
     """Check that config matches the current schema and tables without any inconsistencies."""
     table_names = inspector.get_table_names(schema)
@@ -81,7 +89,7 @@ def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_t
         if config_columns is not None:
             validate_config_columns(table, config_columns, actual_columns, skippable_columns, config_pk_columns)
 
-        subsets = table_config.get('subsets', None)
+        subsets: Optional[List[SubsetConfig]] = table_config.get('subsets', None)
         if subsets is not None:
             validate_config_subsets(table, subsets, table_names, subset_names)
             subset_names.update([subset['name'] for subset in subsets])
@@ -110,7 +118,7 @@ def validate_config_columns(table: str, config_columns: List[str], actual_column
             .format(list(missing_pk_columns)), table)
 
 
-def validate_config_subsets(table: str, new_subsets: List[Dict[str, Any]], table_names: List[str],
+def validate_config_subsets(table: str, new_subsets: List[SubsetConfig], table_names: List[str],
                             known_subsets: Set[str]) -> None:
     """Check that subsets specified are valid tables and don't have duplicates."""
     for subset in new_subsets:
