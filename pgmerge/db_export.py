@@ -169,7 +169,10 @@ def sql_select_table_with_foreign_columns(inspector: Any, schema: str, table: st
     """
     Create SQL to select a table, but with it's own columns replaced with those from foreign tables.
 
-    :param foreign_columns: A list of tuples describing which columns to export. Columns can be from any other tables
+    Parameters
+    ----------
+    foreign_columns :
+        A list of tuples describing which columns to export. Columns can be from any other tables
         that are dependencies of this one. Each tuple should be of the format:
             (column_name, list_of_foreign_key_names_to_reach_table_with_column)
         To use a column from the current table, use:

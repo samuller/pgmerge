@@ -87,10 +87,16 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     - Transform data and copy it to the second temporary table
     - Compare data in second temporary table and destination table and only import/update the necessary rows/fields
 
-    :param file_config: Config for the file being imported
-    :param config_per_table: Config for all tables. Will be used in case of foreign keys to other tables.
-                             Also used if file_config is None.
-    :return:
+    Parameters
+    ----------
+    file_config :
+        Config for the file being imported
+    config_per_table :
+        Config for all tables. Will be used in case of foreign keys to other tables. Also used if file_config is None.
+
+    Returns
+    -------
+    A dictionary of import/update/skip stats.
     """
     # Determine default values if needed
     file_format = "FORMAT CSV, HEADER, ENCODING 'UTF8'" if file_format is None else file_format
@@ -258,8 +264,12 @@ def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_tabl
     The foreign columns should be based on the foreign keys from the schema
     table (in the case of further indirection, some other tables will also be included).
 
-    :param schema_table: Has foreign keys
-    :param src_table: Will be selected from and might be a temporary table (i.e. no schema)
+    Parameters
+    ----------
+    schema_table :
+        Has foreign keys
+    src_table :
+        Will be selected from and might be a temporary table (i.e. no schema)
     """
     if config_per_table is None:
         config_per_table = {}
