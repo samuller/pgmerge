@@ -212,7 +212,16 @@ class TestCLI(TestDB):
         reusing logging setup across modules, controlling logging level etc.
         """
         # pgmerge.setup_logging(False)
-        pass
+        result = self.runner.invoke(pgmerge.cli_app, [])
+        self.assertEqual(result.exit_code, 2)
+
+    def test_missing_table(self):
+        """
+        Test import to tables not found in schema.
+        """
+        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                     self.output_dir, 'missing'])
+        self.assertEqual(result.exit_code, 2)
 
     def test_inspect_tables(self):
         """
