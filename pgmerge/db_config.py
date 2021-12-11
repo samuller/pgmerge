@@ -4,10 +4,11 @@ pgmerge - a PostgreSQL data import and merge utility.
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
+import copy
 import urllib
 import logging
 import getpass
-from typing import Any, Dict, List, Set, Optional, cast
+from typing import Any, Dict, List, Set, Optional, Callable, cast
 
 import yaml
 from rxjson import Rx
@@ -57,6 +58,31 @@ def load_config_for_tables(config_path: str) -> TablesConfig:
                                      .format(config_path, schema_path))
         # return None
     return cast(TablesConfig, yaml_config)
+
+
+def convert_to_config_per_subset(config_per_table: TablesConfig) -> Dict[str, FileConfig]:
+    """Subset configs include parent config and the configs of subset that override those of the parent."""
+    subsets: Dict[str, List[str]] = {
+        table: [subset['name'] for subset in config_per_table[table]['subsets']]
+        for table in config_per_table if 'subsets' in config_per_table[table]
+    }
+    subsets_configs = {config['name']: config
+                       for table in config_per_table if 'subsets' in config_per_table[table]
+                       for config in cast(List[SubsetConfig], config_per_table[table]['subsets'])}
+    subset_to_table = {name: table for table in subsets for name in subsets[table]}
+    # Give copy parent configs to all subsets as a base
+    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(FileConfig, copy.deepcopy(x))  # type: ignore
+    config_per_subset = {name: cast_copy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
+    for subset_name in subset_to_table:
+        # Remove extra key to fully correct typing
+        del cast(PerTableConfig, config_per_subset[subset_name])['subsets']  # type: ignore
+        # Overwrite keys that are defined on subset-level
+        subset_config = subsets_configs[subset_name]
+        for key in subset_config:
+            config_per_subset[subset_name][key] = subset_config[key]
+
+    # config_per_file = {(name + '.csv'): config_per_subset[name] for name in config_per_subset}
+    return config_per_subset
 
 
 def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_table: TablesConfig
