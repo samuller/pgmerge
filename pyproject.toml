@@ -44,6 +44,9 @@ mypy = "^0.910"
 testpaths = [
     "pgmerge/tests"
 ]
+# Capture logging and print to stdout while running tests
+log_cli = true
+log_cli_level = "INFO"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
