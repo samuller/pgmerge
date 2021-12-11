@@ -21,13 +21,16 @@ SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tables_c
 DB_CONFIG_FILE = "db_config.yml"
 PGPASS_FILE = ".pgpass"
 
-# In Python 3.8+ we can use TypedDict
+# In Python 3.8+ we can use TypedDict and Literal (and remove some "type: ignore" comments)
 # See: https://stackoverflow.com/questions/44225788/python-3-dictionary-with-known-keys-typing
-PerTableConfig = Dict[Literal['columns', 'alternate_key', 'where', 'subsets'], Any]
+# 3.8+: Literal['columns', 'alternate_key', 'where', 'subsets']
+PerTableConfig = Dict[str, Any]
 TablesConfig = Dict[str, PerTableConfig]
-SubsetConfig = Dict[Literal['name', 'where', 'columns'], Any]
+# 3.8+: Literal['name', 'where', 'columns']
+SubsetConfig = Dict[str, Any]
 # Combination of Subset and PerTable
-FileConfig = Dict[Literal['name', 'alternate_key', 'where', 'columns'], Any]
+# 3.8+: Literal['name', 'alternate_key', 'where', 'columns']
+FileConfig = Dict[str, Any]
 
 
 def load_config_for_tables(config_path: str) -> TablesConfig:

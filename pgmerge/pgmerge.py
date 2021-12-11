@@ -275,11 +275,11 @@ def convert_to_config_per_subset(config_per_table: TablesConfig) -> Dict[str, Fi
                        for config in cast(List[SubsetConfig], config_per_table[table]['subsets'])}
     subset_to_table = {name: table for table in subsets for name in subsets[table]}
     # Give copy parent configs to all subsets as a base
-    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(FileConfig, copy.deepcopy(x))
+    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(FileConfig, copy.deepcopy(x))  # type: ignore
     config_per_subset = {name: cast_copy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
     for subset_name in subset_to_table:
         # Remove extra key to fully correct typing
-        del cast(PerTableConfig, config_per_subset[subset_name])['subsets']
+        del cast(PerTableConfig, config_per_subset[subset_name])['subsets']  # type: ignore
         # Overwrite keys that are defined on subset-level
         subset_config = subsets_configs[subset_name]
         for key in subset_config:

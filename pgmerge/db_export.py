@@ -105,7 +105,7 @@ def export_tables_per_config(connection: Any, inspector: Any, schema: str, outpu
             config_per_table[table] = {}
 
         # Determine files to be generated: one per table plus one for each of its subsets
-        file_configs = [cast(SubsetConfig, config_per_table[table])]
+        file_configs = [cast(SubsetConfig, config_per_table[table])]  # type: ignore
         file_configs[0]['name'] = table
 
         if 'subsets' in config_per_table[table]:
