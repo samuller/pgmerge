@@ -7,6 +7,7 @@ import os
 import logging
 from typing import Any, List, Tuple, Optional, cast
 
+from .utils import replace_indexes
 from .db_config import TablesConfig, SubsetConfig
 
 DEFAULT_FILE_FORMAT = "FORMAT CSV, HEADER, ENCODING 'UTF8'"
@@ -32,20 +33,6 @@ def get_unique_columns(inspector: Any, table: str, schema: str) -> List[str]:
     unique_constraints = inspector.get_unique_constraints(table, schema)
     unique = [col for constraint in unique_constraints for col in constraint['column_names']]
     return pks + unique
-
-
-def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]) -> None:
-    """Remove given indexes and insert a new set of values into the given list."""
-    # Delete values to be replaced (remove highest indices first so that indices don't change)
-    for idx in reversed(sorted(idxs_to_replace)):
-        del listy[idx]
-    # We have to add all new values at the first index to be replaced since thats the only index which is now unchanged
-    idx_to_add = min(idxs_to_replace)
-
-    # Add multiple values in reverse so that we can keep the insertion index the same
-    # and their final order will end up correct
-    for value in reversed(new_values):
-        listy.insert(idx_to_add, value)
 
 
 def replace_local_columns_with_alternate_keys(inspector: Any, config_per_table: TablesConfig, schema: str,

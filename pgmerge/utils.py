@@ -28,6 +28,20 @@ class NoExceptionFormatter(logging.Formatter):
         return ''
 
 
+def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]) -> None:
+    """Remove given indexes and insert a new set of values into the given list."""
+    # Delete values to be replaced (remove highest indices first so that indices don't change)
+    for idx in reversed(sorted(idxs_to_replace)):
+        del listy[idx]
+    # We have to add all new values at the first index to be replaced since thats the only index which is now unchanged
+    idx_to_add = min(idxs_to_replace)
+
+    # Add multiple values in reverse so that we can keep the insertion index the same
+    # and their final order will end up correct
+    for value in reversed(new_values):
+        listy.insert(idx_to_add, value)
+
+
 def recursive_update_ignore_none(any_dict: Dict[Any, Any], update_dict: Dict[Any, Any]
                                  ) -> Dict[Any, Any]:  # pragma: no cover
     """Similar to dict.update(), but updates recursively nested dictionaries and never updates a key's value to None."""
