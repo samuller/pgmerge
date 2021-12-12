@@ -6,8 +6,9 @@ Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 import logging
 from typing import Any, List, Dict, Tuple, Optional, cast
 
+from .utils import replace_indexes
 from .db_config import TablesConfig, FileConfig
-from .db_export import ForeignColumnPath, get_unique_columns, replace_indexes, \
+from .db_export import ForeignColumnPath, get_unique_columns, \
     replace_local_columns_with_alternate_keys, \
     sql_select_table_with_foreign_columns, \
     sql_join_alias_for_foreign_key, sql_join_from_foreign_key
