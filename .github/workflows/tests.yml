@@ -44,13 +44,13 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Python ${{ matrix.python }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
       # Cache entire Python environment
-      # - uses: actions/cache@v2
+      # - uses: actions/cache@v3
       #   with:
       #     path: ${{ env.pythonLocation }}
       #     # pythonLocation includes exact Python version
@@ -112,7 +112,7 @@ jobs:
         with:
           fail_ci_if_error: false
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
           path: htmlcov/
