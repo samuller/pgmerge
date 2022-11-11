@@ -23,7 +23,7 @@ include = ["NOTICE"]
 pgmerge = "pgmerge.pgmerge:cli_app"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 psycopg2-binary = "*"
 # 2.6 only supports Python 3.7+ and 2.5.1 uses older "decorator" lib
 networkx = "2.5"
