@@ -45,7 +45,7 @@ Type checking can be done with `mypy`:
 
 To run the tests you'll need to set an environment variable with a database connection URL, e.g.:
 
-    DB_TEST_URL=postgres://postgres:password@localhost:5432/
+    DB_TEST_URL=postgresql://postgres:password@localhost:5432/
 
 The user has to have rights to create a new database. Then you can run the tests with `nosetests` or `pytest`, e.g.:
 
@@ -95,7 +95,11 @@ Check for outdated dependencies with:
 
     poetry show -l
 
-Update or change dependencies with, e.g.:
+Update all dependencies to latest matching version specs in `pyproject.toml` (can thus change dependency version by manually editing the version spec first):
+
+    poetry update
+
+Add a new dependency or change dependencies with the following (which also includes/forces a `poetry update` to run):
 
     poetry add name_of_lib@latest
 
