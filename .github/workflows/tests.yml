@@ -23,7 +23,7 @@ jobs:
             postgres: 10
           # Test everything with latest versions
           - name: latest
-            os: ubuntu-latest
+            os: latest
             python: 3.x
             postgres: latest
 
