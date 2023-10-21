@@ -1,6 +1,6 @@
 # pgmerge - a PostgreSQL data import and merge utility
 
-[![Build Status](https://github.com/samuller/pgmerge/workflows/tests/badge.svg)](https://github.com/samuller/pgmerge/actions)
+[![Build Status](https://github.com/samuller/pgmerge/actions/workflows/tests.yml/badge.svg)](https://github.com/samuller/pgmerge/actions)
 [![PyPI Version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/samuller/3c84321138784d39b31a02d7fe93b31d/raw/badge-coverage.json)](https://github.com/samuller/pgmerge/actions)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
