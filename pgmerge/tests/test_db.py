@@ -29,7 +29,7 @@ class TestDB(unittest.TestCase):
     Class for setting up a test database and handling connections to it.
 
     Requires environment variable with connection details/URL to database, e.g.:
-        DB_TEST_URL=postgres://postgres:password@localhost:5432/
+        DB_TEST_URL=postgresql://postgres:password@localhost:5432/
     User has to have create database permissions.
     """
 
