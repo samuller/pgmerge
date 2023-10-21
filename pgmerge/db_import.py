@@ -49,12 +49,16 @@ def sql_insert_rows_not_in_table(insert_table_name: str, reference_table_name: s
     """Create SQL to insert rows into a table, but only if those rows don't already exist in a reference table."""
     insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col)
                                   for col in id_column_names])
-    reference_table_cols = ",".join(["{tbl}.{col}".format(tbl=reference_table_name, col=col)
+    reference_table_cols = ",".join(["_tft.{col}".format(col=col)
                                      for col in id_column_names])
+    # Use sub-select with extra column to maintain row order.
+    subselect_sql = f"SELECT ROW_NUMBER() OVER () as __row_number, * FROM {reference_table_name}"
+    tft_columns = ','.join([f"_tft.{col}" for col in column_names])
     # The left join will give nulls for the joined table when no matches are found.
     # We use '(tuple) is null' to see if all columns (values in the tuple) are null.
-    select_sql = "SELECT {ref}.* FROM {ref} LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) WHERE ({ins_cols}) is NULL"\
-        .format(ref=reference_table_name, ins=insert_table_name,
+    select_sql = "SELECT {tft_cols} FROM ({ref}) as _tft LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) " \
+        "WHERE ({ins_cols}) is NULL ORDER BY _tft.__row_number" \
+        .format(tft_cols=tft_columns, ref=subselect_sql, ins=insert_table_name,
                 ins_cols=insert_table_cols, ref_cols=reference_table_cols)
     columns_sql = ','.join(column_names)
 
