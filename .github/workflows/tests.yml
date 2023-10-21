@@ -104,13 +104,9 @@ jobs:
           label: coverage
           message: "${{ env.COV_TOTAL }}%"
           color: ${{ env.COV_COLOR }}
-      - name: Upload coverage to Codecov
+      - name: Archive code coverage results
         # Ensure we only upload once per build
         if: matrix.name == 'supported'
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: false
-      - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
