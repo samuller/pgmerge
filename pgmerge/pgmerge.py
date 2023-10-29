@@ -419,7 +419,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         find_and_warn_about_cycles(table_graph, tables)
 
         def export_tables(conn: Any) -> Tuple[int, int]:
-            return db_export.export_tables_per_config(conn, inspector, schema, directory, cast(List[str], tables),
+            return db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
                                                       config_per_table=config_per_table)
         table_count, file_count = run_in_session(engine, export_tables)
         print("Exported {} tables to {} files".format(table_count, file_count))

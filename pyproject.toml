@@ -38,7 +38,7 @@ pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
 flake8 = "^5.0.0"
 flake8-docstrings = "^1.6.0"
-mypy = "^0.910"
+mypy = "^1.4.0"
 
 [tool.pytest.ini_options]
 testpaths = [
