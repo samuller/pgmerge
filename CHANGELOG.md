@@ -25,7 +25,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.9.1] - 2021-12-11
 
+### Changed
+
+* Make changes to partially migrate and prepare for new APIs in SQLAlchemy 2.0.
+* Return exit code 3 when exceptions cause execution to fail and exit code 4 when there are unexpected data issues.
+
+### Added
+
+* Add extra tests, code coverage and CI checks.
+
 ## [1.9.0] - 2021-12-05
+
+### Added
+
+* Add `--single-table` option for imports that assumes all files in a folder are of the same type and should be imported into the same table.
+* Many extra linting & typing checks and improvements.
+
+### Changed
+
+* Update depdencies: `networkX` from 1.11 to 2.5, `PyYAML` from 5.1.1 to 6.0, `SQLAlchemy` from 1.3.5 to 1.4.27 & `appdirs` from 1.4.3 to 1.4.4.
+* Convert command-line handling from `click` (6.7 to 7.1.2) to `typer` 0.4.0.
+* Improve performance during and after imports with `ANALYZE` queries.
+* Always import data in same order by sorting import files and tables order in dependency graph.
+* Convert to Poetry build system.
 
 ## [1.8.0] - 2019-07-23
 
