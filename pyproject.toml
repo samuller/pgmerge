@@ -18,6 +18,10 @@ classifiers = [
     "Topic :: Utilities",
 ]
 include = ["NOTICE"]
+# Exclude tests from built packages
+exclude = [
+    "pgmerge/tests/"
+]
 
 [tool.poetry.scripts]
 pgmerge = "pgmerge.pgmerge:cli_app"
