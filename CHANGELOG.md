@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 * Upsert operations more consistenly maintains ordering of newly inserted rows in PostgreSQL 16+.
-* Move to Poetry for build amd dependency management.
+* Move to Poetry for build and dependency management.
 
 ### Removed
 
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Changelog.
+* Mypy type checking & CI improvements.
 
 ## [1.9.1] - 2021-12-11
 
