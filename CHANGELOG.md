@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2024-05-16
+
 ### Changed
 
 * Upsert operations more consistenly maintains ordering of newly inserted rows in PostgreSQL 16+.
