@@ -46,8 +46,7 @@ test() {
         exit
     fi
 
-    # DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/
-    DB_TEST_URL=postgresql://postgres:postgres@pgmerge-db:5432/ SQLALCHEMY_WARN_20=1 poetry run pytest \
+    DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ SQLALCHEMY_WARN_20=1 poetry run pytest \
             --cov-report html --cov-report xml --cov pgmerge --verbose
 }
 
