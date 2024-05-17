@@ -61,20 +61,12 @@ jobs:
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.0 python -
       - name: Install dependencies
         run: poetry install
-      - name: Check for flake8 issues
-        run: poetry run flake8 --exclude "tests" pgmerge/
-      # We do a separate pass with less stringent documentation requirements
-      - name: Check for flake8 issues in tests
-        run: poetry run flake8 --extend-ignore=D pgmerge/
-      - name: Check for mypy typing issues
-        run: poetry run mypy --install-types --non-interactive --ignore-missing-imports --strict pgmerge/*.py
-      # No strict type requirements for tests
-      - name: Check for mypy typing issues in tests
-        run: poetry run mypy --ignore-missing-imports pgmerge/tests
+      - name: Check for linting issues
+        run: ./run.sh lint
       - name: Test with pytest
-        run: |
-          DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ SQLALCHEMY_WARN_20=1 poetry run pytest \
-            --cov-report html --cov-report xml --cov pgmerge --verbose
+        run: ./run.sh test
+      - name: Check consistent versions
+        run: ./run.sh check-version
       - name: Get final code coverage percentage & color
         run: |
           COV_TOTAL=$(poetry run coverage report | grep 'TOTAL' | tr -s ' ' | cut -d ' ' -f 4 | tr -d '%')
