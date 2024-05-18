@@ -11,7 +11,7 @@ from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey, sel
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import write_file, compare_table_output, check_header
+from .helpers import del_file, write_file, compare_table_output, check_header
 
 
 class TestConfig(TestDB):
@@ -53,8 +53,12 @@ class TestConfig(TestDB):
             }
         }
         config_file_path = os.path.join(self.output_dir, 'test.yml')
+        animals_path = os.path.join(self.output_dir, "animals.csv")
+        fish_path = os.path.join(self.output_dir, "fish.csv")
+        mammal_path = os.path.join(self.output_dir, "mammals.csv")
         with write_file(config_file_path) as config_file, \
-                create_table(self.engine, the_table):
+                create_table(self.engine, the_table), \
+                del_file(animals_path), del_file(fish_path), del_file(mammal_path):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
                 self.connection.execute(the_table.insert(None), [
@@ -77,13 +81,7 @@ class TestConfig(TestDB):
                 # TODO: 1 table (3 files)
             ], "3 tables imported successfully")
 
-            animals_path = os.path.join(self.output_dir, "animals.csv")
             check_header(self, animals_path, ['type', 'name'])
-            fish_path = os.path.join(self.output_dir, "fish.csv")
-            mammal_path = os.path.join(self.output_dir, "mammals.csv")
-            os.remove(animals_path)
-            os.remove(fish_path)
-            os.remove(mammal_path)
 
     def test_config_references(self):
         """
@@ -105,9 +103,12 @@ class TestConfig(TestDB):
             'other_table': {'alternate_key': ['code']}
         }  # 'other_table': {'columns'}
         config_file_path = os.path.join(self.output_dir, 'test.yml')
+        the_table_path = os.path.join(self.output_dir, "the_table.csv")
+        other_table_path = os.path.join(self.output_dir, "other_table.csv")
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
-                create_table(self.engine, the_table):
+                create_table(self.engine, the_table), \
+                del_file(the_table_path), del_file(other_table_path):
             with self.connection.begin():
                 self.connection.execute(other_table.insert(None), [
                     {'code': 'IS', 'name': 'Iceland'},
@@ -130,15 +131,9 @@ class TestConfig(TestDB):
                 ["skip:", "0", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
 
-            the_table_path = os.path.join(self.output_dir, "the_table.csv")
             check_header(self, the_table_path, ['id', 'code',
                                                 'name', 'join_the_table_ref_other_table_fkey_code'])
-
-            other_table_path = os.path.join(self.output_dir, "other_table.csv")
             check_header(self, other_table_path, ['id', 'code', 'name'])
-
-            os.remove(the_table_path)
-            os.remove(other_table_path)
 
     def test_config_self_reference(self):
         """
@@ -156,8 +151,9 @@ class TestConfig(TestDB):
                           'alternate_key': ['code', 'parent_id']}
         }
         config_file_path = os.path.join(self.output_dir, 'test.yml')
+        the_table_path = os.path.join(self.output_dir, "the_table.csv")
         with write_file(config_file_path) as config_file, \
-                create_table(self.engine, the_table), \
+                create_table(self.engine, the_table), del_file(the_table_path), \
                 self.connection:  # 'Select' requires us to close the connection before dropping the table
             with self.connection.begin():
                 self.connection.execute(the_table.insert(None), [
@@ -190,9 +186,6 @@ class TestConfig(TestDB):
             self.assertEqual(result, [
                 (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
-
-            the_table_path = os.path.join(self.output_dir, "the_table.csv")
-            os.remove(the_table_path)
 
     def test_parent_link(self):
         metadata = MetaData()

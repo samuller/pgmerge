@@ -22,6 +22,23 @@ def write_file(path):
         os.remove(path)
 
 
+@contextmanager
+def del_file(path):
+    """
+    Context manager for deleting files if created during a test.
+
+    Example:
+        with del_file(file_path):
+            # perform tests commands that might generate file
+        # file is now deleted
+    """
+    try:
+        yield
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
 def slice_lines(multi_line_string: str, start=None, stop=None, step=None):
     return '\n'.join(islice(multi_line_string.splitlines(), start, stop, step))
 
