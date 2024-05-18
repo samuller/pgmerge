@@ -72,6 +72,7 @@ class TestConfig(TestDB):
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 3 files\n")
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
@@ -80,6 +81,7 @@ class TestConfig(TestDB):
                 ["skip:", "5", "insert:", "0", "update:", "0"],
                 # TODO: 1 table (3 files)
             ], "3 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             check_header(self, animals_path, ['type', 'name'])
 
@@ -121,6 +123,7 @@ class TestConfig(TestDB):
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 2 tables to 2 files\n")
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
@@ -130,6 +133,7 @@ class TestConfig(TestDB):
                 ["the_table:"],
                 ["skip:", "0", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             check_header(self, the_table_path, ['id', 'code',
                                                 'name', 'join_the_table_ref_other_table_fkey_code'])
@@ -170,6 +174,8 @@ class TestConfig(TestDB):
             self.assertEqual(result_lines[0].strip(),
                              "Self-referencing tables found that could prevent import: the_table")
             self.assertEqual(result_lines[3].strip(), "Exported 1 tables to 1 files")
+            self.assertEqual(result.exit_code, 0)
+
             with self.connection.begin():
                 # Clear table to see if import worked
                 self.connection.execute(the_table.delete())
@@ -242,11 +248,13 @@ class TestConfig(TestDB):
 
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             result_lines = result.output.splitlines()
             self.assertEqual(result_lines[-1], "4 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             # Delete exported files
             for export_file in ['area.csv', 'party.csv', 'organisation.csv', 'party_area.csv']:

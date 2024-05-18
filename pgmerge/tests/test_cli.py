@@ -46,6 +46,7 @@ class TestCLI(TestDB):
         """
         result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
         self.assertEqual(result.output, "Exported 0 tables to 0 files\n")
+        self.assertEqual(result.exit_code, 0)
 
     def test_dir_invalid(self):
         """
@@ -68,6 +69,7 @@ class TestCLI(TestDB):
         with create_table(self.engine, table):
             result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.exit_code, 0)
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
             check_header(self, file_path, ['code', 'name'])
@@ -93,6 +95,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
                                                          self.output_dir, table_name])
@@ -125,6 +128,7 @@ class TestCLI(TestDB):
 
             result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.exit_code, 0)
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
             stmt = table.insert(None).values([
@@ -141,6 +145,7 @@ class TestCLI(TestDB):
                 ["country:"],
                 ["skip:", "1", "insert:", "1", "update:", "1"],
             ], "1 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             stmt = select(table).order_by('code')
             with self.connection.begin():
@@ -186,6 +191,7 @@ class TestCLI(TestDB):
                                                          '--include-dependent-tables', self.output_dir,
                                                          dep_table_name])
             self.assertEqual(result.output.splitlines()[-1], "Exported 2 tables to 2 files")
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
                                                          '--include-dependent-tables', self.output_dir, dep_table_name])
@@ -198,6 +204,7 @@ class TestCLI(TestDB):
                 ["places_to_go:"],
                 ["skip:", "1", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             for export_file in ['country.csv', 'places_to_go.csv']:
                 export_path = os.path.join(self.output_dir, export_file)
@@ -243,6 +250,7 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--list-tables'])
             self.assertEqual(result.output.splitlines(), ['other_table', 'the_table'])
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--table-details'])
@@ -252,12 +260,14 @@ class TestCLI(TestDB):
             self.assertEqual(result_output[4], "table: the_table")
             self.assertEqual(result_output[5].strip().split()[0], "columns:")
             self.assertEqual(result_output[6].strip().split()[0], "fks:")
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--insert-order'])
             self.assertEqual(result.output.splitlines(), [
                 "Found 2 tables in schema 'public'", "",
                 'Insertion order:', str(['other_table', 'the_table'])])
+            self.assertEqual(result.exit_code, 0)
 
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--warnings', '--cycles', '--partition'])
