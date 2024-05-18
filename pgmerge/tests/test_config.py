@@ -47,9 +47,10 @@ class TestConfig(TestDB):
                 'alternate_key': ['type', 'name'],
                 'columns': ['type', 'name'],
                 'subsets': [
-                { 'name': 'fish', 'where': "type = 'FISH'" },
-                { 'name': 'mammals', 'where': "type = 'MAMMAL'" },
-            ]}
+                    {'name': 'fish', 'where': "type = 'FISH'"},
+                    {'name': 'mammals', 'where': "type = 'MAMMAL'"},
+                ]
+            }
         }
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         with write_file(config_file_path) as config_file, \
@@ -73,7 +74,7 @@ class TestConfig(TestDB):
             compare_table_output(self, result.output, [
                 ["animals:"],
                 ["skip:", "5", "insert:", "0", "update:", "0"],
-            # TODO: 1 table (3 files)
+                # TODO: 1 table (3 files)
             ], "3 tables imported successfully")
 
             animals_path = os.path.join(self.output_dir, "animals.csv")
