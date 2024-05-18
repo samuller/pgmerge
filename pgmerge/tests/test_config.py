@@ -32,6 +32,58 @@ class TestConfig(TestDB):
         super().tearDownClass()
         os.rmdir(cls.output_dir)
 
+    def test_config_subsets(self):
+        """
+        Test import and export that uses config file to break table into subsets.
+        """
+        # Use a new metadata for each test since the database schema should be empty
+        metadata = MetaData()
+        the_table = Table('animals', metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('type', String, nullable=False),
+                          Column('name', String))
+        config_data = {
+            'animals': {
+                'alternate_key': ['type', 'name'],
+                'columns': ['type', 'name'],
+                'subsets': [
+                { 'name': 'fish', 'where': "type = 'FISH'" },
+                { 'name': 'mammals', 'where': "type = 'MAMMAL'" },
+            ]}
+        }
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file, \
+                create_table(self.engine, the_table):
+            yaml.dump(config_data, config_file, default_flow_style=False)
+            with self.connection.begin():
+                self.connection.execute(the_table.insert(None), [
+                    {'type': 'FISH', 'name': 'Salmon'},
+                    {'type': 'FISH', 'name': 'Hake'},
+                    {'type': 'MAMMAL', 'name': 'Elephant'},
+                    {'type': 'MAMMAL', 'name': 'Whale'},
+                    {'type': 'REPTILE', 'name': 'Lizard'},
+                ])
+
+            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            self.assertEqual(result.output, "Exported 1 tables to 3 files\n")
+
+            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            compare_table_output(self, result.output, [
+                ["animals:"],
+                ["skip:", "5", "insert:", "0", "update:", "0"],
+            # TODO: 1 table (3 files)
+            ], "3 tables imported successfully")
+
+            animals_path = os.path.join(self.output_dir, "animals.csv")
+            check_header(self, animals_path, ['type', 'name'])
+            fish_path = os.path.join(self.output_dir, "fish.csv")
+            mammal_path = os.path.join(self.output_dir, "mammals.csv")
+            os.remove(animals_path)
+            os.remove(fish_path)
+            os.remove(mammal_path)
+
     def test_config_references(self):
         """
         Test import and export that uses config file to select an alternate key.

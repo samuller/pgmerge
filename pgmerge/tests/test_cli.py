@@ -20,7 +20,7 @@ LOG.level = logging.WARN
 
 class TestCLI(TestDB):
     """
-    Functional tests that test the application by using it's command-line interface (CLI).
+    Functional tests that test the application by using its command-line interface (CLI).
     """
 
     output_dir = '_tmp_test'
