@@ -49,7 +49,7 @@ class TestCLI(TestDB):
         """
         Test the basic command-line and database connection by exporting an empty database.
         """
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
+        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
         self.assertEqual(result.output, "Exported 0 tables to 0 files\n")
         self.assertEqual(result.exit_code, 0)
 
@@ -57,10 +57,10 @@ class TestCLI(TestDB):
         """
         Test providing invalid output directory as a command-line parameter.
         """
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, 'dir'])
+        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'dir'])
         self.assertEqual(result.exit_code, 2)
         # If directory given is actually a file
-        result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, 'NOTICE'])
+        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'NOTICE'])
         self.assertEqual(result.exit_code, 2)
 
     def test_export_table(self):
@@ -72,7 +72,7 @@ class TestCLI(TestDB):
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
-            result = self.runner.invoke(pgmerge.export, ['--dbname', 'testdb', '--uri', self.url, self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             self.assertEqual(result.exit_code, 0)
 
@@ -294,6 +294,14 @@ class TestCLI(TestDB):
         with mock.patch.dict(os.environ, {'PGCLIENTENCODING': 'LATIN1'}):
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
                                                          self.output_dir])
+        self.assertEqual(
+            result.output.splitlines()[0],
+            "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
+        )
+        self.assertEqual(result.exit_code, 0)
+
+        with mock.patch.dict(os.environ, {'PGCLIENTENCODING': 'LATIN1'}):
+            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
         self.assertEqual(
             result.output.splitlines()[0],
             "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"

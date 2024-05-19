@@ -77,7 +77,7 @@ def export_tables_per_config(connection: Any, inspector: Any, schema: str, outpu
     """Export all given tables according to the options specified in the config_per_table dictionary."""
     if connection.encoding != 'UTF8':
         # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
-        print('WARNING: Setting database connection encoding to UTF8 instead of {}'.format(connection.encoding))
+        print("WARNING: Setting database connection encoding to UTF8 instead of '{}'".format(connection.encoding))
         connection.set_client_encoding('UTF8')
 
     if file_format is None:
@@ -227,7 +227,7 @@ def export_table_with_any_columns(cursor: Any, inspector: Any, output_path: str,
 
     Columns could be in the table or any of its dependencies.
     """
-    if file_format is None:
+    if file_format is None:  # pragma: no cover
         file_format = DEFAULT_FILE_FORMAT
 
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, main_table, any_columns, order_columns,
