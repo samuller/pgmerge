@@ -12,6 +12,7 @@ from contextlib import redirect_stdout
 import click
 from click.testing import CliRunner
 # from typer.testing import CliRunner
+from sqlalchemy.dialects.postgresql import JSONB
 from pgmerge.pgmerge import EXIT_CODE_ARGS, EXIT_CODE_INVALID_DATA, version_callback
 from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 
@@ -58,10 +59,10 @@ class TestCLI(TestDB):
         Test providing invalid output directory as a command-line parameter.
         """
         result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'dir'])
-        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
         # If directory given is actually a file
         result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'NOTICE'])
-        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
     def test_export_table(self):
         """
@@ -109,6 +110,39 @@ class TestCLI(TestDB):
                 ["country:"],
                 ["skip:", "3", "insert:", "0", "update:", "0"],
             ], "1 tables imported successfully")
+
+            os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
+
+    def test_export_and_import_with_jsonb_field(self):
+        """
+        Test exporting and importing some data to a column of type JSONB.
+        """
+        table_name = 'country'
+        table = Table(table_name, MetaData(),
+                      Column('code', String(2), primary_key=True),
+                      Column('name', JSONB, nullable=False))
+        with create_table(self.engine, table):
+            stmt = table.insert(None).values([
+                ('CI', 'Côte d’Ivoire'),
+                ('RE', 'Réunion'),
+                ('ST', 'São Tomé and Príncipe')
+            ])
+            with self.connection.begin():
+                self.connection.execute(stmt)
+
+            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir])
+            self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
+            self.assertEqual(result.exit_code, 0)
+
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir, table_name])
+            # Since data hasn't changed, the import should change nothing. All lines should be skipped.
+            compare_table_output(self, result.output, [
+                ["country:"],
+                ["skip:", "3", "insert:", "0", "update:", "0"],
+            ], "1 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -225,7 +259,7 @@ class TestCLI(TestDB):
         """
         # pgmerge.setup_logging(False)
         result = self.runner.invoke(pgmerge.cli_app, [])
-        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
     def test_missing_table(self):
         """
@@ -233,7 +267,7 @@ class TestCLI(TestDB):
         """
         result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
                                                      self.output_dir, 'missing'])
-        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
     def test_inspect_tables(self):
         """
