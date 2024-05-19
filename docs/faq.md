@@ -20,6 +20,7 @@ There are many tools for PostgreSQL that provide import/export functionality. Th
 * Postgres' **COPY** command: built-in SQL command for importing/exporting any table or query data to various different text, CSV or binary formats
 * **pg_bulkload**: external tool that provides similar import functionality as COPY, but with performance improvements, increased configurability and data validation and transformation capabilities
 * **pgloader**: external tool that uses COPY to do bulk imports, but with better error handling
+* **pgfutter** and **pgclimb**: two tools by the same author, one that imports CSV and line delimited JSON into a database using COPY and will create the tables for you, the other exports into various formats that are either standard (JSON, CSV, XML) or can be fully custom through the use of templates
 * **pgmerge**: external tool that uses COPY to import/export full tables or table subsets in CSV format, but on import also does merging using primary key or other unique columns
 
 ## Can pgmerge export the schema for my database/tables?
