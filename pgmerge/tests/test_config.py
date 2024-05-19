@@ -46,6 +46,8 @@ class TestConfig(TestDB):
             'animals': {
                 'alternate_key': ['type', 'name'],
                 'columns': ['type', 'name'],
+                # Make parent export mutually exclusive with subsets if you don't want duplicated rows across CSVs
+                'where': "type not in ('FISH', 'MAMMAL')",
                 'subsets': [
                     {'name': 'fish', 'where': "type = 'FISH'"},
                     {'name': 'mammals', 'where': "type = 'MAMMAL'"},
@@ -75,7 +77,7 @@ class TestConfig(TestDB):
             self.assertEqual(result.exit_code, 0)
             # Check exported files
             check_header(self, animals_path, ['type', 'name'])
-            self.assertEqual(count_lines(animals_path), 1+5)
+            self.assertEqual(count_lines(animals_path), 1+1)
             self.assertEqual(count_lines(fish_path), 1+2)
             self.assertEqual(count_lines(mammals_path), 1+2)
             # Import
@@ -83,7 +85,8 @@ class TestConfig(TestDB):
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             compare_table_output(self, result.output, [
                 ["animals:"],
-                ["skip:", "5", "insert:", "0", "update:", "0"],
+                # TODO: skip count only looks at count of "parent" file?
+                ["skip:", "1", "insert:", "0", "update:", "0"],
                 # TODO: 1 table (3 files)
             ], "3 tables imported successfully")
             self.assertEqual(result.exit_code, 0)
