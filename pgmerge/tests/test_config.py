@@ -11,7 +11,7 @@ from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey, sel
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import del_file, write_file, compare_table_output, check_header
+from .helpers import count_lines, del_file, write_file, compare_table_output, check_header
 
 
 class TestConfig(TestDB):
@@ -55,10 +55,10 @@ class TestConfig(TestDB):
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         animals_path = os.path.join(self.output_dir, "animals.csv")
         fish_path = os.path.join(self.output_dir, "fish.csv")
-        mammal_path = os.path.join(self.output_dir, "mammals.csv")
+        mammals_path = os.path.join(self.output_dir, "mammals.csv")
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, the_table), \
-                del_file(animals_path), del_file(fish_path), del_file(mammal_path):
+                del_file(animals_path), del_file(fish_path), del_file(mammals_path):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
                 self.connection.execute(the_table.insert(None), [
@@ -68,12 +68,17 @@ class TestConfig(TestDB):
                     {'type': 'MAMMAL', 'name': 'Whale'},
                     {'type': 'REPTILE', 'name': 'Lizard'},
                 ])
-
+            # Export
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 3 files\n")
             self.assertEqual(result.exit_code, 0)
-
+            # Check exported files
+            check_header(self, animals_path, ['type', 'name'])
+            self.assertEqual(count_lines(animals_path), 1+5)
+            self.assertEqual(count_lines(fish_path), 1+2)
+            self.assertEqual(count_lines(mammals_path), 1+2)
+            # Import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             compare_table_output(self, result.output, [
@@ -82,8 +87,6 @@ class TestConfig(TestDB):
                 # TODO: 1 table (3 files)
             ], "3 tables imported successfully")
             self.assertEqual(result.exit_code, 0)
-
-            check_header(self, animals_path, ['type', 'name'])
 
     def test_config_references(self):
         """
@@ -119,12 +122,18 @@ class TestConfig(TestDB):
                     {'code': 'IN'},
                 ])
             yaml.dump(config_data, config_file, default_flow_style=False)
-
+            # Export
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 2 tables to 2 files\n")
             self.assertEqual(result.exit_code, 0)
-
+            # Check exported files
+            check_header(self, the_table_path, ['id', 'code',
+                                                'name', 'join_the_table_ref_other_table_fkey_code'])
+            self.assertEqual(count_lines(the_table_path), 1+0)
+            check_header(self, other_table_path, ['id', 'code', 'name'])
+            self.assertEqual(count_lines(other_table_path), 1+2)
+            # Import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             compare_table_output(self, result.output, [
@@ -134,10 +143,6 @@ class TestConfig(TestDB):
                 ["skip:", "0", "insert:", "0", "update:", "0"],
             ], "2 tables imported successfully")
             self.assertEqual(result.exit_code, 0)
-
-            check_header(self, the_table_path, ['id', 'code',
-                                                'name', 'join_the_table_ref_other_table_fkey_code'])
-            check_header(self, other_table_path, ['id', 'code', 'name'])
 
     def test_config_self_reference(self):
         """
@@ -167,7 +172,7 @@ class TestConfig(TestDB):
                     {'code': 'MAIN', 'name': 'Main street', 'parent_id': 2},
                 ])
             yaml.dump(config_data, config_file, default_flow_style=False)
-
+            # Export
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             result_lines = result.output.splitlines()
@@ -182,9 +187,10 @@ class TestConfig(TestDB):
                 # We reset sequence so that id numbers match the initial import
                 self.connection.execute(text("ALTER SEQUENCE the_table_id_seq RESTART WITH 1"))
 
+            # TODO: test idempotency with double import
             # self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
             #                                     '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-
+            # Import
             self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                 '--dbname', self.db_name, '--uri', self.url, self.output_dir])
 
@@ -245,11 +251,11 @@ class TestConfig(TestDB):
                     {'party_id': 1, 'area_id': 2, 'type': 'located_in'},
                     {'party_id': 3, 'area_id': 1, 'type': 'located_in'}
                 ])
-
+            # Export
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.exit_code, 0)
-
+            # Import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             result_lines = result.output.splitlines()

@@ -69,3 +69,12 @@ def check_header(self, file_path, expected_header_list):
     with open(file_path) as ifh:
         header_columns = ifh.readlines()[0].strip().split(',')
         self.assertEqual(header_columns, expected_header_list)
+
+
+def count_lines(file_path):
+    """
+    Count the number of lines in a file.
+    """
+    with open(file_path) as ifh:
+        line_count = len(ifh.readlines())
+        return line_count
