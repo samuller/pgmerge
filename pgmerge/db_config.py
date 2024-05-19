@@ -8,6 +8,7 @@ import copy
 import logging
 import getpass
 import urllib.parse
+from collections import Counter
 from typing import Any, Dict, List, Set, Optional, Callable, cast
 
 import yaml
@@ -147,22 +148,27 @@ def validate_config_columns(table: str, config_columns: List[str], actual_column
             .format(list(missing_pk_columns)), table)
 
 
-def validate_config_subsets(table: str, new_subsets: List[SubsetConfig], table_names: List[str],
+def validate_config_subsets(table: str, new_subsets: List[SubsetConfig], all_db_table_names: List[str],
                             known_subsets: Set[str]) -> None:
     """Check that subsets specified are valid tables and don't have duplicates."""
+    table_subset_names = []
+    if new_subsets is not None:
+        table_subset_names = [subset['name'] for subset in new_subsets]
+
+    self_duplicates = [k for k, v in Counter(table_subset_names).items() if v > 1]
+    if len(self_duplicates) > 0:
+        raise ConfigInvalidException("duplicate subset names: {}".format(self_duplicates), table)
+
     for subset in new_subsets:
         name = subset['name']
-        if name in table_names:
+        if name in all_db_table_names:
             raise ConfigInvalidException(
                 "subset name can't be the same as that of a table in the schema: {}".format(name), table)
 
-    table_subset_names = set()
-    if new_subsets is not None:
-        table_subset_names = {subset['name'] for subset in new_subsets}
-    duplicate_names = known_subsets.intersection(table_subset_names)
+    duplicate_names = known_subsets.intersection(set(table_subset_names))
     if len(duplicate_names) > 0:
         raise ConfigInvalidException(
-            "duplicate subset names: {}".format(sorted(list(duplicate_names))), table)
+            "subset names already in use: {}".format(sorted(list(duplicate_names))), table)
 
 
 def retrieve_password(appname: str, dbname: str, host: str, port: str, username: str, password: Optional[str],
