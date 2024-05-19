@@ -1,44 +1,63 @@
+#
+# This file defines a schema for validating the a "table" config which determines table-specific behaviour.
+# The file format is YAML for readability & comment support, but it is actually following the JSON
+# schema standard: https://json-schema.org/.
+#
+
 # The top-level consists of keys for the name of each table you want to configure.
-type: //map
-values:
-  type: //rec
-  optional:
-    # A subset or specific order of columns. Can only skip columns that are
-    # nullable or have default values. Either primary key or alternate key columns
-    # have to be included.
-    columns: 
-        type: //arr
-        length: { min: 1 }
-        contents: { type: //str }
-    # A list of columns that should be used as an alternate key instead of the
-    # primary key columns.
-    alternate_key:
-        type: //arr
-        length: { min: 1 }
-        contents: { type: //str }
-    # An SQL string that will be added to the WHERE clause to selectively
-    # filter which rows will be exported from the table.
-    where: //str
-    # The subsets option allows you to divide a single table into separate
-    # files.
-    subsets:
-        type: //arr
-        length: { min: 1 }
-        contents:
-            type: //rec
-            required:
-                # A filename for this subset. Cannot be the same as any table name
-                # and no two subsets can have the same name.
-                name: //str
-                where: //str
-            optional:
-                columns: 
-                    type: //arr
-                    length: { min: 1 }
-                    contents: { type: //str }
-                # TODO: Alternate keys have to be per table, but subsets can
-                # set defaults? (replace or add 'default' to 'where'?)
-                #alternate_key_defaults:
-                #    type: //arr
-                #    length: { min: 1 }
-                #    contents: { type: //str }
+type: object
+$schema: https://json-schema.org/draft/2020-12/schema
+title: "Tables config schema"
+description: "JSON schema of config format."
+additionalProperties:
+    type: object
+    additionalProperties: false
+    properties:
+        # A subset or specific order of columns. Can only skip columns that are
+        # nullable or have default values. Either primary key or alternate key columns
+        # have to be included.
+        columns:
+            type: array
+            minItems: 1
+            items:
+                type: string
+        # A list of columns that should be used as an alternate key instead of the
+        # primary key columns.
+        alternate_key:
+            type: array
+            minItems: 1
+            items:
+                type: string
+        # An SQL string that will be added to the WHERE clause to selectively
+        # filter which rows will be exported from the table.
+        where:
+            type: string
+        # The subsets option allows you to divide a single table into separate
+        # files.
+        subsets:
+            type: array
+            minItems: 1
+            items:
+                type: object
+                properties:
+                    # A filename for this subset. Cannot be the same as any table name
+                    # and no two subsets can have the same name.
+                    name:
+                        type: string
+                    where:
+                        type: string
+                    columns:
+                        type: array
+                        minItems: 1
+                        items:
+                            type: string
+                    # TODO: Alternate keys have to be per table, but subsets can
+                    # set defaults? (replace or add 'default' to 'where'?)
+                    #alternate_key_defaults:
+                    #    type: array
+                    #    minItems: 1
+                    #    items:
+                    #        type: string
+                required:
+                    - name
+                    - where

@@ -12,7 +12,7 @@ from collections import Counter
 from typing import Any, Dict, List, Set, Optional, Callable, cast
 
 import yaml
-from rxjson import Rx
+import fastjsonschema
 from appdirs import user_config_dir
 
 from .pg_pass import load_pgpass
@@ -39,12 +39,10 @@ def load_config_for_tables(config_path: str) -> TablesConfig:
     """Load a config defining how tables should be imported and exported."""
     # Load YAML defining schema for validation of default config
     schema_path = SCHEMA_FILE
-    schema = None
     if os.path.isfile(schema_path):
         with open(schema_path, 'r') as config_file:
-            schema_config = yaml.safe_load(config_file)
-            rxf = Rx.Factory({"register_core_types": True})
-            schema = rxf.make_schema(schema_config)
+            # We put JSON schema into YAML
+            json_schema = yaml.safe_load(config_file)
     else:
         _log.warning('Config schema description is missing (re-install recommended): {}', schema_path)
 
@@ -52,12 +50,15 @@ def load_config_for_tables(config_path: str) -> TablesConfig:
     with open(config_path, 'r') as config_file:
         yaml_config = yaml.safe_load(config_file)
 
-    # Validate config if it's not empty
-    if yaml_config is not None and schema is not None and not schema.check(yaml_config):
-        # _log.warning("Config is invalid: '%s'" % (config_path,))
+    try:
+        # Validate config if it's not empty
+        if yaml_config is not None and json_schema is not None:
+            fastjsonschema.validate(json_schema, yaml_config)
+    except fastjsonschema.JsonSchemaException:
+        # _log.warning(f"Config '{config_path}' is invalid: {exc}")
         raise ConfigInvalidException("incorrect format for '{}', should match description in '{}'"
                                      .format(config_path, schema_path))
-        # return None
+
     return cast(TablesConfig, yaml_config)
 
 
