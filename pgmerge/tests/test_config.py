@@ -311,3 +311,159 @@ class TestConfig(TestDB):
                 ["skip:", "0", "insert:", "2", "update:", "0"],
             ], "3 tables imported successfully")
             self.assertEqual(result.exit_code, 0)
+
+    def test_invalid_config_format(self):
+        """
+        Test invalid config checking.
+        """
+        config_data = {
+            'animals': {
+                'invalid_key': ['type', 'name'],
+            }
+        }
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file:
+            yaml.dump(config_data, config_file, default_flow_style=False)
+            # Export
+            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            self.assertEqual(result.output.splitlines()[0], "Configuration is invalid:")
+            self.assertTrue(result.output.splitlines()[1].startswith(" incorrect format for"))
+            self.assertEqual(result.exit_code, pgmerge.EXIT_CODE_EXC)
+
+    def test_invalid_config_no_table(self):
+        """
+        Test config invalid as it references a non-existent table.
+        """
+        config_data = {
+            'animals': {
+                'columns': ['type', 'name'],
+            }
+        }
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file:
+            yaml.dump(config_data, config_file, default_flow_style=False)
+            # Export
+            result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            self.assertEqual(result.output.splitlines(), [
+                "Configuration is invalid:",
+                " table not found in database: ['animals']"
+            ])
+            self.assertEqual(result.exit_code, pgmerge.EXIT_CODE_EXC)
+
+    def test_invalid_config_table_match(self):
+        """
+        Test config invalid as it doesn't match with table schema.
+        """
+        metadata = MetaData()
+        animal_table = Table('animals', metadata,
+                             Column('id', Integer, primary_key=True),
+                             Column('type', String, nullable=False),
+                             Column('name', String))
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file, create_table(self.engine, animal_table):
+            config_and_error = [
+                {
+                    'config_data': {
+                        'animals': {'columns': ['type', 'name']}
+                    },
+                    'error': " 'columns' has to also contain primary/alternate keys, but doesn't contain ['id']"
+                },
+                {
+                    'config_data': {
+                        'animals': {'columns': ['type', 'name__invalid']}
+                    },
+                    'error': " 'columns' not found in table: ['name__invalid']"
+                },
+                {
+                    'config_data': {
+                        'animals': {'columns': ['name']}
+                    },
+                    'error': " 'columns' can't skip columns that aren't nullable or don't have defaults: ['type']"
+                },
+                {
+                    'config_data': {
+                        'animals': {'alternate_key': ['type', 'name__invalid']}
+                    },
+                    'error': " 'alternate_key' columns not found in table: ['name__invalid']"
+                }
+            ]
+            for conferr in config_and_error:
+                config_data = conferr['config_data']
+                error_msg = conferr['error']
+                yaml.dump(config_data, config_file, default_flow_style=False)
+                # Export
+                result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                             '--dbname', self.db_name, '--uri', self.url,
+                                                             self.output_dir])
+                self.assertEqual(result.output.splitlines(), [
+                    "Configuration for table 'animals' is invalid:",
+                    error_msg
+                ])
+                self.assertEqual(result.exit_code, pgmerge.EXIT_CODE_EXC)
+
+    def test_invalid_config_subsets(self):
+        """
+        Test config invalid as it has invalid subsets.
+        """
+        metadata = MetaData()
+        animal_table = Table('animals', metadata,
+                             Column('id', Integer, primary_key=True),
+                             Column('type', String, nullable=False),
+                             Column('name', String))
+        other_table = Table('other_table', metadata, Column('id', Integer, primary_key=True))
+
+        config_file_path = os.path.join(self.output_dir, 'test.yml')
+        with write_file(config_file_path) as config_file, \
+             create_table(self.engine, animal_table), create_table(self.engine, other_table):
+            config_and_error = [
+                {
+                    'config_data': {
+                        'animals': {'subsets': [
+                            {'name': 'fish', 'where': "type = 'FISH'"},
+                            {'name': 'fish', 'where': "type = 'FISH'"}
+                        ]}
+                    },
+                    'output': [
+                        "Configuration for table 'animals' is invalid:",
+                        " duplicate subset names: ['fish']"
+                    ]
+                },
+                {
+                    'config_data': {
+                        'animals': {'subsets': [
+                            {'name': 'fish', 'where': "type = 'FISH'"}
+                        ]},
+                        'other_table': {'subsets': [
+                            {'name': 'fish', 'where': "type = 'FISH'"},
+                        ]}
+                    },
+                    'output': [
+                        "Configuration for table 'other_table' is invalid:",
+                        " subset names already in use: ['fish']"
+                    ]
+                },
+                {
+                    'config_data': {
+                        'animals': {'subsets': [
+                            {'name': 'fish', 'where': "type = 'FISH'"},
+                            {'name': 'other_table', 'where': "type = 'FISH'"},
+                        ]}
+                    },
+                    'output': [
+                        "Configuration for table 'animals' is invalid:",
+                        " subset name can't be the same as that of a table in the schema: other_table"
+                    ]
+                }
+            ]
+            for conferr in config_and_error:
+                config_data = conferr['config_data']
+                output_msg = conferr['output']
+                yaml.dump(config_data, config_file, default_flow_style=False)
+                # Export
+                result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
+                                                             '--dbname', self.db_name, '--uri', self.url,
+                                                             self.output_dir])
+                self.assertEqual(result.output.splitlines(), output_msg)
+                self.assertEqual(result.exit_code, pgmerge.EXIT_CODE_EXC)
