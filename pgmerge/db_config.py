@@ -54,10 +54,10 @@ def load_config_for_tables(config_path: str) -> TablesConfig:
         # Validate config if it's not empty
         if yaml_config is not None and json_schema is not None:
             fastjsonschema.validate(json_schema, yaml_config)
-    except fastjsonschema.JsonSchemaException:
-        # _log.warning(f"Config '{config_path}' is invalid: {exc}")
-        raise ConfigInvalidException("incorrect format for '{}', should match description in '{}'"
-                                     .format(config_path, schema_path))
+    except fastjsonschema.JsonSchemaException as exc:
+        raise ConfigInvalidException(
+            f"incorrect format for '{config_path}', should match description in '{schema_path}'\n"
+            + f" Details: {exc}")
 
     return cast(TablesConfig, yaml_config)
 

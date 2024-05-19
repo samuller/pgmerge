@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Table config schema has been changed to use standard JSON schema.
   - Table config's format remains unchanged and the format of the schema file is still YAML.
   - Dependency `rxjson` has been replaced with `fastjsonschema` (version 2.19.1).
+  - Details about validation failure are now included in reported error messages.
 
 ## [1.10.1] - 2024-05-17
 
