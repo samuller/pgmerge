@@ -1,4 +1,5 @@
 import os
+import csv
 from itertools import islice
 from contextlib import contextmanager
 
@@ -39,6 +40,13 @@ def del_file(path):
             os.remove(path)
 
 
+def write_csv(path, rows):
+    with open(path, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        for row in rows:
+            csvwriter.writerow(row)
+
+
 def slice_lines(multi_line_string: str, start=None, stop=None, step=None):
     return '\n'.join(islice(multi_line_string.splitlines(), start, stop, step))
 
@@ -66,7 +74,7 @@ def check_header(self, file_path, expected_header_list):
     """
     Check that the first line of the CSV header matches expectation.
     """
-    with open(file_path) as ifh:
+    with open(file_path, 'r') as ifh:
         header_columns = ifh.readlines()[0].strip().split(',')
         self.assertEqual(header_columns, expected_header_list)
 
@@ -75,6 +83,6 @@ def count_lines(file_path):
     """
     Count the number of lines in a file.
     """
-    with open(file_path) as ifh:
+    with open(file_path, 'r') as ifh:
         line_count = len(ifh.readlines())
         return line_count
