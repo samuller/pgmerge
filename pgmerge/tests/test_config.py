@@ -11,7 +11,7 @@ from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey, sel
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import count_lines, del_file, write_file, compare_table_output, check_header
+from .helpers import count_lines, del_file, write_csv, write_file, compare_table_output, check_header
 
 
 class TestConfig(TestDB):
@@ -269,3 +269,45 @@ class TestConfig(TestDB):
             for export_file in ['area.csv', 'party.csv', 'organisation.csv', 'party_area.csv']:
                 export_path = os.path.join(self.output_dir, export_file)
                 os.remove(export_path)
+
+    def test_single_table(self):
+        """
+        Test import with --single-table option that generates config file to import multiple files into a single table.
+        """
+        # Use a new metadata for each test since the database schema should be empty
+        metadata = MetaData()
+        creatures_table = Table('creatures', metadata,
+                                Column('id', Integer, primary_key=True),
+                                Column('type', String, nullable=False),
+                                Column('name', String))
+        animals_path = os.path.join(self.output_dir, "creatures.csv")
+        fish_path = os.path.join(self.output_dir, "fish.csv")
+        mammals_path = os.path.join(self.output_dir, "mammals.csv")
+        with write_file(animals_path), write_file(mammals_path), write_file(fish_path), \
+             create_table(self.engine, creatures_table):
+            write_csv(animals_path, [
+                [1, 'type', 'name'],
+                [6, 'REPTILE', 'Lizard'],
+            ])
+            write_csv(fish_path, [
+                [1, 'type', 'name'],
+                [2, 'FISH', 'Salmon'],
+                [3, 'FISH', 'Hake'],
+            ])
+            write_csv(mammals_path, [
+                [1, 'type', 'name'],
+                [4, 'MAMMAL', 'Elephant'],
+                [5, 'MAMMAL', 'Whale'],
+            ])
+            # TODO: test with a config (generated config combines with it)
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, '--single-table',
+                                                         self.output_dir, 'creatures'])
+            compare_table_output(self, result.output, [
+                ["creatures:"],
+                ["skip:", "0", "insert:", "1", "update:", "0"],
+                ["creatures", "[fish]:"],
+                ["skip:", "0", "insert:", "2", "update:", "0"],
+                ["creatures", "[mammals]:"],
+                ["skip:", "0", "insert:", "2", "update:", "0"],
+            ], "3 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
