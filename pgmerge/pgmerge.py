@@ -144,7 +144,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     import_files = list(import_files)
     dest_tables = list(dest_tables)
 
-    # This should be the default (see: http://initd.org/psycopg/docs/connection.html#connection.autocommit)
+    # This should be the default (see: https://www.psycopg.org/docs/connection.html#connection.autocommit)
     # but it helps make it clear that we're follow the PostgreSQL recommendation:
     # https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT
     connection.autocommit = False
@@ -266,7 +266,7 @@ def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
 
 def validate_schema(inspector: Any, schema: str) -> str:
     """Check that the database schema specified exists and is valid."""
-    if schema is None:
+    if schema is None:  # pragma: no cover
         schema = inspector.default_schema_name
     if schema not in inspector.get_schema_names():
         print("Schema not found: '{}'".format(schema))
@@ -383,7 +383,7 @@ def main(
         version: Optional[bool] = typer.Option(None, '--version', callback=version_callback, is_eager=True)
         ) -> None:
     """Use to add arguments related to whole app and not only specific sub-commands."""
-    setup_logging(verbose)
+    setup_logging(verbose)  # pragma: no cover
 
 
 @click.command()
@@ -423,7 +423,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
                                                       config_per_table=config_per_table)
         table_count, file_count = run_in_session(engine, export_tables)
         print("Exported {} tables to {} files".format(table_count, file_count))
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         logging.exception(exc)
         sys.exit(EXIT_CODE_EXC)
     finally:
@@ -488,7 +488,7 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
                                       config_per_table=config_per_table,
                                       suspend_foreign_keys=disable_foreign_keys,
                                       fail_on_warning=not ignore_cycles))
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         logging.exception(exc)
         sys.exit(EXIT_CODE_EXC)
     finally:
@@ -534,7 +534,7 @@ def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, 
         db_inspect.main(_engine, schema,
                         warnings, list_tables, table_details, partition,
                         cycles, insert_order, export_graph, transferable)
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         logging.exception(exc)
         sys.exit(EXIT_CODE_EXC)
     finally:

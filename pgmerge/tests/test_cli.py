@@ -4,15 +4,20 @@ pgmerge - a PostgreSQL data import and merge utility
 Copyright 2018-2021 Simon Muller (samullers@gmail.com)
 """
 import os
+import io
 import logging
+from unittest import mock
+from contextlib import redirect_stdout
 
+import click
 from click.testing import CliRunner
 # from typer.testing import CliRunner
+from pgmerge.pgmerge import EXIT_CODE_ARGS, EXIT_CODE_INVALID_DATA, version_callback
 from sqlalchemy import MetaData, Table, Column, ForeignKey, String, Integer, select
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import compare_table_output, check_header, slice_lines
+from .helpers import compare_table_output, check_header, slice_lines, write_csv, write_file
 
 LOG = logging.getLogger()
 LOG.level = logging.WARN
@@ -272,3 +277,105 @@ class TestCLI(TestDB):
             result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
                                                           '--warnings', '--cycles', '--partition'])
             self.assertEqual(result.exit_code, 0)
+
+    def test_version(self):
+        """
+        Test version print out.
+        """
+        fh = io.StringIO()
+        with self.assertRaises(click.exceptions.Exit), redirect_stdout(fh):
+            version_callback(True)
+        self.assertTrue(fh.getvalue().startswith("pgmerge, version "))
+
+    def test_setting_encoding(self):
+        """
+        Test that we set standard encoding when needed.
+        """
+        with mock.patch.dict(os.environ, {'PGCLIENTENCODING': 'LATIN1'}):
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir])
+        self.assertEqual(
+            result.output.splitlines()[0],
+            "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
+        )
+        self.assertEqual(result.exit_code, 0)
+
+    def test_missing_table_file(self):
+        """
+        Test import when specified table has no matching file.
+        """
+        metadata = MetaData()
+        the_table = Table('the_table', metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('value', String))
+
+        with create_table(self.engine, the_table):
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir,  "the_table"])
+        self.assertEqual(result.output.splitlines(), [
+            "No files found for the following tables:",
+            "\t the_table.csv"
+        ])
+        self.assertEqual(result.exit_code, EXIT_CODE_INVALID_DATA)
+
+    def test_single_table_has_table_args(self):
+        """
+        Test single-table import requires one table argument.
+        """
+        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                     '--single-table', self.output_dir])
+        self.assertEqual(
+            result.output.splitlines()[0],
+            'One table has to be specified when using the --single-table option'
+        )
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
+
+        metadata = MetaData()
+        table_one = Table('table_one', metadata, Column('id', Integer, primary_key=True))
+        table_two = Table('table_two', metadata, Column('id', Integer, primary_key=True),)
+
+        with create_table(self.engine, table_one), \
+             create_table(self.engine, table_two):
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         '--single-table', self.output_dir,
+                                                         "table_one", "table_two"])
+        self.assertEqual(
+            result.output.splitlines()[0],
+            'Only one table can be specified when using the --single-table option'
+        )
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
+
+    def test_unknown_schema(self):
+        """
+        Test checks when invalid schema is specified.
+        """
+        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                     '--schema', 'invalid_schema', self.output_dir])
+        self.assertEqual(result.output.splitlines()[0], "Schema not found: 'invalid_schema'")
+        self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
+
+    def test_invalid_table(self):
+        """
+        Test checks for tables with unsupported schemas.
+        """
+        metadata = MetaData()
+        the_table = Table('the_table', metadata, Column('value', String))
+
+        the_table_csv_path = os.path.join(self.output_dir, "the_table.csv")
+        with create_table(self.engine, the_table), write_file(the_table_csv_path):
+            write_csv(the_table_csv_path, [['value']])
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir, 'the_table'])
+        self.assertEqual(
+            result.output.splitlines()[0:2], [
+                'the_table:',
+                '\tSkipping table with unsupported schema: Table has no primary key or unique columns!'
+            ])
+        self.assertEqual(
+            result.output.splitlines()[9:11], [
+                '1 tables skipped due to errors:',
+                '\tthe_table'
+            ])
+        compare_table_output(self, slice_lines(result.output, 3), [
+            ], "0 tables imported successfully")
+        self.assertEqual(result.exit_code, 0)
