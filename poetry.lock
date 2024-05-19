@@ -199,6 +199,21 @@ files = [
 ]
 
 [[package]]
+name = "fastjsonschema"
+version = "2.19.1"
+description = "Fastest Python implementation of JSON schema"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "fastjsonschema-2.19.1-py3-none-any.whl", hash = "sha256:3672b47bc94178c9f23dbb654bf47440155d4db9df5f7bc47643315f9c405cd0"},
+    {file = "fastjsonschema-2.19.1.tar.gz", hash = "sha256:e3126a94bdc4623d3de4485f8d468a12f02a67921315ddc87836d6e456dc789d"},
+]
+
+[package.extras]
+devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benchmark", "pytest-cache", "validictory"]
+
+[[package]]
 name = "flake8"
 version = "5.0.4"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -738,17 +753,6 @@ files = [
 ]
 
 [[package]]
-name = "rxjson"
-version = "0.3"
-description = "JSON RX Schema validation tool"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "rxjson-0.3.zip", hash = "sha256:2ed3d5dadf9e8aef2ef1f3cdfa3cf9abae99c9eac5a2db0267f17a9dae3a66e1"},
-]
-
-[[package]]
 name = "snowballstemmer"
 version = "2.2.0"
 description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
@@ -952,4 +956,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-content-hash = "af77317c86685644297173f9ac796f479f9e8727ee7cabdf58e2ab6f348e7c78"
+content-hash = "dd8cd7ef46d469bc347234292a22b7cda69c53560e55ae4fdade475be2208a30"

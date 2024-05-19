@@ -34,8 +34,8 @@ networkx = "2.5"
 SQLAlchemy = "^1.4.27"
 appdirs = "~1.4.4"
 PyYAML = "6.0.1"
-rxjson = "0.3"
 typer = "~0.4.0"
+fastjsonschema = "2.19.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
