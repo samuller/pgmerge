@@ -316,10 +316,10 @@ def generate_single_table_config(directory: str, tables: List[str],
                                  config_per_table: Optional[TablesConfig]
                                  ) -> Tuple[List[str], List[str], TablesConfig]:
     """Create a fake config such that all files found in the directory are subsets for the given table."""
-    if config_per_table is None:
-        config_per_table = {}
     assert len(tables) == 1
     table_name = tables[0]
+    if config_per_table is None:
+        config_per_table = {table_name: {}}
 
     all_files = sorted([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])
     import_files = [f for f in all_files if re.match(r".*\.csv", f)]
