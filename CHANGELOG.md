@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `--single-table` option to also work when no config is provided.
+- Detect invalid config that has duplicate subset names within one table's configs.
+
+### Changed
+
+- Table config schema has been changed to use standard JSON schema.
+  - Table config's format remains unchanged and the format of the schema file is still YAML.
+  - Dependency `rxjson` has been replaced with `fastjsonschema` (version 2.19.1).
+
 ## [1.10.1] - 2024-05-17
 
 ### Fixed
