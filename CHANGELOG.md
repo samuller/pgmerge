@@ -11,21 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix `--single-table` option to also work when no config is provided.
-- Detect invalid config that has duplicate subset names within one table's configs.
+* Fix `--single-table` option to also work when no config is provided.
+* Detect invalid config that has duplicate subset names within one table's configs.
 
 ### Changed
 
-- Table config schema has been changed to use standard JSON schema.
-  - Table config's format remains unchanged and the format of the schema file is still YAML.
-  - Dependency `rxjson` has been replaced with `fastjsonschema` (version 2.19.1).
-  - Details about validation failure are now included in reported error messages.
+* Table config schema has been changed to use standard JSON schema.
+  * Table config's format remains unchanged and the format of the schema file is still YAML.
+  * Dependency `rxjson` has been replaced with `fastjsonschema` (version 2.19.1).
+  * Details about validation failure are now included in reported error messages.
 
 ## [1.10.1] - 2024-05-17
 
 ### Fixed
 
-- Fix reported version when running `--version`.
+* Fix reported version when running `--version`.
 
 ## [1.10.0] - 2024-05-16
 
@@ -73,15 +73,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for splitting tables into multiple files by specifying "subsets" in the "tables" config.
-    - With the same config, tables will be correctly split on export and combined on import.
-    - Added validation for "subsets" specified in "tables" config & update output messages to include file count.
-- Add confirmation step that database's `COPY` command exported expected files.
-- CLI commands can now specify database connection parameters with a single combined URI by using `--uri` or `-L`.
+* Support for splitting tables into multiple files by specifying "subsets" in the "tables" config.
+  * With the same config, tables will be correctly split on export and combined on import.
+  * Added validation for "subsets" specified in "tables" config & update output messages to include file count.
+* Add confirmation step that database's `COPY` command exported expected files.
+* CLI commands can now specify database connection parameters with a single combined URI by using `--uri` or `-L`.
 
 ### Fixed
 
-- Fix ignored columns being used for ordering rows on export.
+* Fix ignored columns being used for ordering rows on export.
 
 ### Changed
 
