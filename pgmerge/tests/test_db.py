@@ -1,7 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility
-
-Copyright 2018-2021 Simon Muller (samullers@gmail.com)
+Functions and classes for helping with database-related tests.
 """
 import os
 import unittest

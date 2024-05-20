@@ -1,7 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility.
-
-Copyright 2018-2021 Simon Muller (samullers@gmail.com)
+Tests of the app's more advanced configurable capabilities.
 """
 import os
 

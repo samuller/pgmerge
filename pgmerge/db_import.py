@@ -1,7 +1,5 @@
 """
-pgmerge - a PostgreSQL data import and merge utility.
-
-Copyright 2018-2021 Simon Muller (samullers@gmail.com)
+Module with functions for importing CSVs into database.
 """
 import logging
 from typing import Any, List, Dict, Tuple, Optional, cast

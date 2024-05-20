@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
-pgmerge - a PostgreSQL data import and merge utility.
-
-Copyright 2018-2021 Simon Muller (samullers@gmail.com)
+Module with functions for inspecting database schema structures and generating summary reports.
 """
 import logging
 
