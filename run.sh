@@ -50,6 +50,21 @@ test() {
             --cov-report html --cov-report xml --cov pgmerge --verbose
 }
 
+man_publish="Build and upload Python package."
+publish() {
+    # Make sure no local changes are distributed.
+    git stash
+
+    poetry build
+    echo "Package contents"
+    tar -tf $(ls -1t dist/*.tar.gz | head -n1)
+
+    read -s -p "Password: " PASSWORD
+    poetry publish -u __token__ -p $PASSWORD
+
+    git stash pop
+}
+
 man_check_version="Check consistency of newest version in code and docs."
 check-version() {
     PROJECT_VERSION=$(cat pyproject.toml | grep "^version = " | sed "s/^version =//" | tr -d '" ')
