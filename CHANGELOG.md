@@ -63,13 +63,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Update depdencies: `networkX` from 1.11 to 2.5, `PyYAML` from 5.1.1 to 6.0, `SQLAlchemy` from 1.3.5 to 1.4.27 & `appdirs` from 1.4.3 to 1.4.4.
+* Update dependencies: `networkX` from 1.11 to 2.5, `PyYAML` from 5.1.1 to 6.0, `SQLAlchemy` from 1.3.5 to 1.4.27 & `appdirs` from 1.4.3 to 1.4.4.
 * Convert command-line handling from `click` (6.7 to 7.1.2) to `typer` 0.4.0.
 * Improve performance during and after imports with `ANALYZE` queries.
 * Always import data in same order by sorting import files and tables order in dependency graph.
 * Convert to Poetry build system.
 
 ## [1.8.0] - 2019-07-23
+
+### Added
+
+- Support for splitting tables into multiple files by specifying "subsets" in the "tables" config.
+    - With the same config, tables will be correctly split on export and combined on import.
+    - Added validation for "subsets" specified in "tables" config & update output messages to include file count.
+- Add confirmation step that database's `COPY` command exported expected files.
+- CLI commands can now specify database connection parameters with a single combined URI by using `--uri` or `-L`.
+
+### Fixed
+
+- Fix ignored columns being used for ordering rows on export.
+
+### Changed
+
+* Update dependencies: `PyYAML` from 3.12 to 5.1.1 & `SQLAlchemy` from 1.1.5 to 1.3.5.
 
 ## [1.7.0] - 2018-04-24
 
