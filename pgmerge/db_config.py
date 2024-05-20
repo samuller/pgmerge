@@ -1,6 +1,4 @@
-"""
-Module with functions for loading configs related to database access and our export/import formats.
-"""
+"""Module with functions for loading configs related to database access and our export/import formats."""
 import os
 import copy
 import logging

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Module with functions for inspecting database schema structures and generating summary reports.
-"""
+"""Module with functions for inspecting database schema structures and generating summary reports."""
 import logging
 
 import networkx as nx

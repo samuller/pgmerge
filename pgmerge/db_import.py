@@ -1,6 +1,4 @@
-"""
-Module with functions for importing CSVs into database.
-"""
+"""Module with functions for importing CSVs into database."""
 import logging
 from typing import Any, List, Dict, Tuple, Optional, cast
 

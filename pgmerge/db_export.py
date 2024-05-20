@@ -1,6 +1,4 @@
-"""
-Module with functions for exporting from database.
-"""
+"""Module with functions for exporting from database."""
 import os
 import logging
 from typing import Any, List, Tuple, Optional, cast

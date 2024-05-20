@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Module with functions for generating connectivity graphs from database tables and foreign keys.
-"""
+"""Module with functions for generating connectivity graphs from database tables and foreign keys."""
 import logging
 import networkx as nx
 from typing import Any, List, Dict, Set, Optional, cast

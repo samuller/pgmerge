@@ -1,6 +1,4 @@
-"""
-Module for loading pgpass config format.
-"""
+"""Module for loading pgpass config format."""
 import os
 import errno
 import logging

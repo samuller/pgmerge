@@ -1,6 +1,4 @@
-"""
-Module with miscellaneous utility functions.
-"""
+"""Module with miscellaneous utility functions."""
 import os
 import logging
 from typing import Any, Dict, List, Callable
