@@ -46,8 +46,12 @@ test() {
         exit
     fi
 
+    # We add "test" contexts to see how many tests cover each line of code. This helps to spot overlapping coverage
+    # or a too-high "coverage density" which means that small changes to those parts of the code will require updating
+    # and fixing many different tests.
     DB_TEST_URL=postgresql://postgres:postgres@localhost:5432/ SQLALCHEMY_WARN_20=1 poetry run pytest \
-            --cov-report html --cov-report xml --cov pgmerge --verbose
+            --cov-report html --cov-report xml --cov pgmerge \
+            --cov-branch --cov-context test --cov-fail-under=85 --verbose "${@:2}"
 }
 
 man_publish="Build and upload Python package."
