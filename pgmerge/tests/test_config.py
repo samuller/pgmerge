@@ -231,7 +231,9 @@ class TestConfig(TestDB):
              create_table(self.engine, area), \
              create_table(self.engine, party), \
              create_table(self.engine, org), \
-             create_table(self.engine, party_area):
+             create_table(self.engine, party_area), \
+             del_files([os.path.join(self.output_dir, ef) for ef in
+                        ['area.csv', 'party.csv', 'organisation.csv', 'party_area.csv']]):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
                 self.connection.execute(area.insert(None), [
@@ -262,11 +264,6 @@ class TestConfig(TestDB):
             result_lines = result.output.splitlines()
             self.assertEqual(result_lines[-1], "4 tables imported successfully")
             self.assertEqual(result.exit_code, 0)
-
-            # Delete exported files
-            for export_file in ['area.csv', 'party.csv', 'organisation.csv', 'party_area.csv']:
-                export_path = os.path.join(self.output_dir, export_file)
-                os.remove(export_path)
 
     def test_single_table(self):
         """
