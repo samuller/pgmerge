@@ -156,6 +156,8 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
 
     cursor = connection.cursor()
 
+    # Count destination tables before invalid ones are removed
+    expected_dest_table_count = len(dest_tables)
     tables = sorted(inspector.get_table_names(schema))
     unknown_tables = get_and_warn_about_any_unknown_tables(import_files, dest_tables, tables)
 
@@ -206,7 +208,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     if len(error_tables) > 0:
         print("\n%s tables skipped due to errors:" % (len(error_tables)))
         print("\t" + "\n\t".join(error_tables))
-    print("\n%s tables imported successfully" % (len(dest_tables) - len(error_tables),))
+    print("\n%s tables imported successfully" % (expected_dest_table_count - len(error_tables),))
 
     # Transaction is committed
     connection.commit()

@@ -319,6 +319,25 @@ class TestConfig(TestDB):
                 ], "3 tables imported successfully")
                 self.assertEqual(result.exit_code, 0)
 
+    def test_invalid_tables(self):
+        """
+        Test import when tables are not found in database.
+        """
+        animals_path = os.path.join(self.output_dir, "creatures.csv")
+        fish_path = os.path.join(self.output_dir, "fish.csv")
+        mammals_path = os.path.join(self.output_dir, "mammals.csv")
+        with write_file(animals_path), write_file(mammals_path), write_file(fish_path):
+            # Test failed import into empty database
+            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                         self.output_dir])
+            self.assertEqual(result.output.splitlines()[0], "Skipping files for unknown tables:")
+            self.assertEqual([line.strip() for line in result.output.splitlines()[6:6+7]], [
+                "Total results:", "skip: 0", "insert: 0", "update: 0", "total: 0", "",
+                "3 tables skipped due to errors:",
+            ])
+            self.assertEqual(result.output.splitlines()[-1], "0 tables imported successfully")
+            self.assertEqual(result.exit_code, 0)
+
     def test_invalid_config_format(self):
         """
         Test invalid config checking.
