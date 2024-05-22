@@ -307,8 +307,8 @@ class TestConfig(TestDB):
             # Test working import once tables are created
             with create_table(self.engine, creatures_table):
                 # TODO: test with a config (generated config combines with it)
-                result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, '--single-table',
-                                                            self.output_dir, 'creatures'])
+                result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
+                                                             '--single-table', self.output_dir, 'creatures'])
                 compare_table_output(self, result.output, [
                     ["creatures:"],
                     ["skip:", "0", "insert:", "1", "update:", "0"],
