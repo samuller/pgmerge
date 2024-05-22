@@ -32,6 +32,7 @@ EXIT_CODE_ARGS = 2
 # Use exit code 3 for exceptions since click already returns 1 and 2
 # (1 for aborts and 2 invalid arguments)
 EXIT_CODE_EXC = 3
+# Invalid data in either files or database (e.g. file data and tables don't match up)
 EXIT_CODE_INVALID_DATA = 4
 
 log = logging.getLogger()
@@ -106,20 +107,21 @@ def find_and_warn_about_cycles(table_graph: Any, dest_tables: List[str]) -> bool
     return False
 
 
-# Excluded from code coverage because all the CLI pre-checks prevent this check from ever picking anything up
 def get_and_warn_about_any_unknown_tables(import_files: List[str], dest_tables: List[str], schema_tables: List[str]
-                                          ) -> Set[str]:  # pragma: no cover
+                                          ) -> Tuple[List[str], Set[str]]:
     """Compare tables expected for import with actual in schema and warn about inconsistencies."""
     unknown_tables = set(dest_tables).difference(set(schema_tables))
+    skipped_files = []
     if len(unknown_tables) > 0:
         print("Skipping files for unknown tables:")
         for table in unknown_tables:
             idx = dest_tables.index(table)
             print("\t%s: %s" % (table, import_files[idx]))
+            skipped_files.append(import_files[idx])
             del dest_tables[idx]
             del import_files[idx]
         print()
-    return unknown_tables
+    return skipped_files, unknown_tables
 
 
 def _get_table_name_with_file(file_name: str, table_name: str) -> str:
@@ -157,9 +159,11 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     cursor = connection.cursor()
 
     # Count destination tables before invalid ones are removed
-    expected_dest_table_count = len(dest_tables)
+    expected_dest_tables_count = len(dest_tables)
+    expected_import_files_count = len(import_files)
     tables = sorted(inspector.get_table_names(schema))
-    unknown_tables = get_and_warn_about_any_unknown_tables(import_files, dest_tables, tables)
+    skipped_files, unknown_tables = get_and_warn_about_any_unknown_tables(import_files, dest_tables, tables)
+    assert len(import_files) == len(dest_tables), "Files without matching tables after skips"
 
     table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
     # Sort by dependency requirements
@@ -188,6 +192,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
         except db_import.UnsupportedSchemaException as exc:
             print("\tSkipping table with unsupported schema: {}".format(exc))
             error_tables.append(table)
+            skipped_files.append(file)
             continue
 
         stat_output = "\t skip: {0:<10} insert: {1:<10} update: {2}".format(
@@ -208,7 +213,9 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     if len(error_tables) > 0:
         print("\n%s tables skipped due to errors:" % (len(error_tables)))
         print("\t" + "\n\t".join(error_tables))
-    print("\n%s tables imported successfully" % (expected_dest_table_count - len(error_tables),))
+    success_tables = expected_dest_tables_count - len(error_tables)
+    success_files = expected_import_files_count - len(skipped_files)
+    print(f"\n{success_files} files imported successfully into {success_tables} tables")
 
     # Transaction is committed
     connection.commit()

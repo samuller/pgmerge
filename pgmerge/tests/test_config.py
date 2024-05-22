@@ -86,7 +86,7 @@ class TestConfig(TestDB):
                 # TODO: skip count only looks at count of "parent" file?
                 ["skip:", "1", "insert:", "0", "update:", "0"],
                 # TODO: 1 table (3 files)
-            ], "3 tables imported successfully")
+            ], "3 files imported successfully into 3 tables")
             self.assertEqual(result.exit_code, 0)
 
     def test_config_references(self):
@@ -142,7 +142,7 @@ class TestConfig(TestDB):
                 ["skip:", "2", "insert:", "0", "update:", "0"],
                 ["the_table:"],
                 ["skip:", "0", "insert:", "0", "update:", "0"],
-            ], "2 tables imported successfully")
+            ], "2 files imported successfully into 2 tables")
             self.assertEqual(result.exit_code, 0)
 
     def test_config_self_reference(self):
@@ -262,7 +262,7 @@ class TestConfig(TestDB):
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             result_lines = result.output.splitlines()
-            self.assertEqual(result_lines[-1], "4 tables imported successfully")
+            self.assertEqual(result_lines[-1], "4 files imported successfully into 4 tables")
             self.assertEqual(result.exit_code, 0)
 
     def test_single_table(self):
@@ -313,7 +313,7 @@ class TestConfig(TestDB):
                     ["skip:", "0", "insert:", "2", "update:", "0"],
                     ["creatures", "[mammals]:"],
                     ["skip:", "0", "insert:", "2", "update:", "0"],
-                ], "3 tables imported successfully")
+                ], "3 files imported successfully into 3 tables")
                 self.assertEqual(result.exit_code, 0)
 
     def test_invalid_tables(self):
@@ -332,7 +332,7 @@ class TestConfig(TestDB):
                 "Total results:", "skip: 0", "insert: 0", "update: 0", "total: 0", "",
                 "3 tables skipped due to errors:",
             ])
-            self.assertEqual(result.output.splitlines()[-1], "0 tables imported successfully")
+            self.assertEqual(result.output.splitlines()[-1], "0 files imported successfully into 0 tables")
             self.assertEqual(result.exit_code, 0)
 
     def test_invalid_config_format(self):

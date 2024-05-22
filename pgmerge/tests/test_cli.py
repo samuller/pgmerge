@@ -107,7 +107,7 @@ class TestCLI(TestDB):
             compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "3", "insert:", "0", "update:", "0"],
-            ], "1 tables imported successfully")
+            ], "1 files imported successfully into 1 tables")
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -139,7 +139,7 @@ class TestCLI(TestDB):
             compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "3", "insert:", "0", "update:", "0"],
-            ], "1 tables imported successfully")
+            ], "1 files imported successfully into 1 tables")
             self.assertEqual(result.exit_code, 0)
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
@@ -181,7 +181,7 @@ class TestCLI(TestDB):
             compare_table_output(self, result.output, [
                 ["country:"],
                 ["skip:", "1", "insert:", "1", "update:", "1"],
-            ], "1 tables imported successfully")
+            ], "1 files imported successfully into 1 tables")
             self.assertEqual(result.exit_code, 0)
 
             stmt = select(table).order_by('code')
@@ -240,7 +240,7 @@ class TestCLI(TestDB):
                 ["skip:", "3", "insert:", "0", "update:", "0"],
                 ["places_to_go:"],
                 ["skip:", "1", "insert:", "0", "update:", "0"],
-            ], "2 tables imported successfully")
+            ], "2 files imported successfully into 2 tables")
             self.assertEqual(result.exit_code, 0)
 
             for export_file in ['country.csv', 'places_to_go.csv']:
@@ -417,5 +417,5 @@ class TestCLI(TestDB):
                 '\tthe_table'
             ])
         compare_table_output(self, slice_lines(result.output, 3), [
-            ], "0 tables imported successfully")
+            ], "0 files imported successfully into 0 tables")
         self.assertEqual(result.exit_code, 0)
