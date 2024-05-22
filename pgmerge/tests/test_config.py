@@ -281,8 +281,7 @@ class TestConfig(TestDB):
         animals_path = os.path.join(self.output_dir, "creatures.csv")
         fish_path = os.path.join(self.output_dir, "fish.csv")
         mammals_path = os.path.join(self.output_dir, "mammals.csv")
-        with write_file(animals_path), write_file(mammals_path), write_file(fish_path), \
-             create_table(self.engine, creatures_table):
+        with write_file(animals_path), write_file(mammals_path), write_file(fish_path):
             write_csv(animals_path, [
                 [1, 'type', 'name'],
                 [6, 'REPTILE', 'Lizard'],
@@ -298,17 +297,27 @@ class TestConfig(TestDB):
                 [5, 'MAMMAL', 'Whale'],
             ])
             # TODO: test with a config (generated config combines with it)
+            # First test failed import into empty database
             result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, '--single-table',
                                                          self.output_dir, 'creatures'])
-            compare_table_output(self, result.output, [
-                ["creatures:"],
-                ["skip:", "0", "insert:", "1", "update:", "0"],
-                ["creatures", "[fish]:"],
-                ["skip:", "0", "insert:", "2", "update:", "0"],
-                ["creatures", "[mammals]:"],
-                ["skip:", "0", "insert:", "2", "update:", "0"],
-            ], "3 tables imported successfully")
-            self.assertEqual(result.exit_code, 0)
+            self.assertEqual(result.output.splitlines(), [
+                "Tables not found in database:",
+                "\tcreatures"
+            ])
+            # Test working import once tables are created
+            with create_table(self.engine, creatures_table):
+                # TODO: test with a config (generated config combines with it)
+                result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url, '--single-table',
+                                                            self.output_dir, 'creatures'])
+                compare_table_output(self, result.output, [
+                    ["creatures:"],
+                    ["skip:", "0", "insert:", "1", "update:", "0"],
+                    ["creatures", "[fish]:"],
+                    ["skip:", "0", "insert:", "2", "update:", "0"],
+                    ["creatures", "[mammals]:"],
+                    ["skip:", "0", "insert:", "2", "update:", "0"],
+                ], "3 tables imported successfully")
+                self.assertEqual(result.exit_code, 0)
 
     def test_invalid_config_format(self):
         """
