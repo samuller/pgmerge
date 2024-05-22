@@ -56,3 +56,10 @@ log_cli_level = "INFO"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+omit = ["*tests*"]
+
+[tool.coverage.html]
+# See https://pytest-cov.readthedocs.io/en/latest/contexts.html
+show_contexts = true
