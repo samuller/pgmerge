@@ -9,7 +9,7 @@ from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey, sel
 
 from pgmerge import pgmerge
 from .test_db import TestDB, create_table
-from .helpers import count_lines, del_file, write_csv, write_file, compare_table_output, check_header
+from .helpers import count_lines, del_files, write_csv, write_file, compare_table_output, check_header
 
 
 class TestConfig(TestDB):
@@ -58,7 +58,7 @@ class TestConfig(TestDB):
         mammals_path = os.path.join(self.output_dir, "mammals.csv")
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, the_table), \
-                del_file(animals_path), del_file(fish_path), del_file(mammals_path):
+                del_files([animals_path, fish_path, mammals_path]):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
                 self.connection.execute(the_table.insert(None), [
@@ -114,7 +114,7 @@ class TestConfig(TestDB):
         with write_file(config_file_path) as config_file, \
                 create_table(self.engine, other_table), \
                 create_table(self.engine, the_table), \
-                del_file(the_table_path), del_file(other_table_path):
+                del_files([the_table_path, other_table_path]):
             with self.connection.begin():
                 self.connection.execute(other_table.insert(None), [
                     {'code': 'IS', 'name': 'Iceland'},
@@ -163,7 +163,7 @@ class TestConfig(TestDB):
         config_file_path = os.path.join(self.output_dir, 'test.yml')
         the_table_path = os.path.join(self.output_dir, "the_table.csv")
         with write_file(config_file_path) as config_file, \
-                create_table(self.engine, the_table), del_file(the_table_path), \
+                create_table(self.engine, the_table), del_files([the_table_path]), \
                 self.connection:  # 'Select' requires us to close the connection before dropping the table
             with self.connection.begin():
                 self.connection.execute(the_table.insert(None), [

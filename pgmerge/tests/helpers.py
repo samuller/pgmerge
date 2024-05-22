@@ -1,5 +1,6 @@
 import os
 import csv
+from typing import List
 from itertools import islice
 from contextlib import contextmanager
 
@@ -24,20 +25,21 @@ def write_file(path):
 
 
 @contextmanager
-def del_file(path):
+def del_files(paths: List[str]):
     """
     Context manager for deleting files if created during a test.
 
     Example:
-        with del_file(file_path):
+        with del_files([file_path]):
             # perform tests commands that might generate file
         # file is now deleted
     """
     try:
         yield
     finally:
-        if os.path.exists(path):
-            os.remove(path)
+        for path in paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 
 def write_csv(path, rows):
