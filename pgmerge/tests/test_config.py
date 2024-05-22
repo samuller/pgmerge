@@ -86,7 +86,7 @@ class TestConfig(TestDB):
                 # TODO: skip count only looks at count of "parent" file?
                 ["skip:", "1", "insert:", "0", "update:", "0"],
                 # TODO: 1 table (3 files)
-            ], "3 files imported successfully into 3 tables")
+            ], "3 files imported successfully into 1 tables")
             self.assertEqual(result.exit_code, 0)
 
     def test_config_references(self):
@@ -313,7 +313,7 @@ class TestConfig(TestDB):
                     ["skip:", "0", "insert:", "2", "update:", "0"],
                     ["creatures", "[mammals]:"],
                     ["skip:", "0", "insert:", "2", "update:", "0"],
-                ], "3 files imported successfully into 3 tables")
+                ], "3 files imported successfully into 1 tables")
                 self.assertEqual(result.exit_code, 0)
 
     def test_invalid_tables(self):

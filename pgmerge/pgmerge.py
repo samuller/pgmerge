@@ -159,7 +159,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     cursor = connection.cursor()
 
     # Count destination tables before invalid ones are removed
-    expected_dest_tables_count = len(dest_tables)
+    expected_dest_tables_count = len(set(dest_tables))
     expected_import_files_count = len(import_files)
     tables = sorted(inspector.get_table_names(schema))
     skipped_files, unknown_tables = get_and_warn_about_any_unknown_tables(import_files, dest_tables, tables)
