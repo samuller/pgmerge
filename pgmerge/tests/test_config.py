@@ -4,6 +4,7 @@ Tests of the app's more advanced configurable capabilities.
 import os
 
 import yaml
+from pathlib import Path
 from click.testing import CliRunner
 from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey, select, text
 
@@ -123,7 +124,7 @@ class TestConfig(TestDB):
                     {'code': 'IN'},
                 ])
                 self.connection.execute(the_table.insert(None), [
-                    {'code': 'RK', 'name': 'Reykjavík'},
+                    {'code': 'RK', 'name': 'Reykjavík', 'ref_other_table': 1},
                 ])
             yaml.dump(config_data, config_file, default_flow_style=False)
             # Export
@@ -134,6 +135,8 @@ class TestConfig(TestDB):
             # Check exported files
             check_header(self, the_table_path, ['id', 'code',
                                                 'name', 'join_the_table_ref_other_table_fkey_code'])
+            self.assertEqual(Path(the_table_path).read_text().splitlines()[1].split(','),
+                             ['1', 'RK', 'Reykjavík', 'IS'])
             self.assertEqual(count_lines(the_table_path), 1+1)
             check_header(self, other_table_path, ['id', 'code', 'name'])
             self.assertEqual(count_lines(other_table_path), 1+2)
@@ -147,6 +150,17 @@ class TestConfig(TestDB):
                 ["skip:", "1", "insert:", "0", "update:", "0"],
             ], "2 files imported successfully into 2 tables")
             self.assertEqual(result.exit_code, 0)
+            # Import only the one table without referenced table having valid data
+            with self.connection.begin():
+                self.connection.execute(the_table.delete())
+                self.connection.execute(other_table.delete())
+            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir,
+                                                         'the_table'])
+            compare_table_output(self, result.output, [
+                ["the_table:"],
+                ["skip:", "0", "insert:", "1", "update:", "0"],
+            ], "1 files imported successfully into 1 tables")
 
     def test_config_self_reference(self):
         """
