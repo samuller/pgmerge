@@ -122,6 +122,9 @@ class TestConfig(TestDB):
                 self.connection.execute(other_table.insert(None), [
                     {'code': 'IN'},
                 ])
+                self.connection.execute(the_table.insert(None), [
+                    {'code': 'RK', 'name': 'Reykjavík'},
+                ])
             yaml.dump(config_data, config_file, default_flow_style=False)
             # Export
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
@@ -131,7 +134,7 @@ class TestConfig(TestDB):
             # Check exported files
             check_header(self, the_table_path, ['id', 'code',
                                                 'name', 'join_the_table_ref_other_table_fkey_code'])
-            self.assertEqual(count_lines(the_table_path), 1+0)
+            self.assertEqual(count_lines(the_table_path), 1+1)
             check_header(self, other_table_path, ['id', 'code', 'name'])
             self.assertEqual(count_lines(other_table_path), 1+2)
             # Import
@@ -141,7 +144,7 @@ class TestConfig(TestDB):
                 ["other_table:"],
                 ["skip:", "2", "insert:", "0", "update:", "0"],
                 ["the_table:"],
-                ["skip:", "0", "insert:", "0", "update:", "0"],
+                ["skip:", "1", "insert:", "0", "update:", "0"],
             ], "2 files imported successfully into 2 tables")
             self.assertEqual(result.exit_code, 0)
 
