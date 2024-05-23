@@ -63,11 +63,11 @@ def compare_table_output(self, actual_output, table_result_output, total_output)
     # Check per-table output that consists of table name and result summary
     for idx in range(len(table_result_output) // 2):
         # Should be table name
-        self.assertEqual(actual_output_lines[idx].strip().split(),
-                         table_result_output[idx])
+        self.assertEqual(actual_output_lines[2*idx].strip().split(),
+                         table_result_output[2*idx])
         # Check table result
-        self.assertEqual(actual_output_lines[idx + 1].strip().split(),
-                         table_result_output[idx + 1])
+        self.assertEqual(actual_output_lines[2*idx + 1].strip().split(),
+                         table_result_output[2*idx + 1])
     # Check total count
     self.assertEqual(actual_output_lines[-1], total_output)
 
