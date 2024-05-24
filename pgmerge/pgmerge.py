@@ -15,7 +15,7 @@ from typing import Any, Optional, List, Dict, Set, Tuple, Union, Callable, cast
 import typer
 import click
 import sqlalchemy
-from appdirs import user_log_dir
+from platformdirs import user_log_dir
 
 from .utils import decorate, NoExceptionFormatter, only_file_stem
 from .db_config import load_config_for_tables, \

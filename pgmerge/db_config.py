@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Set, Optional, Callable, cast
 
 import yaml
 import fastjsonschema
-from appdirs import user_config_dir
+from platformdirs import user_config_dir
 
 from .pg_pass import load_pgpass
 
