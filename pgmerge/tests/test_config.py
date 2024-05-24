@@ -228,7 +228,8 @@ class TestConfig(TestDB):
                       Column('type', String(1), nullable=False),
                       Column('name', String))
         org = Table('organisation', metadata,
-                    Column('id', Integer, primary_key=True),  # ForeignKey("party.id")
+                    # TODO: handle id type being ForeignKey("party.id") instead of Integer
+                    Column('id', Integer, primary_key=True),
                     Column('code', String(3), nullable=False),
                     Column('name', String))
         party_area = Table('party_area', metadata,
@@ -275,6 +276,15 @@ class TestConfig(TestDB):
             result = self.runner.invoke(pgmerge.export, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             self.assertEqual(result.exit_code, 0)
+            # Check exported files
+            organisation_path = os.path.join(self.output_dir, "organisation.csv")
+            check_header(self, organisation_path, ['code', 'name'])
+            area_path = os.path.join(self.output_dir, "area.csv")
+            check_header(self, area_path, ['code', 'name'])
+            party_area_path = os.path.join(self.output_dir, "party_area.csv")
+            check_header(self, party_area_path, ['party_id', 'area_id', 'type'])
+            party_path = os.path.join(self.output_dir, "party.csv")
+            check_header(self, party_path, ['id', 'type', 'name'])
             # Import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir])
