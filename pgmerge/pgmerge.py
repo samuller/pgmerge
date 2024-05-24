@@ -384,7 +384,7 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()  # type: ignore
+@app.callback()
 def main(
         verbose: bool = typer.Option(
             False, '--verbose', '-v',
