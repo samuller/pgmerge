@@ -53,7 +53,7 @@ def get_insertion_order(table_graph: Any) -> List[Any]:
     return list(reversed(list(nx.topological_sort(copy_of_graph))))
 
 
-def build_fk_dependency_graph(inspector: Any, schema: str, tables: Optional[List[str]] = None) -> Any:
+def build_fk_dependency_graph(inspector: Any, schema: str, tables: Optional[List[str]] = None) -> nx.DiGraph:
     """Build a dependency graph of based on the foreign keys and tables in the database schema."""
     table_graph = nx.OrderedDiGraph()
     if tables is None:
