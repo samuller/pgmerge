@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated dependency: `SQLAlchemy` from 1.4.43 to 2.0.30.
+
 ## [1.12.0] - 2024-05-24
 
 ### Fixed
