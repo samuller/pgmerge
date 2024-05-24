@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Include file count in reported success output.
+- Enable updated transaction-level API when using database engine to prepare for SQLAlchemy 2.0.
 
 ## [1.11.0] - 2024-05-20
 
