@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated dependency: `SQLAlchemy` from 1.4.43 to 2.0.30.
+- Updated dependencies: `SQLAlchemy` from 1.4.43 to 2.0.30 & `typer` from 0.4.2 to 0.12.3 (and prefer `typer-slim`).
 - Replace deprecated `appdirs` dependency with `platformdirs` 4.0.0.
 
 ## [1.12.0] - 2024-05-24
