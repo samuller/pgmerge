@@ -414,7 +414,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
             no_password = True
         password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(uri, dbname, host, port, username, password)
-        engine = sqlalchemy.create_engine(db_url, future=True)
+        engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
         schema = validate_schema(inspector, schema)
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
@@ -470,7 +470,7 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
             no_password = True
         password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(uri, dbname, host, port, username, password)
-        engine = sqlalchemy.create_engine(db_url, future=True)
+        engine = sqlalchemy.create_engine(db_url)
         inspector = sqlalchemy.inspect(engine)
         schema = validate_schema(inspector, schema)
         table_graph = db_graph.build_fk_dependency_graph(inspector, schema, tables=None)
@@ -539,7 +539,7 @@ def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, 
             no_password = True
         password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(uri, dbname, host, port, username, password, type=engine)
-        _engine = sqlalchemy.create_engine(db_url, future=True)
+        _engine = sqlalchemy.create_engine(db_url)
         db_inspect.main(_engine, schema,
                         warnings, list_tables, table_details, partition,
                         cycles, insert_order, export_graph, transferable)
