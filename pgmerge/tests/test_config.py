@@ -62,7 +62,7 @@ class TestConfig(TestDB):
                 del_files([animals_path, fish_path, mammals_path]):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
-                self.connection.execute(the_table.insert(None), [
+                self.connection.execute(the_table.insert(), [
                     {'type': 'FISH', 'name': 'Salmon'},
                     {'type': 'FISH', 'name': 'Hake'},
                     {'type': 'MAMMAL', 'name': 'Elephant'},
@@ -117,13 +117,13 @@ class TestConfig(TestDB):
                 create_table(self.engine, the_table), \
                 del_files([the_table_path, other_table_path]):
             with self.connection.begin():
-                self.connection.execute(other_table.insert(None), [
+                self.connection.execute(other_table.insert(), [
                     {'code': 'IS', 'name': 'Iceland'},
                 ])
-                self.connection.execute(other_table.insert(None), [
+                self.connection.execute(other_table.insert(), [
                     {'code': 'IN'},
                 ])
-                self.connection.execute(the_table.insert(None), [
+                self.connection.execute(the_table.insert(), [
                     {'code': 'RK', 'name': 'Reykjavík', 'ref_other_table': 1},
                 ])
             yaml.dump(config_data, config_file, default_flow_style=False)
@@ -183,7 +183,7 @@ class TestConfig(TestDB):
                 create_table(self.engine, the_table), del_files([the_table_path]), \
                 self.connection:  # 'Select' requires us to close the connection before dropping the table
             with self.connection.begin():
-                self.connection.execute(the_table.insert(None), [
+                self.connection.execute(the_table.insert(), [
                     {'code': 'LCY', 'name': 'London', 'parent_id': None},
                     {'code': 'NYC', 'name': 'New York City', 'parent_id': None},
                     {'code': 'MAIN', 'name': 'Main street', 'parent_id': 1},
@@ -254,21 +254,21 @@ class TestConfig(TestDB):
                         ['area.csv', 'party.csv', 'organisation.csv', 'party_area.csv']]):
             yaml.dump(config_data, config_file, default_flow_style=False)
             with self.connection.begin():
-                self.connection.execute(area.insert(None), [
+                self.connection.execute(area.insert(), [
                     {'id': 1, 'code': 'BWA', 'name': 'Botswana'},
                     {'id': 2, 'code': 'ZAF', 'name': 'South Africa'},
                     {'id': 3, 'code': 'ZWE', 'name': 'Zimbabwe'}
                 ])
-                self.connection.execute(party.insert(None), [
+                self.connection.execute(party.insert(), [
                     {'id': 1, 'type': 'O', 'name': 'First'},
                     {'id': 2, 'type': 'P', 'name': 'Second'},
                     {'id': 3, 'type': 'O', 'name': 'Third'}
                 ])
-                self.connection.execute(org.insert(None), [
+                self.connection.execute(org.insert(), [
                     {'id': 1, 'code': 'TBC', 'name': 'Table Mountain Co.'},
                     {'id': 3, 'code': 'ODR', 'name': 'Okavango Delta Resort'}
                 ])
-                self.connection.execute(party_area.insert(None), [
+                self.connection.execute(party_area.insert(), [
                     {'party_id': 1, 'area_id': 2, 'type': 'located_in'},
                     {'party_id': 3, 'area_id': 1, 'type': 'located_in'}
                 ])

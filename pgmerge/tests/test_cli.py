@@ -89,7 +89,7 @@ class TestCLI(TestDB):
                       Column('code', String(2), primary_key=True),
                       Column('name', String, nullable=False))
         with create_table(self.engine, table):
-            stmt = table.insert(None).values([
+            stmt = table.insert().values([
                 ('CI', 'Côte d’Ivoire'),
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
@@ -120,7 +120,7 @@ class TestCLI(TestDB):
                       Column('code', String(2), primary_key=True),
                       Column('name', JSONB, nullable=False))
         with create_table(self.engine, table):
-            stmt = table.insert(None).values([
+            stmt = table.insert().values([
                 ('CI', 'Côte d’Ivoire'),
                 ('RE', 'Réunion'),
                 ('ST', 'São Tomé and Príncipe')
@@ -155,7 +155,7 @@ class TestCLI(TestDB):
                       Column('name', String, nullable=False))
         # Create table with data to export
         with create_table(self.engine, table):
-            stmt = table.insert(None).values([
+            stmt = table.insert().values([
                 ('CI', 'Côte d’Ivoire'),
                 ('EG', 'Egypt'),
                 ('RE', 'Réunion'),
@@ -168,7 +168,7 @@ class TestCLI(TestDB):
             self.assertEqual(result.exit_code, 0)
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
-            stmt = table.insert(None).values([
+            stmt = table.insert().values([
                 ('EG', 'Egypt'),
                 ('RE', 'Re-union'),
                 ('ST', 'São Tomé and Príncipe'),
@@ -211,14 +211,14 @@ class TestCLI(TestDB):
                           )
         with create_table(self.engine, table), \
              create_table(self.engine, dep_table):
-            stmt = table.insert(None).values([
+            stmt = table.insert().values([
                 ('BWA', 'Botswana'),
                 ('ZAF', 'South Africa'),
                 ('ZWE', 'Zimbabwe')
             ])
             with self.connection.begin():
                 self.connection.execute(stmt)
-            stmt = dep_table.insert(None).values([
+            stmt = dep_table.insert().values([
                 {'place_code': 'ZAF'},
             ])
             with self.connection.begin():
