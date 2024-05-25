@@ -6,7 +6,7 @@ Clone the repo and perform all these following steps from the root directory.
 
 [Install poetry](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions):
 
-    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.0 python -
+    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.5.1 python -
 
 Install packages:
 
