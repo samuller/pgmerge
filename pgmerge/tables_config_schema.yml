@@ -1,5 +1,5 @@
 #
-# This file defines a schema for validating the a "table" config which determines table-specific behaviour.
+# This file defines a schema for validating the "tables" config which determines table-specific behaviour.
 # The file format is YAML for readability & comment support, but it is actually following the JSON
 # schema standard: https://json-schema.org/.
 #

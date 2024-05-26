@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/samuller/pgmerge/actions/workflows/tests.yml/badge.svg)](https://github.com/samuller/pgmerge/actions)
 [![PyPI Version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/samuller/3c84321138784d39b31a02d7fe93b31d/raw/badge-coverage.json)](https://github.com/samuller/pgmerge/actions)
-[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database. Each of these CSV files can then be *merged* into their table, meaning that the following process will occur (also called an *upsert* operation):
 
@@ -76,7 +76,7 @@ With `Python 3` installed on your system, you can run:
 
     pip install pgmerge
 
-(your `pip --version` has to be 9.0 or greater). To test that installation worked, run:
+To test that installation worked, run:
 
     pgmerge --help
 
