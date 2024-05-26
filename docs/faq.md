@@ -8,7 +8,7 @@ Only if the database's schema has already been set up. pgmerge expects that the 
 
 It depends. If you want the fastest possible way to import lots of data, then *no*. Consider using the built-in `pg_restore` utility or manually using the `COPY` command. These tools are more mature and should be very reliable. A good guide is available in the [PostgreSQL documentation][1].
 
-If you want a simple method that'll be the same when importing your initial data and any future updates, then pgmerge could work well.
+If you want a simple method that'll work the same for importing your initial data and any future updates to the data, then pgmerge could work well.
 
 [1]: https://www.postgresql.org/docs/current/static/populate.html
 
