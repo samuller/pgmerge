@@ -7,7 +7,7 @@
 
 This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database:
 
-* Each of these CSV files can then be *merged* into their table (see section below).
+* Each of these CSV file's data can then be *merged* into their corresponding table (see section below).
 * The database schema is analysed to determine dependencies among tables (due to foreign keys), and CSV files are then imported in the correct order such that the data/tables they depend on have been imported first.
 * `pgmerge` can then also export data in the same format expected for import.
 
