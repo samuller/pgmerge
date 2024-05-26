@@ -5,15 +5,23 @@
 [![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/samuller/3c84321138784d39b31a02d7fe93b31d/raw/badge-coverage.json)](https://github.com/samuller/pgmerge/actions)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
-This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database. Each of these CSV files can then be *merged* into their table, meaning that the following process will occur (also called an *upsert* operation):
+This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database:
+
+* Each of these CSV files can then be *merged* into their table (see section below).
+* The database schema is analysed to determine dependencies among tables (due to foreign keys), and CSV files are then imported in the correct order such that the data/tables they depend on have been imported first.
+* `pgmerge` can then also export data in the same format expected for import.
+
+These features allow you to move data between databases with the same schema to keep them up to date and in sync, although it does not cover handling deleted data.
+
+### Import merging
+
+Merging CSVs into a table means that the following process will occur (also called an *upsert* operation):
 
 * Rows whose primary key don't yet exist in the table will be imported.
 * When the primary key already exists, row values will be updated.
 * Rows that are missing or unchanged will be ignored.
 
-pgmerge can then also export data in the *same format* expected for import.
-
-These features allow you to move data between databases with the same schema to keep them up to date and in sync, although it does not cover handling deleted data.
+## CLI arguments
 
     $ pgmerge --help
     Usage: pgmerge [OPTIONS] COMMAND [ARGS]...
