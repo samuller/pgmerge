@@ -32,9 +32,9 @@ class TestDB(unittest.TestCase):
     """
 
     env_var = "DB_TEST_URL"
-    url = ''
-    db_name = 'testdb'
-    initial_db = 'template1'
+    url = ""
+    db_name = "testdb"
+    initial_db = "template1"
 
     @classmethod
     def setUpClass(cls):

@@ -16,7 +16,7 @@ def write_file(path):
             # read from file
         # file is now deleted
     """
-    file = open(path, 'w')
+    file = open(path, "w")
     try:
         yield file
     finally:
@@ -43,14 +43,14 @@ def del_files(paths: List[str]):
 
 
 def write_csv(path, rows):
-    with open(path, 'w', newline='') as csvfile:
+    with open(path, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
         for row in rows:
             csvwriter.writerow(row)
 
 
 def slice_lines(multi_line_string: str, start=None, stop=None, step=None):
-    return '\n'.join(islice(multi_line_string.splitlines(), start, stop, step))
+    return "\n".join(islice(multi_line_string.splitlines(), start, stop, step))
 
 
 def compare_table_output(self, actual_output, table_result_output, total_output):
@@ -71,8 +71,8 @@ def check_header(self, file_path, expected_header_list):
     """
     Check that the first line of the CSV header matches expectation.
     """
-    with open(file_path, 'r') as ifh:
-        header_columns = ifh.readlines()[0].strip().split(',')
+    with open(file_path, "r") as ifh:
+        header_columns = ifh.readlines()[0].strip().split(",")
         self.assertEqual(header_columns, expected_header_list)
 
 
@@ -80,6 +80,6 @@ def count_lines(file_path):
     """
     Count the number of lines in a file.
     """
-    with open(file_path, 'r') as ifh:
+    with open(file_path, "r") as ifh:
         line_count = len(ifh.readlines())
         return line_count

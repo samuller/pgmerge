@@ -18,10 +18,22 @@ class TestUtils(unittest.TestCase):
         url = generate_url("user@localhost/", "db", "", "", "", "", "")
         self.assertEqual(url, "user@localhost/db")
 
-        url = generate_url(None, dbname="test_db", host="localhost", port="5432",
-                           username="user", password="password")
+        url = generate_url(
+            None,
+            dbname="test_db",
+            host="localhost",
+            port="5432",
+            username="user",
+            password="password",
+        )
         self.assertEqual(url, "postgresql://user:password@localhost:5432/test_db")
 
-        url = generate_url(None, dbname="test_db", host="localhost", port="5432",
-                           username="user", password="pass@word")
+        url = generate_url(
+            None,
+            dbname="test_db",
+            host="localhost",
+            port="5432",
+            username="user",
+            password="pass@word",
+        )
         self.assertEqual(url, "postgresql://user:pass%40word@localhost:5432/test_db")
