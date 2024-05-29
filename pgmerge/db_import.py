@@ -213,6 +213,7 @@ def upsert_table_to_table(cursor: Any, src_table: str, dest_table: str, id_colum
     exec_sql(cursor, sql_update_rows_between_tables(dest_table, src_table, id_columns, columns))
     stats['update'] = cursor.rowcount
 
+    # TODO: compare rows to determine success, e.g. foreign keys might not've been filled-in
     return stats
 
 

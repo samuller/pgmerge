@@ -137,6 +137,7 @@ def sql_join_from_foreign_key(foreign_key: Any, table_or_alias: str, join_alias:
         comparisons.append('({t}.{c} = {rt}.{rc} OR ({t}.{c} IS NULL AND {rt}.{rc} IS NULL))'.format(
             t=table_or_alias, c=col, rt=join_alias, rc=ref_col
         ))
+    # TODO: detect when *left* joins fail - look at counts after transformation
     return "LEFT JOIN {referred_schema}.{referred_table} AS {join_alias} ON {cmps}"\
         .format(join_alias=join_alias, cmps=" AND ".join(comparisons), **foreign_key)
 

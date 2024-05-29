@@ -48,6 +48,7 @@ class TestConfig(TestDB):
                 # Make parent export mutually exclusive with subsets if you don't want duplicated rows across CSVs
                 'where': "type not in ('FISH', 'MAMMAL')",
                 'subsets': [
+                    # TODO: add defaults to remove 'type' in subsets
                     {'name': 'fish', 'where': "type = 'FISH'"},
                     {'name': 'mammals', 'where': "type = 'MAMMAL'"},
                 ]
@@ -154,6 +155,7 @@ class TestConfig(TestDB):
             with self.connection.begin():
                 self.connection.execute(the_table.delete())
                 self.connection.execute(other_table.delete())
+            # TODO: detect missing foreign key data not getting imported
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path,
                                                          '--dbname', self.db_name, '--uri', self.url, self.output_dir,
                                                          'the_table'])
@@ -218,6 +220,9 @@ class TestConfig(TestDB):
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
 
     def test_parent_link(self):
+        """
+        Test import when tables have a common reference to a hierarchical parent.
+        """
         metadata = MetaData()
         area = Table('area', metadata,
                      Column('id', Integer, primary_key=True),

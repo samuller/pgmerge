@@ -121,6 +121,7 @@ def get_and_warn_about_any_unknown_tables(import_files: List[str], dest_tables: 
             del dest_tables[idx]
             del import_files[idx]
         print()
+    # TODO: have common data structure for file/table pairs
     return skipped_files, unknown_tables
 
 
@@ -152,7 +153,6 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     connection.autocommit = False
 
     if connection.encoding != 'UTF8':
-        # raise ExportException('Database connection encoding isn\'t UTF8: {}'.format(connection.encoding))
         print("WARNING: Setting database connection encoding to UTF8 instead of '{}'".format(connection.encoding))
         connection.set_client_encoding('UTF8')
 
@@ -444,7 +444,7 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
 @decorate(DB_CONNECT_OPTIONS)
 @click.option('--ignore-cycles', '-f', is_flag=True,
               help='Don\'t stop import when cycles are detected in schema' +
-              ' (will still fail if there are cycles in data)')
+              ' (will still fail if there are cycles in the data)')
 @click.option('--disable-foreign-keys', '-F', is_flag=True,
               help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
               'requires superuser rights).')
