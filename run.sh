@@ -73,7 +73,7 @@ man_check_version="Check consistency of newest version in code and docs."
 check-version() {
     PROJECT_VERSION=$(cat pyproject.toml | grep "^version = " | sed "s/^version =//" | tr -d '" ')
     CHANGE_VERSION=$(cat CHANGELOG.md | grep "## \[[[:digit:]]" | cut -d'-' -f1 | sed "s/## //" | tr -d "[] " | head -n1)
-    CLI_VERSION=$(cat pgmerge/__init__.py | grep "__version__" | sed "s/__version__ = //" | tr -d "' ")
+    CLI_VERSION=$(cat pgmerge/__init__.py | grep "__version__" | sed "s/__version__ = //" | tr -d '" ')
     # Run "test" from system command instead of local function
     $(which test) "$PROJECT_VERSION" = "$CHANGE_VERSION"
     $(which test) "$PROJECT_VERSION" = "$CLI_VERSION"
