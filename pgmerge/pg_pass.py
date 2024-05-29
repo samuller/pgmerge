@@ -8,11 +8,18 @@ from .utils import is_windows
 _log = logging.getLogger(__name__)
 
 # A string that is hopefully unused in hostnames, ports, databases, usernames or passwords
-COLON_REPLACE_STRING = "<|\t COLON \t|>"  # string can't contain a colon or escaped backslash
+COLON_REPLACE_STRING = (
+    "<|\t COLON \t|>"  # string can't contain a colon or escaped backslash
+)
 
 
-def load_pgpass(hostname: str, port: str, database: str, username: str, pgpass_path: Optional[str] = None
-                ) -> Optional[str]:  # pragma: no cover
+def load_pgpass(
+    hostname: str,
+    port: str,
+    database: str,
+    username: str,
+    pgpass_path: Optional[str] = None,
+) -> Optional[str]:  # pragma: no cover
     """
     Return a password if a matching entry is found in PostgreSQL's pgpass file.
 
@@ -25,7 +32,7 @@ def load_pgpass(hostname: str, port: str, database: str, username: str, pgpass_p
 
     # "Field can be a literal value, or *, which matches anything."
     def field_matches(pg_field: str, our_value: str) -> bool:
-        return pg_field == '*' or our_value is None or pg_field == our_value
+        return pg_field == "*" or our_value is None or pg_field == our_value
 
     def line_matches(fields: List[str]) -> bool:
         if len(fields) != 5:
@@ -37,10 +44,10 @@ def load_pgpass(hostname: str, port: str, database: str, username: str, pgpass_p
         return True
 
     try:
-        with open(pgpass_path, 'r') as pgpass_file:
+        with open(pgpass_path, "r") as pgpass_file:
             lines = pgpass_file.readlines()
             # Filter out comments
-            lines = [line for line in lines if not line.startswith('#')]
+            lines = [line for line in lines if not line.startswith("#")]
             for line in lines:
                 # "If an entry needs to contain : or \, escape this character with \."
                 line = line.replace("\\:", COLON_REPLACE_STRING)
@@ -67,12 +74,12 @@ def get_default_pgpass_path() -> str:
 
     See documentation at: https://www.postgresql.org/docs/10/static/libpq-pgpass.html
     """
-    pgpass_path = os.getenv('PGPASSFILE')
+    pgpass_path = os.getenv("PGPASSFILE")
     if pgpass_path is not None:
         return pgpass_path
 
-    app_data_dir = os.getenv('APPDATA')
+    app_data_dir = os.getenv("APPDATA")
     if is_windows() and app_data_dir is not None:
-        return os.path.join(app_data_dir, 'postgresql', 'pgpass.conf')
+        return os.path.join(app_data_dir, "postgresql", "pgpass.conf")
 
-    return os.path.join(os.path.expanduser("~"), '.pgpass')
+    return os.path.join(os.path.expanduser("~"), ".pgpass")

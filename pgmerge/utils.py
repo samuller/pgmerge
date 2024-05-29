@@ -16,15 +16,17 @@ class NoExceptionFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Remove cached exception traceback message."""
         # Clear cached exception message
-        record.exc_text = ''
+        record.exc_text = ""
         return super(NoExceptionFormatter, self).format(record)
 
     def formatException(self, exc: Any) -> str:
         """Remove exception details."""
-        return ''
+        return ""
 
 
-def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]) -> None:
+def replace_indexes(
+    listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]
+) -> None:
     """Remove given indexes and insert a new set of values into the given list."""
     # Delete values to be replaced (remove highest indices first so that indices don't change)
     for idx in reversed(sorted(idxs_to_replace)):
@@ -38,8 +40,9 @@ def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: Li
         listy.insert(idx_to_add, value)
 
 
-def recursive_update_ignore_none(any_dict: Dict[Any, Any], update_dict: Dict[Any, Any]
-                                 ) -> Dict[Any, Any]:  # pragma: no cover
+def recursive_update_ignore_none(
+    any_dict: Dict[Any, Any], update_dict: Dict[Any, Any]
+) -> Dict[Any, Any]:  # pragma: no cover
     """Similar to dict.update(), but updates recursively nested dictionaries and never updates a key's value to None."""
     for key, value in update_dict.items():
         if value is None:
@@ -58,7 +61,7 @@ def ensure_file_exists(file_path: str) -> None:  # pragma: no cover
     if not os.path.exists(file_dirs):
         os.makedirs(file_dirs)
     # Create file if it doesn't exist, but don't alter it if it does
-    with open(file_path, 'a'):
+    with open(file_path, "a"):
         pass
 
 
@@ -69,10 +72,12 @@ def decorate(decorators: List[Callable[..., Any]]) -> Callable[..., Any]:
 
     The original use case is with click decorators (see: https://github.com/pallets/click/issues/108)
     """
+
     def func_with_shared_decorators(func: Callable[..., Any]) -> Callable[..., Any]:
         for option in reversed(decorators):
             func = option(func)
         return func
+
     return func_with_shared_decorators
 
 
@@ -85,4 +90,4 @@ def only_file_stem(file_path: str) -> str:
 
 def is_windows() -> bool:
     """Check if running on Windows OS."""
-    return os.name == 'nt'
+    return os.name == "nt"
