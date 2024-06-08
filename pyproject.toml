@@ -64,3 +64,7 @@ omit = ["*tests*"]
 [tool.coverage.html]
 # See https://pytest-cov.readthedocs.io/en/latest/contexts.html
 show_contexts = true
+
+[tool.black]
+# Change black's default line length from 88 to 120 characters.
+line-length = 120
