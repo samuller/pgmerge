@@ -207,17 +207,34 @@ class TestConfig(TestDB):
                 # We reset sequence so that id numbers match the initial import
                 self.connection.execute(text("ALTER SEQUENCE the_table_id_seq RESTART WITH 1"))
 
-            # TODO: test idempotency with double import
-            # self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
-            #                                     '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             # Import
-            self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
+            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
                                                 '--dbname', self.db_name, '--uri', self.url, self.output_dir])
-
+            compare_table_output(self, result.output, [
+                ["the_table:"],
+                ["skip:", "0", "insert:", "4", "update:", "0"],
+            ], "1 files imported successfully into 1 tables")
+            self.assertEqual(result.exit_code, 0)
             result = self.run_query(select(the_table).order_by('id'))
+            # TODO: support inserting self-references on first import
             self.assertEqual(result, [
                 (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
+            # Test idempotency with double import
+            result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
+                                                '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            compare_table_output(self, result.output, [
+                ["the_table:"],
+                ["skip:", "2", "insert:", "2", "update:", "0"],
+            ], "1 files imported successfully into 1 tables")
+            self.assertEqual(result.exit_code, 0)
+            # TODO: support self-references without importing twice
+            result = self.run_query(select(the_table).order_by('id'))
+            self.assertEqual(result, [
+                (1, 'LCY', 'London', None), (2, 'NYC', 'New York City', None),
+                (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None),
+                # TODO: prevent inserting duplicates
+                (5, 'MAIN', 'Main street', 1), (6, 'MAIN', 'Main street', 2)])
 
     def test_parent_link(self):
         """
