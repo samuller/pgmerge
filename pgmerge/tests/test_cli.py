@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 
 import click
 from click.testing import CliRunner
+
 # from typer.testing import CliRunner
 from sqlalchemy.dialects.postgresql import JSONB
 from pgmerge.pgmerge import EXIT_CODE_ARGS, EXIT_CODE_INVALID_DATA, version_callback
@@ -27,7 +28,7 @@ class TestCLI(TestDB):
     Functional tests that test the application by using its command-line interface (CLI).
     """
 
-    output_dir = '_tmp_test'
+    output_dir = "_tmp_test"
 
     @classmethod
     def setUpClass(cls):
@@ -48,7 +49,7 @@ class TestCLI(TestDB):
         """
         Test the basic command-line and database connection by exporting an empty database.
         """
-        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
+        result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
         self.assertEqual(result.output, "Exported 0 tables to 0 files\n")
         self.assertEqual(result.exit_code, 0)
 
@@ -56,27 +57,27 @@ class TestCLI(TestDB):
         """
         Test providing invalid output directory as a command-line parameter.
         """
-        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'dir'])
+        result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, "dir"])
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
         # If directory given is actually a file
-        result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, 'NOTICE'])
+        result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, "NOTICE"])
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
     def test_export_table(self):
         """
         Test exporting a single empty table.
         """
-        table_name = 'country'
-        table = Table(table_name, MetaData(),
-                      Column('code', String(2), primary_key=True),
-                      Column('name', String, nullable=False))
+        table_name = "country"
+        table = Table(
+            table_name, MetaData(), Column("code", String(2), primary_key=True), Column("name", String, nullable=False)
+        )
         with create_table(self.engine, table):
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             self.assertEqual(result.exit_code, 0)
 
             file_path = os.path.join(self.output_dir, "{}.csv".format(table_name))
-            check_header(self, file_path, ['code', 'name'])
+            check_header(self, file_path, ["code", "name"])
             # Clean up file that was created (also tests that it existed as FileNotFoundError would be thrown)
             os.remove(file_path)
 
@@ -84,30 +85,32 @@ class TestCLI(TestDB):
         """
         Test exporting some data (containing UTF-8 characters) and immediately importing it.
         """
-        table_name = 'country'
-        table = Table(table_name, MetaData(),
-                      Column('code', String(2), primary_key=True),
-                      Column('name', String, nullable=False))
+        table_name = "country"
+        table = Table(
+            table_name, MetaData(), Column("code", String(2), primary_key=True), Column("name", String, nullable=False)
+        )
         with create_table(self.engine, table):
-            stmt = table.insert().values([
-                ('CI', 'Côte d’Ivoire'),
-                ('RE', 'Réunion'),
-                ('ST', 'São Tomé and Príncipe')
-            ])
+            stmt = table.insert().values([("CI", "Côte d’Ivoire"), ("RE", "Réunion"), ("ST", "São Tomé and Príncipe")])
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir, table_name])
+            result = self.runner.invoke(
+                pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, table_name]
+            )
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            compare_table_output(self, result.output, [
-                ["country:"],
-                ["skip:", "3", "insert:", "0", "update:", "0"],
-            ], "1 files imported successfully into 1 tables")
+            compare_table_output(
+                self,
+                result.output,
+                [
+                    ["country:"],
+                    ["skip:", "3", "insert:", "0", "update:", "0"],
+                ],
+                "1 files imported successfully into 1 tables",
+            )
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
 
@@ -115,31 +118,32 @@ class TestCLI(TestDB):
         """
         Test exporting and importing some data to a column of type JSONB.
         """
-        table_name = 'country'
-        table = Table(table_name, MetaData(),
-                      Column('code', String(2), primary_key=True),
-                      Column('name', JSONB, nullable=False))
+        table_name = "country"
+        table = Table(
+            table_name, MetaData(), Column("code", String(2), primary_key=True), Column("name", JSONB, nullable=False)
+        )
         with create_table(self.engine, table):
-            stmt = table.insert().values([
-                ('CI', 'Côte d’Ivoire'),
-                ('RE', 'Réunion'),
-                ('ST', 'São Tomé and Príncipe')
-            ])
+            stmt = table.insert().values([("CI", "Côte d’Ivoire"), ("RE", "Réunion"), ("ST", "São Tomé and Príncipe")])
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir, table_name])
+            result = self.runner.invoke(
+                pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, table_name]
+            )
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            compare_table_output(self, result.output, [
-                ["country:"],
-                ["skip:", "3", "insert:", "0", "update:", "0"],
-            ], "1 files imported successfully into 1 tables")
+            compare_table_output(
+                self,
+                result.output,
+                [
+                    ["country:"],
+                    ["skip:", "3", "insert:", "0", "update:", "0"],
+                ],
+                "1 files imported successfully into 1 tables",
+            )
             self.assertEqual(result.exit_code, 0)
 
             os.remove(os.path.join(self.output_dir, "{}.csv".format(table_name)))
@@ -149,46 +153,58 @@ class TestCLI(TestDB):
         Test insert and update (merge) by exporting data, clearing table and then importing into a table with
         slightly different data.
         """
-        table_name = 'country'
-        table = Table(table_name, MetaData(),
-                      Column('code', String(2), primary_key=True),
-                      Column('name', String, nullable=False))
+        table_name = "country"
+        table = Table(
+            table_name, MetaData(), Column("code", String(2), primary_key=True), Column("name", String, nullable=False)
+        )
         # Create table with data to export
         with create_table(self.engine, table):
-            stmt = table.insert().values([
-                ('CI', 'Côte d’Ivoire'),
-                ('EG', 'Egypt'),
-                ('RE', 'Réunion'),
-            ])
+            stmt = table.insert().values(
+                [
+                    ("CI", "Côte d’Ivoire"),
+                    ("EG", "Egypt"),
+                    ("RE", "Réunion"),
+                ]
+            )
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
+            result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
             self.assertEqual(result.output, "Exported 1 tables to 1 files\n")
             self.assertEqual(result.exit_code, 0)
         # Import the exported data into a table with different data
         with create_table(self.engine, table):
-            stmt = table.insert().values([
-                ('EG', 'Egypt'),
-                ('RE', 'Re-union'),
-                ('ST', 'São Tomé and Príncipe'),
-            ])
+            stmt = table.insert().values(
+                [
+                    ("EG", "Egypt"),
+                    ("RE", "Re-union"),
+                    ("ST", "São Tomé and Príncipe"),
+                ]
+            )
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir, table_name])
-            compare_table_output(self, result.output, [
-                ["country:"],
-                ["skip:", "1", "insert:", "1", "update:", "1"],
-            ], "1 files imported successfully into 1 tables")
+            result = self.runner.invoke(
+                pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, table_name]
+            )
+            compare_table_output(
+                self,
+                result.output,
+                [
+                    ["country:"],
+                    ["skip:", "1", "insert:", "1", "update:", "1"],
+                ],
+                "1 files imported successfully into 1 tables",
+            )
             self.assertEqual(result.exit_code, 0)
 
-            stmt = select(table).order_by('code')
+            stmt = select(table).order_by("code")
             with self.connection.begin():
                 result = self.connection.execute(stmt)
-            self.assertEqual(result.fetchall(), [
-                ('CI', 'Côte d’Ivoire'), ('EG', 'Egypt'), ('RE', 'Réunion'), ('ST', 'São Tomé and Príncipe')])
+            self.assertEqual(
+                result.fetchall(),
+                [("CI", "Côte d’Ivoire"), ("EG", "Egypt"), ("RE", "Réunion"), ("ST", "São Tomé and Príncipe")],
+            )
             result.close()
             # Select requires us to close the connection before dropping the table
             self.connection.close()
@@ -200,50 +216,73 @@ class TestCLI(TestDB):
         Test exporting and importing data from tables with dependencies among them.
         """
         metadata = MetaData()
-        table_name = 'country'
-        table = Table(table_name, metadata,
-                      Column('code', String(3), primary_key=True),
-                      Column('name', String, nullable=False))
-        dep_table_name = 'places_to_go'
-        dep_table = Table(dep_table_name, metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('place_code', String(3), ForeignKey('country.code'))
-                          )
-        with create_table(self.engine, table), \
-             create_table(self.engine, dep_table):
-            stmt = table.insert().values([
-                ('BWA', 'Botswana'),
-                ('ZAF', 'South Africa'),
-                ('ZWE', 'Zimbabwe')
-            ])
+        table_name = "country"
+        table = Table(
+            table_name, metadata, Column("code", String(3), primary_key=True), Column("name", String, nullable=False)
+        )
+        dep_table_name = "places_to_go"
+        dep_table = Table(
+            dep_table_name,
+            metadata,
+            Column("id", Integer, primary_key=True),
+            Column("place_code", String(3), ForeignKey("country.code")),
+        )
+        with create_table(self.engine, table), create_table(self.engine, dep_table):
+            stmt = table.insert().values([("BWA", "Botswana"), ("ZAF", "South Africa"), ("ZWE", "Zimbabwe")])
             with self.connection.begin():
                 self.connection.execute(stmt)
-            stmt = dep_table.insert().values([
-                {'place_code': 'ZAF'},
-            ])
+            stmt = dep_table.insert().values(
+                [
+                    {"place_code": "ZAF"},
+                ]
+            )
             with self.connection.begin():
                 self.connection.execute(stmt)
 
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url,
-                                                         '--include-dependent-tables', self.output_dir,
-                                                         dep_table_name])
+            result = self.runner.invoke(
+                pgmerge.export,
+                [
+                    "--dbname",
+                    self.db_name,
+                    "--uri",
+                    self.url,
+                    "--include-dependent-tables",
+                    self.output_dir,
+                    dep_table_name,
+                ],
+            )
             self.assertEqual(result.output.splitlines()[-1], "Exported 2 tables to 2 files")
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         '--include-dependent-tables', self.output_dir, dep_table_name])
+            result = self.runner.invoke(
+                pgmerge.upsert,
+                [
+                    "--dbname",
+                    self.db_name,
+                    "--uri",
+                    self.url,
+                    "--include-dependent-tables",
+                    self.output_dir,
+                    dep_table_name,
+                ],
+            )
 
-            self.assertEqual(result.output.splitlines()[4], 'Final tables exported: country places_to_go')
+            self.assertEqual(result.output.splitlines()[4], "Final tables exported: country places_to_go")
             # Since data hasn't changed, the import should change nothing. All lines should be skipped.
-            compare_table_output(self, slice_lines(result.output, 6), [
-                ["country:"],
-                ["skip:", "3", "insert:", "0", "update:", "0"],
-                ["places_to_go:"],
-                ["skip:", "1", "insert:", "0", "update:", "0"],
-            ], "2 files imported successfully into 2 tables")
+            compare_table_output(
+                self,
+                slice_lines(result.output, 6),
+                [
+                    ["country:"],
+                    ["skip:", "3", "insert:", "0", "update:", "0"],
+                    ["places_to_go:"],
+                    ["skip:", "1", "insert:", "0", "update:", "0"],
+                ],
+                "2 files imported successfully into 2 tables",
+            )
             self.assertEqual(result.exit_code, 0)
 
-            for export_file in ['country.csv', 'places_to_go.csv']:
+            for export_file in ["country.csv", "places_to_go.csv"]:
                 export_path = os.path.join(self.output_dir, export_file)
                 os.remove(export_path)
 
@@ -263,8 +302,9 @@ class TestCLI(TestDB):
         """
         Test import to tables not found in schema.
         """
-        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                     self.output_dir, 'missing'])
+        result = self.runner.invoke(
+            pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, "missing"]
+        )
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
     def test_inspect_tables(self):
@@ -272,25 +312,30 @@ class TestCLI(TestDB):
         Test some inspect commands.
         """
         metadata = MetaData()
-        the_table = Table('the_table', metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('code', String(2), nullable=False),
-                          Column('name', String),
-                          Column('ref_other_table', Integer, ForeignKey('other_table.id')))
-        other_table = Table('other_table', metadata,
-                            Column('id', Integer, primary_key=True),
-                            Column('code', String(2), nullable=False),
-                            Column('name', String))
+        the_table = Table(
+            "the_table",
+            metadata,
+            Column("id", Integer, primary_key=True),
+            Column("code", String(2), nullable=False),
+            Column("name", String),
+            Column("ref_other_table", Integer, ForeignKey("other_table.id")),
+        )
+        other_table = Table(
+            "other_table",
+            metadata,
+            Column("id", Integer, primary_key=True),
+            Column("code", String(2), nullable=False),
+            Column("name", String),
+        )
 
-        with create_table(self.engine, other_table), \
-             create_table(self.engine, the_table):
-            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
-                                                          '--list-tables'])
-            self.assertEqual(result.output.splitlines(), ['other_table', 'the_table'])
+        with create_table(self.engine, other_table), create_table(self.engine, the_table):
+            result = self.runner.invoke(pgmerge.inspect, ["--dbname", self.db_name, "--uri", self.url, "--list-tables"])
+            self.assertEqual(result.output.splitlines(), ["other_table", "the_table"])
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
-                                                          '--table-details'])
+            result = self.runner.invoke(
+                pgmerge.inspect, ["--dbname", self.db_name, "--uri", self.url, "--table-details"]
+            )
             result_output = result.output.splitlines()
             self.assertEqual(result_output[1], "table: other_table")
             self.assertEqual(result_output[2].strip().split()[0], "columns:")
@@ -299,15 +344,18 @@ class TestCLI(TestDB):
             self.assertEqual(result_output[6].strip().split()[0], "fks:")
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
-                                                          '--insert-order'])
-            self.assertEqual(result.output.splitlines(), [
-                "Found 2 tables in schema 'public'", "",
-                'Insertion order:', str(['other_table', 'the_table'])])
+            result = self.runner.invoke(
+                pgmerge.inspect, ["--dbname", self.db_name, "--uri", self.url, "--insert-order"]
+            )
+            self.assertEqual(
+                result.output.splitlines(),
+                ["Found 2 tables in schema 'public'", "", "Insertion order:", str(["other_table", "the_table"])],
+            )
             self.assertEqual(result.exit_code, 0)
 
-            result = self.runner.invoke(pgmerge.inspect, ['--dbname', self.db_name, '--uri', self.url,
-                                                          '--warnings', '--cycles', '--partition'])
+            result = self.runner.invoke(
+                pgmerge.inspect, ["--dbname", self.db_name, "--uri", self.url, "--warnings", "--cycles", "--partition"]
+            )
             self.assertEqual(result.exit_code, 0)
 
     def test_version(self):
@@ -323,20 +371,17 @@ class TestCLI(TestDB):
         """
         Test that we set standard encoding when needed.
         """
-        with mock.patch.dict(os.environ, {'PGCLIENTENCODING': 'LATIN1'}):
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir])
+        with mock.patch.dict(os.environ, {"PGCLIENTENCODING": "LATIN1"}):
+            result = self.runner.invoke(pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
         self.assertEqual(
-            result.output.splitlines()[0],
-            "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
+            result.output.splitlines()[0], "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
         )
         self.assertEqual(result.exit_code, 0)
 
-        with mock.patch.dict(os.environ, {'PGCLIENTENCODING': 'LATIN1'}):
-            result = self.runner.invoke(pgmerge.export, ['--dbname', self.db_name, '--uri', self.url, self.output_dir])
+        with mock.patch.dict(os.environ, {"PGCLIENTENCODING": "LATIN1"}):
+            result = self.runner.invoke(pgmerge.export, ["--dbname", self.db_name, "--uri", self.url, self.output_dir])
         self.assertEqual(
-            result.output.splitlines()[0],
-            "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
+            result.output.splitlines()[0], "WARNING: Setting database connection encoding to UTF8 instead of 'LATIN1'"
         )
         self.assertEqual(result.exit_code, 0)
 
@@ -345,43 +390,47 @@ class TestCLI(TestDB):
         Test import when specified table has no matching file.
         """
         metadata = MetaData()
-        the_table = Table('the_table', metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('value', String))
+        the_table = Table("the_table", metadata, Column("id", Integer, primary_key=True), Column("value", String))
 
         with create_table(self.engine, the_table):
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir,  "the_table"])
-        self.assertEqual(result.output.splitlines(), [
-            "No files found for the following tables:",
-            "\t the_table.csv"
-        ])
+            result = self.runner.invoke(
+                pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, "the_table"]
+            )
+        self.assertEqual(result.output.splitlines(), ["No files found for the following tables:", "\t the_table.csv"])
         self.assertEqual(result.exit_code, EXIT_CODE_INVALID_DATA)
 
     def test_single_table_has_table_args(self):
         """
         Test single-table import requires one table argument.
         """
-        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                     '--single-table', self.output_dir])
+        result = self.runner.invoke(
+            pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, "--single-table", self.output_dir]
+        )
         self.assertEqual(
-            result.output.splitlines()[0],
-            'One table has to be specified when using the --single-table option'
+            result.output.splitlines()[0], "One table has to be specified when using the --single-table option"
         )
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
         metadata = MetaData()
-        table_one = Table('table_one', metadata, Column('id', Integer, primary_key=True))
-        table_two = Table('table_two', metadata, Column('id', Integer, primary_key=True),)
+        table_one = Table("table_one", metadata, Column("id", Integer, primary_key=True))
+        table_two = Table("table_two", metadata, Column("id", Integer, primary_key=True))
 
-        with create_table(self.engine, table_one), \
-             create_table(self.engine, table_two):
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         '--single-table', self.output_dir,
-                                                         "table_one", "table_two"])
+        with create_table(self.engine, table_one), create_table(self.engine, table_two):
+            result = self.runner.invoke(
+                pgmerge.upsert,
+                [
+                    "--dbname",
+                    self.db_name,
+                    "--uri",
+                    self.url,
+                    "--single-table",
+                    self.output_dir,
+                    "table_one",
+                    "table_two",
+                ],
+            )
         self.assertEqual(
-            result.output.splitlines()[0],
-            'Only one table can be specified when using the --single-table option'
+            result.output.splitlines()[0], "Only one table can be specified when using the --single-table option"
         )
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
@@ -389,8 +438,9 @@ class TestCLI(TestDB):
         """
         Test checks when invalid schema is specified.
         """
-        result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                     '--schema', 'invalid_schema', self.output_dir])
+        result = self.runner.invoke(
+            pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, "--schema", "invalid_schema", self.output_dir]
+        )
         self.assertEqual(result.output.splitlines()[0], "Schema not found: 'invalid_schema'")
         self.assertEqual(result.exit_code, EXIT_CODE_ARGS)
 
@@ -399,23 +449,18 @@ class TestCLI(TestDB):
         Test checks for tables with unsupported schemas.
         """
         metadata = MetaData()
-        the_table = Table('the_table', metadata, Column('value', String))
+        the_table = Table("the_table", metadata, Column("value", String))
 
         the_table_csv_path = os.path.join(self.output_dir, "the_table.csv")
         with create_table(self.engine, the_table), write_file(the_table_csv_path):
-            write_csv(the_table_csv_path, [['value']])
-            result = self.runner.invoke(pgmerge.upsert, ['--dbname', self.db_name, '--uri', self.url,
-                                                         self.output_dir, 'the_table'])
+            write_csv(the_table_csv_path, [["value"]])
+            result = self.runner.invoke(
+                pgmerge.upsert, ["--dbname", self.db_name, "--uri", self.url, self.output_dir, "the_table"]
+            )
         self.assertEqual(
-            result.output.splitlines()[0:2], [
-                'the_table:',
-                '\tSkipping table with unsupported schema: Table has no primary key or unique columns!'
-            ])
-        self.assertEqual(
-            result.output.splitlines()[9:11], [
-                '1 tables skipped due to errors:',
-                '\tthe_table'
-            ])
-        compare_table_output(self, slice_lines(result.output, 3), [
-            ], "0 files imported successfully into 0 tables")
+            result.output.splitlines()[0:2],
+            ["the_table:", "\tSkipping table with unsupported schema: Table has no primary key or unique columns!"],
+        )
+        self.assertEqual(result.output.splitlines()[9:11], ["1 tables skipped due to errors:", "\tthe_table"])
+        compare_table_output(self, slice_lines(result.output, 3), [], "0 files imported successfully into 0 tables")
         self.assertEqual(result.exit_code, 0)
