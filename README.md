@@ -4,6 +4,7 @@
 [![PyPI Version](https://badge.fury.io/py/pgmerge.svg)](https://badge.fury.io/py/pgmerge)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/samuller/3c84321138784d39b31a02d7fe93b31d/raw/badge-coverage.json)](https://github.com/samuller/pgmerge/actions)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
+[![Formatted with black](https://img.shields.io/badge/code%20style-black-black)](https://black.readthedocs.io/en/stable/)
 
 This utility's main purpose is to manage a set of CSV files that correspond with tables in a PostgreSQL database:
 

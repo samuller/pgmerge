@@ -37,6 +37,8 @@ lint() {
     poetry run mypy --install-types --non-interactive --ignore-missing-imports --strict pgmerge/*.py
     # No strict type requirements for tests
     poetry run mypy --ignore-missing-imports pgmerge/tests
+
+    poetry run black --check .
 }
 
 man_test="Run tests for Python code."
