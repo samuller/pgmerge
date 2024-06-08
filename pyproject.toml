@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pgmerge"
-version = "1.12.0"
+version = "1.13.0"
 description = "PostgreSQL data import/export utility"
 authors = ["Simon Muller <samullers@gmail.com>"]
 readme = "README.md"
