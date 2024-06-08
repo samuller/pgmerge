@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated dependencies: `SQLAlchemy` from 1.4.43 to 2.0.30 & `typer` from 0.4.2 to 0.12.3 (and prefer `typer-slim`).
+- Update all dependencies to latest versions that still have Python 3.7 support:
+  - This includes `SQLAlchemy` from 1.4.43 to 2.0.30 & `typer` from 0.4.2 to 0.12.3 (and prefer `typer-slim`).
+  - As well as all dev dependencies.
 - Replace deprecated `appdirs` dependency with `platformdirs` 4.0.0.
 - Updated build tool `Poetry` from 1.4.2 to 1.5.1.
+- Standardise code formatting.
 
 ## [1.12.0] - 2024-05-24
 
