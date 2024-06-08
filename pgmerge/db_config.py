@@ -15,9 +15,7 @@ from .pg_pass import load_pgpass
 
 _log = logging.getLogger(__name__)
 
-SCHEMA_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "tables_config_schema.yml"
-)
+SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tables_config_schema.yml")
 DB_CONFIG_FILE = "db_config.yml"
 PGPASS_FILE = ".pgpass"
 
@@ -57,8 +55,7 @@ def load_config_for_tables(config_path: str) -> TablesConfig:
             fastjsonschema.validate(json_schema, yaml_config)
     except fastjsonschema.JsonSchemaException as exc:
         raise ConfigInvalidException(
-            f"incorrect format for '{config_path}', should match description in '{schema_path}'\n"
-            + f" Details: {exc}"
+            f"incorrect format for '{config_path}', should match description in '{schema_path}'\n" + f" Details: {exc}"
         )
 
     return cast(TablesConfig, yaml_config)
@@ -81,13 +78,8 @@ def convert_to_config_per_subset(
     }
     subset_to_table = {name: table for table in subsets for name in subsets[table]}
     # Give copy parent configs to all subsets as a base
-    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(
-        FileConfig, copy.deepcopy(x)
-    )
-    config_per_subset = {
-        name: cast_copy(config_per_table[subset_to_table[name]])
-        for name in subset_to_table
-    }
+    cast_copy: Callable[[PerTableConfig], FileConfig] = lambda x: cast(FileConfig, copy.deepcopy(x))
+    config_per_subset = {name: cast_copy(config_per_table[subset_to_table[name]]) for name in subset_to_table}
     for subset_name in subset_to_table:
         # Remove extra key to fully correct typing
         del cast(PerTableConfig, config_per_subset[subset_name])["subsets"]
@@ -100,29 +92,19 @@ def convert_to_config_per_subset(
     return config_per_subset
 
 
-def validate_table_configs_with_schema(
-    inspector: Any, schema: str, config_per_table: TablesConfig
-) -> None:
+def validate_table_configs_with_schema(inspector: Any, schema: str, config_per_table: TablesConfig) -> None:
     """Check that config matches the current schema and tables without any inconsistencies."""
     table_names = inspector.get_table_names(schema)
     unknown_tables = set(config_per_table.keys()) - set(table_names)
     if len(unknown_tables) > 0:
-        raise ConfigInvalidException(
-            "table not found in database: {}".format(list(unknown_tables))
-        )
+        raise ConfigInvalidException("table not found in database: {}".format(list(unknown_tables)))
 
     subset_names: Set[str] = set()
     for table in config_per_table:
         db_columns = inspector.get_columns(table, schema)
         actual_columns = [col["name"] for col in db_columns]
-        skippable_columns = [
-            col["name"]
-            for col in db_columns
-            if col["nullable"] or col["default"] is not None
-        ]
-        actual_pk_columns = inspector.get_pk_constraint(table, schema)[
-            "constrained_columns"
-        ]
+        skippable_columns = [col["name"] for col in db_columns if col["nullable"] or col["default"] is not None]
+        actual_pk_columns = inspector.get_pk_constraint(table, schema)["constrained_columns"]
 
         table_config = config_per_table[table]
 
@@ -131,9 +113,7 @@ def validate_table_configs_with_schema(
             unknown_pk_columns = set(alternate_key) - set(actual_columns)
             if len(unknown_pk_columns) > 0:
                 raise ConfigInvalidException(
-                    "'alternate_key' columns not found in table: {}".format(
-                        list(unknown_pk_columns)
-                    ),
+                    "'alternate_key' columns not found in table: {}".format(list(unknown_pk_columns)),
                     table,
                 )
 
@@ -167,9 +147,7 @@ def validate_config_columns(
     """Check that columns specified in config match those in table."""
     unknown_columns = set(config_columns) - set(actual_columns)
     if len(unknown_columns) > 0:
-        raise ConfigInvalidException(
-            "'columns' not found in table: {}".format(list(unknown_columns)), table
-        )
+        raise ConfigInvalidException("'columns' not found in table: {}".format(list(unknown_columns)), table)
 
     skipped_columns = set(actual_columns) - set(config_columns)
     unallowable_skipped_columns = set(skipped_columns) - set(skippable_columns)
@@ -204,17 +182,13 @@ def validate_config_subsets(
 
     self_duplicates = [k for k, v in Counter(table_subset_names).items() if v > 1]
     if len(self_duplicates) > 0:
-        raise ConfigInvalidException(
-            "duplicate subset names: {}".format(self_duplicates), table
-        )
+        raise ConfigInvalidException("duplicate subset names: {}".format(self_duplicates), table)
 
     for subset in new_subsets:
         name = subset["name"]
         if name in all_db_table_names:
             raise ConfigInvalidException(
-                "subset name can't be the same as that of a table in the schema: {}".format(
-                    name
-                ),
+                "subset name can't be the same as that of a table in the schema: {}".format(name),
                 table,
             )
 
@@ -245,9 +219,7 @@ def retrieve_password(
         return password
     # With Postgresql we look for a pgpass file
     if type == "postgresql":
-        pgpass_path: Optional[str] = os.path.join(
-            user_config_dir(appname, appauthor=False), PGPASS_FILE
-        )
+        pgpass_path: Optional[str] = os.path.join(user_config_dir(appname, appauthor=False), PGPASS_FILE)
         if pgpass_path and not os.path.isfile(pgpass_path):
             pgpass_path = None
         password = load_pgpass(host, port, dbname, username, pgpass_path=pgpass_path)
@@ -289,9 +261,7 @@ class ConfigInvalidException(Exception):
 
     def __init__(self, message: str, table: Optional[str] = None) -> None:
         if table is not None:
-            message = "Configuration for table '{}' is invalid:\n {}".format(
-                table, message
-            )
+            message = "Configuration for table '{}' is invalid:\n {}".format(table, message)
         else:
             message = "Configuration is invalid:\n {}".format(message)
         super().__init__(message)

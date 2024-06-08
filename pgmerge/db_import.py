@@ -4,10 +4,14 @@ from typing import Any, List, Dict, Tuple, Optional, cast
 
 from .utils import replace_indexes
 from .db_config import TablesConfig, FileConfig
-from .db_export import ForeignColumnPath, get_unique_columns, \
-    replace_local_columns_with_alternate_keys, \
-    sql_select_table_with_foreign_columns, \
-    sql_join_alias_for_foreign_key, sql_join_from_foreign_key
+from .db_export import (
+    ForeignColumnPath,
+    get_unique_columns,
+    replace_local_columns_with_alternate_keys,
+    sql_select_table_with_foreign_columns,
+    sql_join_alias_for_foreign_key,
+    sql_join_from_foreign_key,
+)
 
 # 3.8+: Literal['skip', 'insert', 'update', 'total']
 ImportStats = Dict[str, int]
@@ -16,7 +20,7 @@ _log = logging.getLogger(__name__)
 
 
 def _log_sql(sql: str) -> None:
-    _log.debug('SQL: {}'.format(sql))
+    _log.debug("SQL: {}".format(sql))
 
 
 def exec_sql(cursor: Any, sql: str) -> None:
@@ -25,61 +29,83 @@ def exec_sql(cursor: Any, sql: str) -> None:
     cursor.execute(sql)
 
 
-def sql_delete_identical_rows_between_tables(delete_table_name: str, reference_table_name: str,
-                                             all_column_names: List[str]) -> str:
+def sql_delete_identical_rows_between_tables(
+    delete_table_name: str, reference_table_name: str, all_column_names: List[str]
+) -> str:
     """Create SQL to delete rows from a table that are identical to rows in a reference table."""
     # "IS NOT DISTINCT FROM" handles NULLS better (even composite type columns), but is not indexed
     # where_clause = " AND ".join(["%s.%s IS NOT DISTINCT FROM %s.%s" % (table, col, temp_table_name, col)
     #                               for col in all_columns])
     where_clause = " AND ".join(
-        ["({ref}.{col} = {dlt}.{col} OR ({ref}.{col} IS NULL AND {dlt}.{col} IS NULL))".format(
-            ref=reference_table_name, col=col, dlt=delete_table_name) for col in all_column_names])
+        [
+            "({ref}.{col} = {dlt}.{col} OR ({ref}.{col} IS NULL AND {dlt}.{col} IS NULL))".format(
+                ref=reference_table_name, col=col, dlt=delete_table_name
+            )
+            for col in all_column_names
+        ]
+    )
 
     delete_sql = "DELETE FROM {dlt} USING {ref} WHERE {where_clause};".format(
-        dlt=delete_table_name, ref=reference_table_name, where_clause=where_clause)
+        dlt=delete_table_name, ref=reference_table_name, where_clause=where_clause
+    )
     return delete_sql
 
 
-def sql_insert_rows_not_in_table(insert_table_name: str, reference_table_name: str, id_column_names: List[str],
-                                 column_names: List[str]) -> str:
+def sql_insert_rows_not_in_table(
+    insert_table_name: str, reference_table_name: str, id_column_names: List[str], column_names: List[str]
+) -> str:
     """Create SQL to insert rows into a table, but only if those rows don't already exist in a reference table."""
-    insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col)
-                                  for col in id_column_names])
-    reference_table_cols = ",".join(["_tft.{col}".format(col=col)
-                                     for col in id_column_names])
+    insert_table_cols = ",".join(["{tbl}.{col}".format(tbl=insert_table_name, col=col) for col in id_column_names])
+    reference_table_cols = ",".join(["_tft.{col}".format(col=col) for col in id_column_names])
     # Use sub-select with extra column to maintain row order.
     subselect_sql = f"SELECT ROW_NUMBER() OVER () as __row_number, * FROM {reference_table_name}"
-    tft_columns = ','.join([f"_tft.{col}" for col in column_names])
+    tft_columns = ",".join([f"_tft.{col}" for col in column_names])
     # The left join will give nulls for the joined table when no matches are found.
     # We use '(tuple) is null' to see if all columns (values in the tuple) are null.
-    select_sql = "SELECT {tft_cols} FROM ({ref}) as _tft LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) " \
-        "WHERE ({ins_cols}) is NULL ORDER BY _tft.__row_number" \
-        .format(tft_cols=tft_columns, ref=subselect_sql, ins=insert_table_name,
-                ins_cols=insert_table_cols, ref_cols=reference_table_cols)
-    columns_sql = ','.join(column_names)
+    select_sql = (
+        "SELECT {tft_cols} FROM ({ref}) as _tft LEFT JOIN {ins} ON ({ins_cols}) = ({ref_cols}) "
+        "WHERE ({ins_cols}) is NULL ORDER BY _tft.__row_number".format(
+            tft_cols=tft_columns,
+            ref=subselect_sql,
+            ins=insert_table_name,
+            ins_cols=insert_table_cols,
+            ref_cols=reference_table_cols,
+        )
+    )
+    columns_sql = ",".join(column_names)
 
     insert_sql = "INSERT INTO {ins}({cols}) ({select_sql}) RETURNING NULL;".format(
-        ins=insert_table_name, cols=columns_sql, select_sql=select_sql)
+        ins=insert_table_name, cols=columns_sql, select_sql=select_sql
+    )
     return insert_sql
 
 
-def sql_update_rows_between_tables(update_table_name: str, reference_table_name: str, id_column_names: List[str],
-                                   all_column_names: List[str]) -> str:
+def sql_update_rows_between_tables(
+    update_table_name: str, reference_table_name: str, id_column_names: List[str], all_column_names: List[str]
+) -> str:
     """Create SQL to update rows in a table with values from a reference table."""
     # UPDATE table_b SET column1 = a.column1, column2 = a.column2, column3 = a.column3
     # FROM table_a WHERE table_a.id = table_b.id AND table_b.id in (1, 2, 3)
-    set_columns = ",".join(["{} = {}.{}".format(col, reference_table_name, col)
-                            for col in all_column_names])
-    where_clause = " AND ".join(["{}.{} = {}.{}".format(update_table_name, col, reference_table_name, col)
-                                 for col in id_column_names])
+    set_columns = ",".join(["{} = {}.{}".format(col, reference_table_name, col) for col in all_column_names])
+    where_clause = " AND ".join(
+        ["{}.{} = {}.{}".format(update_table_name, col, reference_table_name, col) for col in id_column_names]
+    )
     update_sql = "UPDATE {upd} SET {set_columns} FROM {ref} WHERE {where_clause};".format(
-        upd=update_table_name, set_columns=set_columns, ref=reference_table_name, where_clause=where_clause)
+        upd=update_table_name, set_columns=set_columns, ref=reference_table_name, where_clause=where_clause
+    )
     return update_sql
 
 
-def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_file: str,
-              file_format: Optional[str] = None, file_config: Optional[FileConfig] = None,
-              config_per_table: Optional[TablesConfig] = None) -> ImportStats:
+def pg_upsert(
+    inspector: Any,
+    cursor: Any,
+    schema: str,
+    dest_table: str,
+    input_file: str,
+    file_format: Optional[str] = None,
+    file_config: Optional[FileConfig] = None,
+    config_per_table: Optional[TablesConfig] = None,
+) -> ImportStats:
     """
     Do a full import (actually a merge or upsert) of a single file into a single table.
 
@@ -111,10 +137,10 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     config_per_table = {} if config_per_table is None else config_per_table
     file_config = cast(FileConfig, config_per_table.get(dest_table, {}) if file_config is None else file_config)
     # Load values from config or set defaults
-    columns = file_config.get('columns', None)
-    all_columns = [col['name'] for col in inspector.get_columns(dest_table, schema)]
+    columns = file_config.get("columns", None)
+    all_columns = [col["name"] for col in inspector.get_columns(dest_table, schema)]
     columns = all_columns if columns is None else columns
-    alternate_key = file_config.get('alternate_key', None)
+    alternate_key = file_config.get("alternate_key", None)
     id_columns = get_unique_columns(inspector, dest_table, schema) if alternate_key is None else alternate_key
 
     ########
@@ -125,33 +151,38 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
         raise UnsupportedSchemaException("Table has no primary key or unique columns!")
     unknown_columns = set(columns) - set(all_columns)
     if len(unknown_columns) > 0:
-        raise InputParametersException("Columns provided do not exist in table '{}': {}"
-                                       .format(dest_table, unknown_columns))
+        raise InputParametersException(
+            "Columns provided do not exist in table '{}': {}".format(dest_table, unknown_columns)
+        )
     skipped_id_columns = set(id_columns) - set(columns)
     if len(skipped_id_columns) > 0:
-        raise InputParametersException("Columns provided do not include required id"
-                                       " columns for table '{}': {}".format(dest_table, skipped_id_columns))
+        raise InputParametersException(
+            "Columns provided do not include required id"
+            " columns for table '{}': {}".format(dest_table, skipped_id_columns)
+        )
 
     ########
     # Create and import data into first (input) temporary table
     ########
-    stats: ImportStats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
+    stats: ImportStats = {"skip": 0, "insert": 0, "update": 0, "total": 0}
 
     table_name_tmp_copy = "_tmp_copy_{}".format(dest_table)
-    foreign_columns = replace_local_columns_with_alternate_keys(inspector, config_per_table,
-                                                                schema, dest_table, columns)
+    foreign_columns = replace_local_columns_with_alternate_keys(
+        inspector, config_per_table, schema, dest_table, columns
+    )
     select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table, foreign_columns)
     # Create temporary table with same columns and types as target table
     create_sql = "CREATE TEMP TABLE {tmp_copy} AS {select_sql} LIMIT 0;".format(
-        tmp_copy=table_name_tmp_copy, select_sql=select_sql)
+        tmp_copy=table_name_tmp_copy, select_sql=select_sql
+    )
     exec_sql(cursor, create_sql)
 
     # Import data into temporary table
-    copy_sql = 'COPY {tbl} FROM STDOUT WITH ({format});'.format(tbl=table_name_tmp_copy, format=file_format)
+    copy_sql = "COPY {tbl} FROM STDOUT WITH ({format});".format(tbl=table_name_tmp_copy, format=file_format)
     _log_sql(copy_sql)
-    with open(input_file, 'r', encoding="utf-8") as file:
+    with open(input_file, "r", encoding="utf-8") as file:
         cursor.copy_expert(copy_sql, file)
-    stats['total'] = cursor.rowcount
+    stats["total"] = cursor.rowcount
 
     # Run analyze to improve performance after populating temporary table.
     # See: https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-TEMPORARY
@@ -164,15 +195,15 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     ########
     # select_sql = sql_select_table_with_foreign_columns(inspector, schema, dest_table)
     table_name_tmp_final = "_tmp_final_{}".format(dest_table)
-    select_sql = sql_select_table_with_local_columns(inspector, schema, dest_table,
-                                                     table_name_tmp_copy, foreign_columns,
-                                                     config_per_table)
+    select_sql = sql_select_table_with_local_columns(
+        inspector, schema, dest_table, table_name_tmp_copy, foreign_columns, config_per_table
+    )
     create_sql = "CREATE TEMP TABLE {tmp_final} AS {select_sql};".format(
-        tmp_final=table_name_tmp_final, select_sql=select_sql)
+        tmp_final=table_name_tmp_final, select_sql=select_sql
+    )
     exec_sql(cursor, create_sql)
     # Add index so that comparison for identical rows is much faster
-    index_sql = "CREATE INDEX ON {} ({});".format(table_name_tmp_final,
-                                                  ",".join(id_columns))
+    index_sql = "CREATE INDEX ON {} ({});".format(table_name_tmp_final, ",".join(id_columns))
     exec_sql(cursor, index_sql)
 
     upsert_stats = upsert_table_to_table(cursor, table_name_tmp_final, dest_table, id_columns, columns)
@@ -194,31 +225,33 @@ def pg_upsert(inspector: Any, cursor: Any, schema: str, dest_table: str, input_f
     return stats
 
 
-def upsert_table_to_table(cursor: Any, src_table: str, dest_table: str, id_columns: List[str], columns: List[str]
-                          ) -> ImportStats:
+def upsert_table_to_table(
+    cursor: Any, src_table: str, dest_table: str, id_columns: List[str], columns: List[str]
+) -> ImportStats:
     """Do a full upsert import from a source table to a destination table."""
-    stats: ImportStats = {'skip': 0, 'insert': 0, 'update': 0}
+    stats: ImportStats = {"skip": 0, "insert": 0, "update": 0}
 
     # Delete rows in temp table that are already identical to those in destination table
     exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
-    stats['skip'] = cursor.rowcount
+    stats["skip"] = cursor.rowcount
 
     # Insert rows from temp table that are not in destination table (according to id columns)
     exec_sql(cursor, sql_insert_rows_not_in_table(dest_table, src_table, id_columns, columns))
-    stats['insert'] = cursor.rowcount
+    stats["insert"] = cursor.rowcount
     # Delete rows that were just inserted
     exec_sql(cursor, sql_delete_identical_rows_between_tables(src_table, dest_table, columns))
 
     # Update rows whose id columns match in destination table
     exec_sql(cursor, sql_update_rows_between_tables(dest_table, src_table, id_columns, columns))
-    stats['update'] = cursor.rowcount
+    stats["update"] = cursor.rowcount
 
     # TODO: compare rows to determine success, e.g. foreign keys might not've been filled-in
     return stats
 
 
-def sql_joins_for_each_path(paths: List[Tuple[str, ...]], src_table: str, fks_with_join_columns_by_name: Dict[str, Any]
-                            ) -> List[str]:
+def sql_joins_for_each_path(
+    paths: List[Tuple[str, ...]], src_table: str, fks_with_join_columns_by_name: Dict[str, Any]
+) -> List[str]:
     """Create SQL joins for each step in the list of given path lists."""
     per_join_sql = []
     for path in paths:
@@ -231,15 +264,17 @@ def sql_joins_for_each_path(paths: List[Tuple[str, ...]], src_table: str, fks_wi
 
         final_fk = fks_with_join_columns_by_name[path[-1]]
         # TODO: consider if join using only last reference can work when foreign key path is known
-        per_join_sql.append(sql_join_from_foreign_key(final_fk, cur_table,
-                                                      local_columns_key='join_columns_local',
-                                                      foreign_columns_key='join_columns_foreign'))
+        per_join_sql.append(
+            sql_join_from_foreign_key(
+                final_fk, cur_table, local_columns_key="join_columns_local", foreign_columns_key="join_columns_foreign"
+            )
+        )
     return per_join_sql
 
 
-def replace_foreign_columns_with_local_columns(foreign_columns: List[ForeignColumnPath],
-                                               fks_by_name: Dict[str, Any], src_table: str
-                                               ) -> List[ForeignColumnPath]:
+def replace_foreign_columns_with_local_columns(
+    foreign_columns: List[ForeignColumnPath], fks_by_name: Dict[str, Any], src_table: str
+) -> List[ForeignColumnPath]:
     """
     Replace "foreign columns" from file data with the corresponding columns of the import table.
 
@@ -256,11 +291,13 @@ def replace_foreign_columns_with_local_columns(foreign_columns: List[ForeignColu
         join_alias = sql_join_alias_for_foreign_key(fk)
 
         idxs_to_replace = [idx for idx, fc in enumerate(foreign_columns) if fk_name in fc[1]]
-        fk_sql_names = ["{join_alias}.{ref_col} AS {con_col}".format(
-            join_alias=join_alias,
-            ref_col=fk['referred_columns'][idx],
-            con_col=fk['constrained_columns'][idx]) for idx in range(len(fk['referred_columns']))]
-        new_values = [(name, [fk['name']]) for name in fk_sql_names]
+        fk_sql_names = [
+            "{join_alias}.{ref_col} AS {con_col}".format(
+                join_alias=join_alias, ref_col=fk["referred_columns"][idx], con_col=fk["constrained_columns"][idx]
+            )
+            for idx in range(len(fk["referred_columns"]))
+        ]
+        new_values = [(name, [fk["name"]]) for name in fk_sql_names]
 
         replace_indexes(foreign_columns, idxs_to_replace, new_values)
 
@@ -272,10 +309,15 @@ def replace_foreign_columns_with_local_columns(foreign_columns: List[ForeignColu
     return foreign_columns
 
 
-def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_table: Any, src_table: str,
-                                        foreign_columns: List[ForeignColumnPath],
-                                        local_columns_subset: Any = None,
-                                        config_per_table: Optional[TablesConfig] = None) -> str:
+def sql_select_table_with_local_columns(
+    inspector: Any,
+    schema: str,
+    schema_table: Any,
+    src_table: str,
+    foreign_columns: List[ForeignColumnPath],
+    local_columns_subset: Any = None,
+    config_per_table: Optional[TablesConfig] = None,
+) -> str:
     """
     Create SQL to convert src_table's foreign columns to local columns matching those of the schema_table.
 
@@ -294,7 +336,7 @@ def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_tabl
 
     # Check correctness of paths and build up all foreign keys possibly needed
     all_fks = inspector.get_foreign_keys(schema_table, schema)
-    fks_by_name = {fk['name']: fk for fk in all_fks}
+    fks_by_name = {fk["name"]: fk for fk in all_fks}
 
     grouped_foreign_columns = {tuple(path): path for _, path in foreign_columns}
     paths = list(grouped_foreign_columns.keys())
@@ -310,8 +352,8 @@ def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_tabl
         idxs_by_fk.setdefault(path[-1], []).append(idx)
 
         final_fk = fks_by_name[path[-1]]
-        new_fks = inspector.get_foreign_keys(final_fk['referred_table'], schema)
-        fks_by_name.update({fk['name']: fk for fk in new_fks})
+        new_fks = inspector.get_foreign_keys(final_fk["referred_table"], schema)
+        fks_by_name.update({fk["name"]: fk for fk in new_fks})
 
     # Go through all foreign columns and collect all 'replaced columns'
     for column, fpath in foreign_columns:
@@ -319,9 +361,10 @@ def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_tabl
             continue
         final_fk = fks_by_name[fpath[-1]]
         join_alias = sql_join_alias_for_foreign_key(final_fk)
-        final_fk.setdefault('join_columns_local', []).append(
-            "{join_alias}_{column}".format(join_alias=join_alias, column=column))
-        final_fk.setdefault('join_columns_foreign', []).append(column)
+        final_fk.setdefault("join_columns_local", []).append(
+            "{join_alias}_{column}".format(join_alias=join_alias, column=column)
+        )
+        final_fk.setdefault("join_columns_foreign", []).append(column)
 
     # Create joins for all foreign keys
     per_join_sql = sql_joins_for_each_path(paths, src_table, fks_by_name)
@@ -330,11 +373,12 @@ def sql_select_table_with_local_columns(inspector: Any, schema: str, schema_tabl
     foreign_columns = replace_foreign_columns_with_local_columns(foreign_columns, fks_by_name, src_table)
 
     joins_sql = " " + " ".join(per_join_sql)
-    columns_sql = ','.join([col for col, path in foreign_columns])
+    columns_sql = ",".join([col for col, path in foreign_columns])
 
     # We don't use {schema}.{src_table} since that doesn't allow temporary tables
     return "SELECT {columns_sql} FROM {src_table}{joins_sql}".format(
-        columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql)
+        columns_sql=columns_sql, src_table=src_table, joins_sql=joins_sql
+    )
 
 
 def disable_foreign_key_constraints(cursor: Any) -> None:

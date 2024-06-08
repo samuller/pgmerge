@@ -24,9 +24,7 @@ class NoExceptionFormatter(logging.Formatter):
         return ""
 
 
-def replace_indexes(
-    listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]
-) -> None:
+def replace_indexes(listy: List[Any], idxs_to_replace: List[int], new_values: List[Any]) -> None:
     """Remove given indexes and insert a new set of values into the given list."""
     # Delete values to be replaced (remove highest indices first so that indices don't change)
     for idx in reversed(sorted(idxs_to_replace)):

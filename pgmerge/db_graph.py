@@ -41,8 +41,8 @@ def get_dependents(directed_acyclic_graph: Any, node: Any) -> List[Any]:
 
 def get_fks_for_direct_cycles(table_graph: Any, direct_cycles: List[Any]) -> List[str]:
     """Get the corresponding foreign key names for the given cycles."""
-    fks = [table_graph.get_edge_data(cycle[0], cycle[1])['name'] for cycle in direct_cycles if len(cycle) == 2]
-    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])['name'] for cycle in direct_cycles if len(cycle) == 2])
+    fks = [table_graph.get_edge_data(cycle[0], cycle[1])["name"] for cycle in direct_cycles if len(cycle) == 2]
+    fks.extend([table_graph.get_edge_data(cycle[1], cycle[0])["name"] for cycle in direct_cycles if len(cycle) == 2])
     return fks
 
 
@@ -62,10 +62,10 @@ def build_fk_dependency_graph(inspector: Any, schema: str, tables: Optional[List
         fks = inspector.get_foreign_keys(table, schema)
         table_graph.add_node(table)
         for fky in fks:
-            assert fky['referred_schema'] == schema, 'Remote tables not supported'
-            other_table = fky['referred_table']
+            assert fky["referred_schema"] == schema, "Remote tables not supported"
+            other_table = fky["referred_table"]
             if other_table in tables:
-                table_graph.add_edge(table, other_table, name=fky['name'])
+                table_graph.add_edge(table, other_table, name=fky["name"])
     return table_graph
 
 
@@ -75,10 +75,11 @@ def get_direct_cycle_fks_per_table(table_graph: Any) -> Dict[str, List[str]]:  #
     cycles = [cycle for cycle in cycles if len(cycle) > 1]
 
     from collections import defaultdict
+
     cycle_fks_per_table = defaultdict(list)
     for table_a, table_b in cycles:
-        cycle_fks_per_table[table_a].append(table_graph.get_edge_data(table_a, table_b)['name'])
-        cycle_fks_per_table[table_b].append(table_graph.get_edge_data(table_b, table_a)['name'])
+        cycle_fks_per_table[table_a].append(table_graph.get_edge_data(table_a, table_b)["name"])
+        cycle_fks_per_table[table_b].append(table_graph.get_edge_data(table_b, table_a)["name"])
 
     return cycle_fks_per_table
 
@@ -101,13 +102,13 @@ def get_all_dependent_tables(table_graph: Any, tables: List[str]) -> Set[str]:
         trees.append((table, dependency_tree))
 
     if len(dependent_tables) > len(set(tables)):
-        print('Also including the following dependent tables:\n')
+        print("Also including the following dependent tables:\n")
         for table, dependency_tree in trees:
-            for node in sorted(dependency_tree.keys(), key=lambda x: cast(str, '' if x == table else x)):
-                indent = '\t' if node == table else '\t  '
-                print(indent + '{} -> {}'.format(node, ', '.join(sorted(dependency_tree[node]))))
-        print('')
-        print('Final tables exported: ' + ' '.join(sorted(list(dependent_tables))))
-        print('')
+            for node in sorted(dependency_tree.keys(), key=lambda x: cast(str, "" if x == table else x)):
+                indent = "\t" if node == table else "\t  "
+                print(indent + "{} -> {}".format(node, ", ".join(sorted(dependency_tree[node]))))
+        print("")
+        print("Final tables exported: " + " ".join(sorted(list(dependent_tables))))
+        print("")
 
     return dependent_tables

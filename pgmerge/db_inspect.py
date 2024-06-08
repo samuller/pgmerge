@@ -57,23 +57,22 @@ def print_insertion_order(table_graph: Any) -> None:
     print(db_graph.get_insertion_order(table_graph))
 
 
-def graph_export_to_dot_file(table_graph: Any, name: str = 'dependency_graph') -> None:  # pragma: no cover
+def graph_export_to_dot_file(table_graph: Any, name: str = "dependency_graph") -> None:  # pragma: no cover
     """Print table/foreign-key dependency graph in graphviz's dot file format."""
-    print('digraph %s {' % (name,))
+    print("digraph %s {" % (name,))
     print("node[shape=plaintext];")
     print('rankdir=LR; ranksep=1.0; size="16.5, 11.7";\n')
     for node in table_graph.nodes():
-        print("""{0} [label=<{1}>];""".format(
-            node, print_table(node, [])))
+        print("""{0} [label=<{1}>];""".format(node, print_table(node, [])))
 
     for node in table_graph.nodes():
         for neighbour in table_graph[node]:
-            edge = table_graph[node][neighbour].get('name')
+            edge = table_graph[node][neighbour].get("name")
             print('"%s":name -> "%s":name [label="%s"];' % (node, neighbour, edge))
-    print('\n}')
+    print("\n}")
 
 
-def print_table(name: str, columns: Optional[List[str]] = None, color: str = '#aec7e8') -> str:  # pragma: no cover
+def print_table(name: str, columns: Optional[List[str]] = None, color: str = "#aec7e8") -> str:  # pragma: no cover
     """Print table details in HTML format supported by graphviz's dot file format."""
     if columns is None:
         columns = []
@@ -85,7 +84,9 @@ def print_table(name: str, columns: Optional[List[str]] = None, color: str = '#a
             <td align='left'></td>
             <td align='left'>{details}</td>
         </tr>
-        """.format(column=column, details="")
+        """.format(
+            column=column, details=""
+        )
 
     return """
     <table border="1" cellborder="0" cellpadding="2" cellspacing="0" bgcolor="white" color="#999999">
@@ -94,7 +95,9 @@ def print_table(name: str, columns: Optional[List[str]] = None, color: str = '#a
             <td bgcolor='{color}' align='right'>[table]</td>
         </tr>
     {columns_str}
-    </table>""".format(name=name, color=color, columns_str=columns_str)
+    </table>""".format(
+        name=name, color=color, columns_str=columns_str
+    )
 
 
 def transferability(inspector: Any, schema: str) -> None:  # pragma: no cover
@@ -111,25 +114,25 @@ def transferability(inspector: Any, schema: str) -> None:  # pragma: no cover
     for table in tables:
         columns = inspector.get_columns(table, schema)
         fks = inspector.get_foreign_keys(table, schema)
-        pks = [col for pk in inspector.get_pk_constraint(table, schema) for col in pk['constrained_columns']]
+        pks = [col for pk in inspector.get_pk_constraint(table, schema) for col in pk["constrained_columns"]]
         uniques = inspector.get_unique_constraints(table, schema)
 
         for fk in fks:
-            if not set(fk['constrained_columns']).isdisjoint(set(pks)):
+            if not set(fk["constrained_columns"]).isdisjoint(set(pks)):
                 pk_contains_fk.append(table)
 
         auto_id = False
         default_columns = []
         for col in columns:
-            if col['name'] in pks and col['default'] is not None:
+            if col["name"] in pks and col["default"] is not None:
                 auto_id = True
-            if col['default'] is not None:
-                default_columns.append(col['name'])
+            if col["default"] is not None:
+                default_columns.append(col["name"])
 
         # For any unique constraint, if all columns don't have defaults, then we can use it
         auto_transformable = False
         for unique in uniques:
-            if set(unique['column_names']).isdisjoint(set(default_columns)):
+            if set(unique["column_names"]).isdisjoint(set(default_columns)):
                 auto_transformable = True
 
         if auto_id and not auto_transformable:
@@ -149,9 +152,18 @@ def transferability(inspector: Any, schema: str) -> None:  # pragma: no cover
     #    inspector, schema, natural_key_tables), name='natural_key_tables')
 
 
-def main(engine: Any, schema: Optional[str],
-         warnings: bool, list_tables: bool, table_details: bool, partition: bool,
-         cycles: bool, insert_order: bool, export_graph: bool, transferable: bool) -> None:
+def main(
+    engine: Any,
+    schema: Optional[str],
+    warnings: bool,
+    list_tables: bool,
+    table_details: bool,
+    partition: bool,
+    cycles: bool,
+    insert_order: bool,
+    export_graph: bool,
+    transferable: bool,
+) -> None:
     """Main-method to process various CLI commands to inspect details of database schema."""
     inspector = inspect(engine)
     if schema is None:
@@ -174,7 +186,7 @@ def main(engine: Any, schema: Optional[str],
             fks = inspector.get_foreign_keys(table, schema)
             print("\ntable:", table)
             if len(columns) > 0:
-                print("\tcolumns:", ", ".join([col['name'] for col in columns]))
+                print("\tcolumns:", ", ".join([col["name"] for col in columns]))
             if len(fks) > 0:
                 print("\tfks:", fks)
     elif not export_graph:
