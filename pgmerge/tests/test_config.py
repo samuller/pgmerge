@@ -209,7 +209,7 @@ class TestConfig(TestDB):
 
             # Import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
-                                                '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             compare_table_output(self, result.output, [
                 ["the_table:"],
                 ["skip:", "0", "insert:", "4", "update:", "0"],
@@ -222,7 +222,7 @@ class TestConfig(TestDB):
                 (3, 'MAIN', 'Main street', None), (4, 'MAIN', 'Main street', None)])
             # Test idempotency with double import
             result = self.runner.invoke(pgmerge.upsert, ['--config', config_file_path, '--disable-foreign-keys',
-                                                '--dbname', self.db_name, '--uri', self.url, self.output_dir])
+                                                         '--dbname', self.db_name, '--uri', self.url, self.output_dir])
             compare_table_output(self, result.output, [
                 ["the_table:"],
                 ["skip:", "2", "insert:", "2", "update:", "0"],
