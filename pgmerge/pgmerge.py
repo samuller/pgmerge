@@ -18,11 +18,15 @@ import sqlalchemy
 from platformdirs import user_log_dir
 
 from .utils import decorate, NoExceptionFormatter, only_file_stem
-from .db_config import load_config_for_tables, \
-    validate_table_configs_with_schema, \
-    retrieve_password, generate_url, \
-    convert_to_config_per_subset, \
-    ConfigInvalidException, TablesConfig
+from .db_config import (
+    load_config_for_tables,
+    validate_table_configs_with_schema,
+    retrieve_password,
+    generate_url,
+    convert_to_config_per_subset,
+    ConfigInvalidException,
+    TablesConfig,
+)
 from . import db_graph, db_import, db_export, db_inspect, __version__
 
 APP_NAME = "pgmerge"
@@ -54,21 +58,27 @@ def setup_logging(verbose: bool = False) -> None:  # pragma: no cover
 
         max_total_size = 1024 * 1024
         file_count = 2
-        file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=max_total_size // file_count,
-                                           backupCount=file_count - 1, encoding=None, delay=False)
+        file_handler = RotatingFileHandler(
+            LOG_FILE,
+            mode="a",
+            maxBytes=max_total_size // file_count,
+            backupCount=file_count - 1,
+            encoding=None,
+            delay=False,
+        )
     except OSError as err:
         if err.errno == errno.EACCES:
-            print('WARN: No permissions to create logging directory or file: ' + LOG_FILE)
+            print("WARN: No permissions to create logging directory or file: " + LOG_FILE)
             return
         raise err
 
     file_handler.setFormatter(
-        logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s"))
+        logging.Formatter("[%(asctime)s] %(name)-10.10s %(threadName)-12.12s %(levelname)-8.8s  %(message)s")
+    )
     file_handler.setLevel(logging.INFO)
 
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(
-        NoExceptionFormatter("%(levelname)s: %(message)s"))
+    stream_handler.setFormatter(NoExceptionFormatter("%(levelname)s: %(message)s"))
     stream_handler.setLevel(logging.WARN)
     # Get the root logger to setup logging for all other modules
     log.addHandler(file_handler)
@@ -84,6 +94,7 @@ def setup_logging(verbose: bool = False) -> None:  # pragma: no cover
 
 def find_and_warn_about_cycles(table_graph: Any, dest_tables: List[str]) -> bool:
     """Check and warn if the parts of database schema being used have foreign keys containing cycles."""
+
     def print_message(msg: str) -> None:
         print(msg)
         print("Import might require the --disable-foreign-keys option.")
@@ -93,22 +104,23 @@ def find_and_warn_about_cycles(table_graph: Any, dest_tables: List[str]) -> bool
 
     relevant_cycles = [cycle for cycle in simple_cycles if len(cycle) > 1 if set(cycle).issubset(set(dest_tables))]
     if len(relevant_cycles) > 0:
-        print_message("Table dependencies contain cycles that could prevent import:\n\t{}"
-                      .format(relevant_cycles))
+        print_message("Table dependencies contain cycles that could prevent import:\n\t{}".format(relevant_cycles))
         return True
 
     self_references = [table for cycle in simple_cycles if len(cycle) == 1 for table in cycle]
     relevant_tables = [table for table in self_references if table in dest_tables]
     if len(relevant_tables) > 0:
-        print_message("Self-referencing tables found that could prevent import: {}"
-                      .format(', '.join(sorted(relevant_tables))))
+        print_message(
+            "Self-referencing tables found that could prevent import: {}".format(", ".join(sorted(relevant_tables)))
+        )
         return True
 
     return False
 
 
-def get_and_warn_about_any_unknown_tables(import_files: List[str], dest_tables: List[str], schema_tables: List[str]
-                                          ) -> Tuple[List[str], Set[str]]:
+def get_and_warn_about_any_unknown_tables(
+    import_files: List[str], dest_tables: List[str], schema_tables: List[str]
+) -> Tuple[List[str], Set[str]]:
     """Compare tables expected for import with actual in schema and warn about inconsistencies."""
     unknown_tables = set(dest_tables).difference(set(schema_tables))
     skipped_files = []
@@ -129,12 +141,20 @@ def _get_table_name_with_file(file_name: str, table_name: str) -> str:
     file_stem = only_file_stem(file_name)
     if file_stem == table_name:
         return table_name
-    return '{} [{}]'.format(table_name, file_stem)
+    return "{} [{}]".format(table_name, file_stem)
 
 
-def import_all_new(connection: Any, inspector: Any, schema: str, import_files: List[str], dest_tables: List[str],
-                   config_per_table: Optional[TablesConfig] = None, file_format: Optional[str] = None,
-                   suspend_foreign_keys: bool = False, fail_on_warning: bool = True) -> None:
+def import_all_new(
+    connection: Any,
+    inspector: Any,
+    schema: str,
+    import_files: List[str],
+    dest_tables: List[str],
+    config_per_table: Optional[TablesConfig] = None,
+    file_format: Optional[str] = None,
+    suspend_foreign_keys: bool = False,
+    fail_on_warning: bool = True,
+) -> None:
     """
     Import files that introduce new or updated rows.
 
@@ -152,9 +172,9 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     # https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT
     connection.autocommit = False
 
-    if connection.encoding != 'UTF8':
+    if connection.encoding != "UTF8":
         print("WARNING: Setting database connection encoding to UTF8 instead of '{}'".format(connection.encoding))
-        connection.set_client_encoding('UTF8')
+        connection.set_client_encoding("UTF8")
 
     cursor = connection.cursor()
 
@@ -171,7 +191,7 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
     import_pairs = list(zip(import_files, dest_tables))
     import_pairs.sort(key=lambda pair: insertion_order.index(pair[1]))
     # Stats
-    total_stats = {'skip': 0, 'insert': 0, 'update': 0, 'total': 0}
+    total_stats = {"skip": 0, "insert": 0, "update": 0, "total": 0}
     error_tables = list(unknown_tables)
 
     if suspend_foreign_keys:
@@ -182,13 +202,21 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
 
     config_per_subset = convert_to_config_per_subset(config_per_table)
     for file, table in import_pairs:
-        print('{}:'.format(_get_table_name_with_file(file, table)))
+        print("{}:".format(_get_table_name_with_file(file, table)))
 
         subset_name = only_file_stem(file)
         file_config = config_per_subset.get(subset_name, None)
         try:
-            stats = db_import.pg_upsert(inspector, cursor, schema, table, file, file_format,
-                                        file_config=file_config, config_per_table=config_per_table)
+            stats = db_import.pg_upsert(
+                inspector,
+                cursor,
+                schema,
+                table,
+                file,
+                file_format,
+                file_config=file_config,
+                config_per_table=config_per_table,
+            )
         except db_import.UnsupportedSchemaException as exc:
             print("\tSkipping table with unsupported schema: {}".format(exc))
             error_tables.append(table)
@@ -196,9 +224,10 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
             continue
 
         stat_output = "\t skip: {0:<10} insert: {1:<10} update: {2}".format(
-            stats['skip'], stats['insert'], stats['update'])
-        if stats['insert'] > 0 or stats['update']:
-            click.secho(stat_output, fg='green')
+            stats["skip"], stats["insert"], stats["update"]
+        )
+        if stats["insert"] > 0 or stats["update"]:
+            click.secho(stat_output, fg="green")
         else:
             print(stat_output)
         new_stats = cast(Dict[str, int], stats)  # type: ignore
@@ -208,8 +237,10 @@ def import_all_new(connection: Any, inspector: Any, schema: str, import_files: L
         db_import.enable_foreign_key_constraints(cursor)
 
     print()
-    print("Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s" %
-          (total_stats['skip'], total_stats['insert'], total_stats['update'], total_stats['total']))
+    print(
+        "Total results:\n\t skip: %s \n\t insert: %s \n\t update: %s \n\t total: %s"
+        % (total_stats["skip"], total_stats["insert"], total_stats["update"], total_stats["total"])
+    )
     if len(error_tables) > 0:
         print("\n%s tables skipped due to errors:" % (len(error_tables)))
         print("\t" + "\n\t".join(error_tables))
@@ -231,9 +262,9 @@ def run_in_session(engine: Any, func: Callable[[Any], Any]) -> Any:
         conn.close()
 
 
-def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
-                                config_per_table: Optional[TablesConfig]
-                                ) -> Tuple[List[str], List[str]]:
+def get_import_files_and_tables(
+    directory: str, tables: Optional[List[str]], config_per_table: Optional[TablesConfig]
+) -> Tuple[List[str], List[str]]:
     """Based on the configuration, determine the set of files to be imported as well as their destination tables."""
     if config_per_table is None:
         config_per_table = {}
@@ -241,14 +272,17 @@ def get_import_files_and_tables(directory: str, tables: Optional[List[str]],
     # Determine tables based on files in directory
     all_files = sorted([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])
     import_files = [f for f in all_files if re.match(r".*\.csv", f)]
-    dest_tables = [f[:-len('.csv')] for f in import_files]
+    dest_tables = [f[: -len(".csv")] for f in import_files]
 
     # Consider subsets in config
-    subsets = {table: [subset['name'] for subset in config_per_table[table]['subsets']]
-               for table in config_per_table if 'subsets' in config_per_table[table]}
+    subsets = {
+        table: [subset["name"] for subset in config_per_table[table]["subsets"]]
+        for table in config_per_table
+        if "subsets" in config_per_table[table]
+    }
     subset_files = {filename: table for table in subsets for filename in subsets[table]}
     for subset_name in subset_files:
-        filename = subset_name + '.csv'
+        filename = subset_name + ".csv"
         actual_table = subset_files[subset_name]
         if filename in import_files:
             # Update dest_tables with correct table
@@ -298,17 +332,18 @@ def validate_tables(inspector: Any, schema: str, tables: Optional[List[str]]) ->
 
 def check_table_params(ctx: click.Context, param: Union[click.Option, click.Parameter], value: List[str]) -> List[str]:
     """Check that 'tables' have been specified if 'include-dependent-tables' CLI is provided."""
-    assert param.name == 'tables'
-    other_flag = 'include_dependent_tables'
+    assert param.name == "tables"
+    other_flag = "include_dependent_tables"
     if len(value) == 0 and other_flag in ctx.params and ctx.params[other_flag] is True:
         raise click.UsageError(
-            "Illegal usage: '{}' option is only valid if '{}' arguments have been specified."
-            .format(other_flag, param.name))
+            "Illegal usage: '{}' option is only valid if '{}' arguments have been specified.".format(
+                other_flag, param.name
+            )
+        )
     return value
 
 
-def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Optional[str]
-                              ) -> Optional[TablesConfig]:
+def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Optional[str]) -> Optional[TablesConfig]:
     """Load and validate table configuration and exit app if there are issues."""
     config_per_table = None
     if config_file_name is not None:
@@ -321,9 +356,9 @@ def load_table_config_or_exit(inspector: Any, schema: str, config_file_name: Opt
     return config_per_table
 
 
-def generate_single_table_config(directory: str, tables: List[str],
-                                 config_per_table: Optional[TablesConfig]
-                                 ) -> Tuple[List[str], List[str], TablesConfig]:
+def generate_single_table_config(
+    directory: str, tables: List[str], config_per_table: Optional[TablesConfig]
+) -> Tuple[List[str], List[str], TablesConfig]:
     """Create a fake config such that all files found in the directory are subsets for the given table."""
     assert len(tables) == 1
     table_name = tables[0]
@@ -334,12 +369,12 @@ def generate_single_table_config(directory: str, tables: List[str],
     import_files = [f for f in all_files if re.match(r".*\.csv", f)]
 
     # Add subsets to config if they don't already exist
-    if 'subsets' not in config_per_table[table_name]:
-        config_per_table[table_name]['subsets'] = []
-    current_subsets = [subset['name'] for subset in config_per_table[table_name]['subsets']]
+    if "subsets" not in config_per_table[table_name]:
+        config_per_table[table_name]["subsets"] = []
+    current_subsets = [subset["name"] for subset in config_per_table[table_name]["subsets"]]
     for name in import_files:
         if name not in current_subsets:
-            config_per_table[table_name]['subsets'].append({'name': name})
+            config_per_table[table_name]["subsets"].append({"name": name})
 
     dest_tables = [table_name] * len(import_files)
     import_files = [os.path.join(directory, f) for f in import_files]
@@ -348,32 +383,47 @@ def generate_single_table_config(directory: str, tables: List[str],
 
 # Shared command line options for connecting to a database
 DB_CONNECT_OPTIONS = [
-    click.option('--dbname', '-d', help='Database name to connect to.', required=True),
-    click.option('--host', '-h', help='Database server host or socket directory.',
-                 default='localhost', show_default=True),
-    click.option('--port', '-p', help='Database server port.', default='5432', show_default=True),
-    click.option('--username', '-U', help='Database user name.', default='postgres', show_default=True),
-    click.option('--schema', '-s', default="public", help='Database schema to use.',
-                 show_default=True),
-    click.option('--no-password', '-w', is_flag=True,
-                 help='Never prompt for password (e.g. peer authentication).'),
-    click.option('--password', '-W', hide_input=True, prompt=False, default=None,
-                 help='Database password (default is to prompt for password or read config).'),
-    click.option('--uri', '-L',
-                 help='Connection URI can be used instead of specifying parameters separately' +
-                      ' (also sets --no-password).', required=False)
+    click.option("--dbname", "-d", help="Database name to connect to.", required=True),
+    click.option(
+        "--host", "-h", help="Database server host or socket directory.", default="localhost", show_default=True
+    ),
+    click.option("--port", "-p", help="Database server port.", default="5432", show_default=True),
+    click.option("--username", "-U", help="Database user name.", default="postgres", show_default=True),
+    click.option("--schema", "-s", default="public", help="Database schema to use.", show_default=True),
+    click.option("--no-password", "-w", is_flag=True, help="Never prompt for password (e.g. peer authentication)."),
+    click.option(
+        "--password",
+        "-W",
+        hide_input=True,
+        prompt=False,
+        default=None,
+        help="Database password (default is to prompt for password or read config).",
+    ),
+    click.option(
+        "--uri",
+        "-L",
+        help="Connection URI can be used instead of specifying parameters separately" + " (also sets --no-password).",
+        required=False,
+    ),
 ]
 
 # Shared command line arguments for importing/exporting tables to a directory
 DIR_TABLES_ARGUMENTS = [
-    click.option('--config', '-c', type=click.Path(exists=True, dir_okay=False),
-                 help='Config file for customizing how tables are imported/exported.'),
     click.option(
-        '--include-dependent-tables', '-i', is_flag=True,
-        help='When selecting specific tables, also include ' +
-        'all tables on which they depend due to foreign key constraints.'),
-    click.argument('directory', nargs=1, type=click.Path(exists=True, file_okay=False)),
-    click.argument('tables', default=None, nargs=-1, callback=check_table_params)
+        "--config",
+        "-c",
+        type=click.Path(exists=True, dir_okay=False),
+        help="Config file for customizing how tables are imported/exported.",
+    ),
+    click.option(
+        "--include-dependent-tables",
+        "-i",
+        is_flag=True,
+        help="When selecting specific tables, also include "
+        + "all tables on which they depend due to foreign key constraints.",
+    ),
+    click.argument("directory", nargs=1, type=click.Path(exists=True, file_okay=False)),
+    click.argument("tables", default=None, nargs=-1, callback=check_table_params),
 ]
 
 
@@ -386,11 +436,9 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-        verbose: bool = typer.Option(
-            False, '--verbose', '-v',
-            help='Give more verbose output.'),
-        version: Optional[bool] = typer.Option(None, '--version', callback=version_callback, is_eager=True)
-        ) -> None:
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Give more verbose output."),
+    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback, is_eager=True),
+) -> None:
     """Use to add arguments related to whole app and not only specific sub-commands."""
     setup_logging(verbose)  # pragma: no cover
 
@@ -398,10 +446,20 @@ def main(
 @click.command()
 @decorate(DB_CONNECT_OPTIONS)
 @decorate(DIR_TABLES_ARGUMENTS)
-def export(dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
-           password: Optional[str], schema: str,
-           config: Optional[str], include_dependent_tables: bool,
-           directory: str, tables: Optional[List[str]]) -> None:
+def export(
+    dbname: str,
+    uri: Optional[str],
+    host: str,
+    port: str,
+    username: str,
+    no_password: bool,
+    password: Optional[str],
+    schema: str,
+    config: Optional[str],
+    include_dependent_tables: bool,
+    directory: str,
+    tables: Optional[List[str]],
+) -> None:
     """
     Export each table to a CSV file.
 
@@ -428,8 +486,10 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
         find_and_warn_about_cycles(table_graph, tables)
 
         def export_tables(conn: Any) -> Tuple[int, int]:
-            return db_export.export_tables_per_config(conn, inspector, schema, directory, tables,
-                                                      config_per_table=config_per_table)
+            return db_export.export_tables_per_config(
+                conn, inspector, schema, directory, tables, config_per_table=config_per_table
+            )
+
         table_count, file_count = run_in_session(engine, export_tables)
         print("Exported {} tables to {} files".format(table_count, file_count))
     except Exception as exc:  # pragma: no cover
@@ -442,21 +502,43 @@ def export(dbname: str, uri: Optional[str], host: str, port: str, username: str,
 
 @click.command(name="import")
 @decorate(DB_CONNECT_OPTIONS)
-@click.option('--ignore-cycles', '-f', is_flag=True,
-              help='Don\'t stop import when cycles are detected in schema' +
-              ' (will still fail if there are cycles in the data)')
-@click.option('--disable-foreign-keys', '-F', is_flag=True,
-              help='Disable foreign key constraint checking during import (necessary if you have cycles, but ' +
-              'requires superuser rights).')
+@click.option(
+    "--ignore-cycles",
+    "-f",
+    is_flag=True,
+    help="Don't stop import when cycles are detected in schema" + " (will still fail if there are cycles in the data)",
+)
+@click.option(
+    "--disable-foreign-keys",
+    "-F",
+    is_flag=True,
+    help="Disable foreign key constraint checking during import (necessary if you have cycles, but "
+    + "requires superuser rights).",
+)
 @decorate(DIR_TABLES_ARGUMENTS)
-@click.option('--single-table', is_flag=True,
-              help='An import-only option that assumes all files in the directory are the same type and imports ' +
-                   'them all into a single table.')
-def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
-           password: Optional[str], schema: str,
-           config: Optional[str], include_dependent_tables: bool, ignore_cycles: bool,
-           disable_foreign_keys: bool, single_table: bool, directory: str, tables: Optional[List[str]]
-           ) -> None:
+@click.option(
+    "--single-table",
+    is_flag=True,
+    help="An import-only option that assumes all files in the directory are the same type and imports "
+    + "them all into a single table.",
+)
+def upsert(
+    dbname: str,
+    uri: Optional[str],
+    host: str,
+    port: str,
+    username: str,
+    no_password: bool,
+    password: Optional[str],
+    schema: str,
+    config: Optional[str],
+    include_dependent_tables: bool,
+    ignore_cycles: bool,
+    disable_foreign_keys: bool,
+    single_table: bool,
+    directory: str,
+    tables: Optional[List[str]],
+) -> None:
     """
     Import/merge each CSV file into a table.
 
@@ -488,15 +570,24 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
 
         config_per_table = load_table_config_or_exit(inspector, schema, config)
         if single_table:
-            import_files, dest_tables, config_per_table = generate_single_table_config(directory, tables,
-                                                                                       config_per_table)
+            import_files, dest_tables, config_per_table = generate_single_table_config(
+                directory, tables, config_per_table
+            )
         else:
             import_files, dest_tables = get_import_files_and_tables(directory, tables, config_per_table)
-        run_in_session(engine, lambda conn:
-                       import_all_new(conn, inspector, schema, import_files, dest_tables,
-                                      config_per_table=config_per_table,
-                                      suspend_foreign_keys=disable_foreign_keys,
-                                      fail_on_warning=not ignore_cycles))
+        run_in_session(
+            engine,
+            lambda conn: import_all_new(
+                conn,
+                inspector,
+                schema,
+                import_files,
+                dest_tables,
+                config_per_table=config_per_table,
+                suspend_foreign_keys=disable_foreign_keys,
+                fail_on_warning=not ignore_cycles,
+            ),
+        )
     except Exception as exc:  # pragma: no cover
         logging.exception(exc)
         sys.exit(EXIT_CODE_EXC)
@@ -506,27 +597,50 @@ def upsert(dbname: str, uri: Optional[str], host: str, port: str, username: str,
 
 
 @click.command(context_settings=dict(max_content_width=120))
-@click.option('--engine', '-e', help="Type of database engine.", default='postgresql', show_default=True)
+@click.option("--engine", "-e", help="Type of database engine.", default="postgresql", show_default=True)
 @decorate(DB_CONNECT_OPTIONS)
-@click.option('--warnings', '-w', is_flag=True, help="Output any issues detected in database schema.")
-@click.option('--list-tables', '-t', is_flag=True, help="Output all tables found in the given schema.")
-@click.option('--table-details', '-td', is_flag=True,
-              help="Output all tables along with column and foreign key information.")
-@click.option('--cycles', '-c', is_flag=True, help="Find and list cycles in foreign-key dependency graph.")
-@click.option('--insert-order', '-i', is_flag=True,
-              help="Output the insertion order of tables based on the foreign-key dependency graph. " +
-              "This can be used by importer scripts if there are no circular dependency issues.")
-@click.option('--partition', '-pt', is_flag=True,
-              help="Partition and list sub-graphs of foreign-key dependency graph.")
-@click.option('--export-graph', '-x', is_flag=True,
-              help="Output dot format description of foreign-key dependency graph." +
-              " To use graphviz to generate a PDF from this format, pipe the output to:" +
-              " dot -Tpdf > graph.pdf")
-@click.option('--transferable', '-tf', is_flag=True, help="Output info related to table transfers.")
-def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, username: str, no_password: bool,
-            password: Optional[str], schema: str,
-            warnings: bool, list_tables: bool, table_details: bool,
-            partition: bool, cycles: bool, insert_order: bool, export_graph: bool, transferable: bool) -> None:
+@click.option("--warnings", "-w", is_flag=True, help="Output any issues detected in database schema.")
+@click.option("--list-tables", "-t", is_flag=True, help="Output all tables found in the given schema.")
+@click.option(
+    "--table-details", "-td", is_flag=True, help="Output all tables along with column and foreign key information."
+)
+@click.option("--cycles", "-c", is_flag=True, help="Find and list cycles in foreign-key dependency graph.")
+@click.option(
+    "--insert-order",
+    "-i",
+    is_flag=True,
+    help="Output the insertion order of tables based on the foreign-key dependency graph. "
+    + "This can be used by importer scripts if there are no circular dependency issues.",
+)
+@click.option("--partition", "-pt", is_flag=True, help="Partition and list sub-graphs of foreign-key dependency graph.")
+@click.option(
+    "--export-graph",
+    "-x",
+    is_flag=True,
+    help="Output dot format description of foreign-key dependency graph."
+    + " To use graphviz to generate a PDF from this format, pipe the output to:"
+    + " dot -Tpdf > graph.pdf",
+)
+@click.option("--transferable", "-tf", is_flag=True, help="Output info related to table transfers.")
+def inspect(
+    engine: str,
+    dbname: str,
+    uri: Optional[str],
+    host: str,
+    port: str,
+    username: str,
+    no_password: bool,
+    password: Optional[str],
+    schema: str,
+    warnings: bool,
+    list_tables: bool,
+    table_details: bool,
+    partition: bool,
+    cycles: bool,
+    insert_order: bool,
+    export_graph: bool,
+    transferable: bool,
+) -> None:
     """
     Inspect database schema in various ways.
 
@@ -540,9 +654,18 @@ def inspect(engine: str, dbname: str, uri: Optional[str], host: str, port: str, 
         password = retrieve_password(APP_NAME, dbname, host, port, username, password, never_prompt=no_password)
         db_url = generate_url(uri, dbname, host, port, username, password, type=engine)
         _engine = sqlalchemy.create_engine(db_url)
-        db_inspect.main(_engine, schema,
-                        warnings, list_tables, table_details, partition,
-                        cycles, insert_order, export_graph, transferable)
+        db_inspect.main(
+            _engine,
+            schema,
+            warnings,
+            list_tables,
+            table_details,
+            partition,
+            cycles,
+            insert_order,
+            export_graph,
+            transferable,
+        )
     except Exception as exc:  # pragma: no cover
         logging.exception(exc)
         sys.exit(EXIT_CODE_EXC)
