@@ -99,7 +99,10 @@ jobs:
       - name: Archive code coverage results
         # Ensure we only upload once per build
         if: matrix.name == 'supported'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: htmlcov/
+          # Ignore errors where parallel execution causes conflicting uploads
+          # See: https://github.com/actions/upload-artifact/issues/506
+          continue-on-error: true
