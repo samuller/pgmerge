@@ -63,7 +63,7 @@ jobs:
         run: poetry install
       # Our depdencies don't currently support Python 3.13+ unless this is done - see comments in pyproject.toml
       - name: Python 3.13+ workaround
-        run: pip install typing-extensions --upgrade
+        run: poetry run pip install typing-extensions --upgrade
       - name: Check for linting issues
         run: ./run.sh lint
       - name: Test with pytest
