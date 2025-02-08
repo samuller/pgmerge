@@ -61,7 +61,9 @@ jobs:
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.5.1 python -
       - name: Install dependencies
         run: poetry install
-      # Our depdencies don't currently support Python 3.13+ unless this is done - see comments in pyproject.toml
+      # Our dependencies don't currently support Python 3.13+ unless this is done - see comments in pyproject.toml
+      # We can remove this once we drop support for Python 3.7 as issue is fixed in versions that support
+      # only Python 3.8+
       - name: Python 3.13+ workaround
         run: poetry run pip install typing-extensions --upgrade
       - name: Check for linting issues
