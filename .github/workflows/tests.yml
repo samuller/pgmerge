@@ -65,7 +65,7 @@ jobs:
       # We can remove this once we drop support for Python 3.7 as issue is fixed in versions that support
       # only Python 3.8+
       - name: Python 3.13+ workaround
-        run: poetry run pip install typing-extensions --upgrade
+        run: poetry run pip install typing-extensions psycopg2-binary --upgrade
       - name: Check for linting issues
         run: ./run.sh lint
       - name: Test with pytest

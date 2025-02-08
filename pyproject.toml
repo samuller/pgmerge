@@ -28,6 +28,8 @@ pgmerge = "pgmerge.pgmerge:cli_app"
 
 [tool.poetry.dependencies]
 python = "^3.7"
+# Newest version support Python 3.13, but drop support for 3.7
+# See: https://www.psycopg.org/docs/news.html
 psycopg2-binary = "*"
 # 2.6 only supports Python 3.7+ and 2.5.1 uses older "decorator" lib
 networkx = "2.5"
