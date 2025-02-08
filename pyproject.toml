@@ -32,6 +32,11 @@ psycopg2-binary = "*"
 # 2.6 only supports Python 3.7+ and 2.5.1 uses older "decorator" lib
 networkx = "2.5"
 SQLAlchemy = "2.0.30"
+# typing-extensions is imported by SQLAlchemy (and most dev dependencies):
+# - Breaks on Python 3.13 if we don't use v4.12.0+
+#   See: https://github.com/python/typing_extensions/issues/405
+# - But v4.7.1 was the last version to support Python 3.7 (the rest are Python 3.8+)
+# typing-extensions = "4.12.*"
 # 4.1.0 and above only supports Python 3.8+
 platformdirs = "4.0.0"
 PyYAML = "6.0.1"
