@@ -18,12 +18,12 @@ jobs:
         include:
           # Test with specific supported versions
           - name: supported
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             python: 3.7
             postgres: 10
           # Test everything with latest versions
           - name: latest
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             python: 3.x
             postgres: latest
 
