@@ -69,6 +69,8 @@ jobs:
       - name: Python 3.13+ workaround
         run: poetry run pip install typing-extensions psycopg2-binary --upgrade
       - name: Check for linting issues
+        # Limit lint checks to oldest supported Python version until it is more modern
+        if: matrix.python-version == '3.7'
         run: ./run.sh lint
       - name: Test with pytest
         run: ./run.sh test
