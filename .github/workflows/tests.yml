@@ -7,6 +7,8 @@ on:
   # python, postgres, or any external packages/dependencies
   schedule:
   - cron: '7 14 * * fri'
+  # Enable triggering manually
+  workflow_dispatch:
 
 jobs:
   run-tests:
